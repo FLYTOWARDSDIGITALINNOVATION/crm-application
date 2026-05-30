@@ -2,20 +2,43 @@ import React, { useState } from 'react';
 import { 
   MessageSquare, MoreVertical, Search, 
   Plus, CheckCircle2, AlertCircle, Clock, 
-  User, Send, Paperclip, Smile
+  User, Send, Paperclip, Smile, X
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { useAppDispatch, useAppSelector } from '../../store';
+import { addTicket, addMessageToTicket, updateTicketStatus } from '../../store/slices/supportSlice';
 
 const SupportTickets: React.FC = () => {
-  const [selectedTicket, setSelectedTicket] = useState<string | null>('t1');
+  const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newTicket, setNewTicket] = useState({ subject: '', description: '', priority: 'Medium' });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [inputText, setInputText] = useState('');
+  
+  const dispatch = useAppDispatch();
+  const allTickets = useAppSelector(state => state.support.items);
+  const tickets = allTickets.filter(t => 
+    t.subject.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    t.customer.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  // Mock tickets data
-  const tickets = [
-    { id: 't1', subject: 'Cannot access analytics dashboard', customer: 'Alice Johnson', priority: 'High', status: 'Open', lastUpdate: '10m ago' },
-    { id: 't2', subject: 'Billing inquiry regarding Q2 invoice', customer: 'Bob Smith', priority: 'Medium', status: 'In Progress', lastUpdate: '2h ago' },
-    { id: 't3', subject: 'How to export leads as CSV?', customer: 'Charlie Davis', priority: 'Low', status: 'Resolved', lastUpdate: '1d ago' },
-    { id: 't4', subject: 'Integration failed with Slack', customer: 'Diana Prince', priority: 'High', status: 'Open', lastUpdate: '4h ago' },
-  ];
+  const currentTicket = allTickets.find(t => t.id === selectedTicket);
+
+  const handleCreateTicket = () => {
+    if (!newTicket.subject.trim()) return;
+    dispatch(addTicket({
+      id: `sup${Date.now()}`,
+      subject: newTicket.subject,
+      description: newTicket.description,
+      status: 'Open',
+      priority: newTicket.priority,
+      customer: 'Current User', // Mock user for now
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }));
+    setIsModalOpen(false);
+    setNewTicket({ subject: '', description: '', priority: 'Medium' });
+  };
 
   const getPriorityStyle = (priority: string) => {
     switch (priority) {
@@ -25,16 +48,17 @@ const SupportTickets: React.FC = () => {
     }
   };
 
-  const [messages, setMessages] = useState([
-    { id: 1, sender: 'agent', text: "Hi Alice, I noticed you were having trouble with the analytics dashboard. Have you tried clearing your browser cache?" },
-    { id: 2, sender: 'customer', text: "Yes, I've tried that and even used a different browser, but the charts are still stuck on 'Loading...'. I really need this data for my 3 PM meeting." },
-    { id: 3, sender: 'agent', text: "Understood. I've escalated this to our engineering team. We'll get a fix out within the next hour. I'll update you here as soon as it's live!" },
-  ]);
-  const [inputText, setInputText] = useState('');
-
   const handleSend = () => {
-    if (!inputText.trim()) return;
-    setMessages([...messages, { id: Date.now(), sender: 'agent', text: inputText }]);
+    if (!inputText.trim() || !selectedTicket) return;
+    dispatch(addMessageToTicket({
+      ticketId: selectedTicket,
+      message: {
+        id: Date.now(),
+        sender: 'agent',
+        text: inputText,
+        timestamp: new Date().toISOString()
+      }
+    }));
     setInputText('');
   };
 
@@ -53,7 +77,10 @@ const SupportTickets: React.FC = () => {
           <h1 className="text-2xl font-bold text-slate-900 font-inter tracking-tight">Support Center</h1>
           <p className="text-slate-500 text-sm">Resolve customer inquiries and maintain high satisfaction.</p>
         </div>
-        <button className="flex items-center gap-2 px-6 py-3 bg-indigo-600 rounded-2xl text-sm font-bold text-white hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all">
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-2 px-6 py-3 bg-indigo-600 rounded-2xl text-sm font-bold text-white hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all"
+        >
           <Plus className="w-5 h-5" />
           New Ticket
         </button>
@@ -66,7 +93,9 @@ const SupportTickets: React.FC = () => {
             <Search className="w-4 h-4 text-slate-400 ml-2" />
             <input 
               placeholder="Search tickets..." 
-              className="bg-transparent border-none text-sm focus:ring-0 w-full"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="bg-transparent border-none text-sm focus:ring-0 w-full outline-none"
             />
           </div>
           <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
@@ -88,7 +117,7 @@ const SupportTickets: React.FC = () => {
                   )}>
                     {ticket.priority}
                   </span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">{ticket.lastUpdate}</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">{new Date(ticket.updatedAt).toLocaleDateString()}</span>
                 </div>
                 <h3 className="text-sm font-bold text-slate-900 leading-snug line-clamp-2">{ticket.subject}</h3>
                 <div className="flex items-center gap-2 mt-3 text-xs text-slate-500 font-medium">
@@ -108,15 +137,31 @@ const SupportTickets: React.FC = () => {
               <div className="p-6 border-b border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/50">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
-                    AJ
+                    {currentTicket?.customer.substring(0, 2).toUpperCase()}
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900">Conversation regarding: Access Issue</h3>
-                    <p className="text-xs text-slate-500 font-medium">With Alice Johnson from TechCorp</p>
+                    <h3 className="text-sm font-bold text-slate-900 line-clamp-1">Conversation regarding: {currentTicket?.subject}</h3>
+                    <p className="text-xs text-slate-500 font-medium">With {currentTicket?.customer}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-white rounded-xl transition-all border border-transparent hover:border-slate-100">
+                  <button 
+                    onClick={() => {
+                      if (selectedTicket) {
+                        dispatch(updateTicketStatus({ 
+                          id: selectedTicket, 
+                          status: currentTicket?.status === 'Resolved' ? 'Open' : 'Resolved' 
+                        }));
+                      }
+                    }}
+                    title={currentTicket?.status === 'Resolved' ? "Reopen Ticket" : "Resolve Ticket"}
+                    className={cn(
+                      "p-2 rounded-xl transition-all border",
+                      currentTicket?.status === 'Resolved' 
+                        ? "text-green-600 bg-green-50 border-green-200" 
+                        : "text-slate-400 hover:text-slate-600 hover:bg-white border-transparent hover:border-slate-100"
+                    )}
+                  >
                     <CheckCircle2 className="w-5 h-5" />
                   </button>
                   <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-white rounded-xl transition-all border border-transparent hover:border-slate-100">
@@ -130,7 +175,7 @@ const SupportTickets: React.FC = () => {
 
               {/* Chat Area */}
               <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col custom-scrollbar bg-slate-50/50">
-                {messages.map((msg) => (
+                {currentTicket?.messages?.length ? currentTicket.messages.map((msg) => (
                   <div 
                     key={msg.id} 
                     className={cn(
@@ -142,7 +187,11 @@ const SupportTickets: React.FC = () => {
                   >
                     {msg.text}
                   </div>
-                ))}
+                )) : (
+                  <div className="flex-1 flex items-center justify-center text-slate-400 text-sm italic">
+                    No messages in this ticket yet.
+                  </div>
+                )}
               </div>
 
               {/* Input Area */}
@@ -191,6 +240,69 @@ const SupportTickets: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* New Ticket Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+          <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl relative border border-slate-100">
+            <button 
+              onClick={() => setIsModalOpen(false)}
+              className="absolute right-6 top-6 text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 p-2 rounded-xl transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-2xl font-bold mb-6 text-slate-900 font-inter">Create New Ticket</h2>
+            <div className="space-y-5">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Subject</label>
+                <input 
+                  type="text" 
+                  placeholder="E.g., Cannot access dashboard"
+                  value={newTicket.subject}
+                  onChange={e => setNewTicket({...newTicket, subject: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all placeholder:text-slate-400"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Description</label>
+                <textarea 
+                  rows={4}
+                  placeholder="Describe the issue in detail..."
+                  value={newTicket.description}
+                  onChange={e => setNewTicket({...newTicket, description: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none transition-all placeholder:text-slate-400"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Priority</label>
+                <div className="relative">
+                  <select 
+                    value={newTicket.priority}
+                    onChange={e => setNewTicket({...newTicket, priority: e.target.value})}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none appearance-none transition-all"
+                  >
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Urgent">Urgent</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                    <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                      <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              <button 
+                onClick={handleCreateTicket}
+                className="w-full bg-indigo-600 text-white rounded-xl py-3.5 text-sm font-bold mt-2 hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all"
+              >
+                Submit Ticket
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

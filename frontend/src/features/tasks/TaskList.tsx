@@ -5,17 +5,25 @@ import {
   User, CheckCircle2, Circle
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { useAppDispatch, useAppSelector } from '../../store';
+import { toggleTaskStatus } from '../../store/slices/taskSlice';
 
 const TaskList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const dispatch = useAppDispatch();
+  const { items: tasks } = useAppSelector((state) => state.tasks);
 
-  // Mock tasks data
-  const tasks = [
-    { id: 't1', title: 'Follow up with Alice Johnson', dueDate: '2026-04-07', priority: 'High', status: 'Pending', assignedTo: 'John Doe', relatedTo: 'TechCorp' },
-    { id: 't2', title: 'Prepare demo for Bob Smith', dueDate: '2026-04-08', priority: 'Medium', status: 'In Progress', assignedTo: 'John Doe', relatedTo: 'Build-it Inc' },
-    { id: 't3', title: 'Contract review for Apex Logistics', dueDate: '2026-04-06', priority: 'High', status: 'Completed', assignedTo: 'Sarah Miller', relatedTo: 'Apex Logistics' },
-    { id: 't4', title: 'Initial discovery call - Fiona', dueDate: '2026-04-10', priority: 'Low', status: 'Pending', assignedTo: 'John Doe', relatedTo: 'Southside Deli' },
-  ];
+  // Derived stats
+  const pendingCount = tasks.filter(t => t.status === 'Pending').length;
+  const completedCount = tasks.filter(t => t.status === 'Completed').length;
+  // A simplistic due today count
+  const todayStr = new Date().toISOString().split('T')[0];
+  const dueTodayCount = tasks.filter(t => t.dueDate === todayStr).length;
+
+  const filteredTasks = tasks.filter(task => 
+    task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    task.assignedTo.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const getPriorityStyle = (priority: string) => {
     switch (priority) {
@@ -47,7 +55,7 @@ const TaskList: React.FC = () => {
           </div>
           <div>
             <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Pending</span>
-            <h3 className="text-2xl font-bold text-slate-900">12</h3>
+            <h3 className="text-2xl font-bold text-slate-900">{pendingCount}</h3>
           </div>
         </div>
         <div className="glass p-6 rounded-2xl flex items-center gap-4">
@@ -56,7 +64,7 @@ const TaskList: React.FC = () => {
           </div>
           <div>
             <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Due Today</span>
-            <h3 className="text-2xl font-bold text-slate-900">4</h3>
+            <h3 className="text-2xl font-bold text-slate-900">{dueTodayCount}</h3>
           </div>
         </div>
         <div className="glass p-6 rounded-2xl flex items-center gap-4">
@@ -65,7 +73,7 @@ const TaskList: React.FC = () => {
           </div>
           <div>
             <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Completed</span>
-            <h3 className="text-2xl font-bold text-slate-900">84</h3>
+            <h3 className="text-2xl font-bold text-slate-900">{completedCount}</h3>
           </div>
         </div>
       </div>
@@ -92,11 +100,14 @@ const TaskList: React.FC = () => {
 
       {/* Task List */}
       <div className="space-y-4">
-        {tasks.map((task) => (
+        {filteredTasks.map((task) => (
           <div key={task.id} className="glass p-4 sm:p-6 rounded-3xl group hover:shadow-lg transition-all border-l-4 border-transparent hover:border-indigo-500">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-4">
-                <button className="mt-1 text-slate-300 hover:text-indigo-600 transition-colors">
+                <button 
+                  onClick={() => dispatch(toggleTaskStatus(task.id))}
+                  className="mt-1 text-slate-300 hover:text-indigo-600 transition-colors"
+                >
                   {task.status === 'Completed' ? (
                     <CheckCircle2 className="w-6 h-6 text-emerald-500" />
                   ) : (

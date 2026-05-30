@@ -60,6 +60,10 @@ const CustomerDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchCustomerProfile();
+    const intervalId = setInterval(() => {
+      fetchCustomerProfile();
+    }, 5000);
+    return () => clearInterval(intervalId);
   }, [user?.email]);
 
   const handleSendMessage = async (e: React.FormEvent) => {

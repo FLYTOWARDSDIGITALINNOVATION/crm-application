@@ -48,6 +48,18 @@ export const fetchCustomers = createAsyncThunk('customers/fetchCustomers', async
   }
 });
 
+export const fetchCustomerById = createAsyncThunk(
+  'customers/fetchCustomerById',
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/customers/${id}`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch customer');
+    }
+  }
+);
+
 export const deleteCustomer = createAsyncThunk(
   'customers/deleteCustomer',
   async (id: string, { rejectWithValue }) => {
@@ -110,9 +122,9 @@ const customerSlice = createSlice({
       .addCase(deleteCustomer.fulfilled, (state, action) => {
         state.items = state.items.filter(item => item._id !== action.payload);
       })
-      // Update Customer / Add Timeline
+      // Update Customer / Add Timeline / Fetch Single Customer
       .addMatcher(
-        isAnyOf(updateCustomer.fulfilled, addCustomerTimelineEntry.fulfilled),
+        isAnyOf(updateCustomer.fulfilled, addCustomerTimelineEntry.fulfilled, fetchCustomerById.fulfilled),
         (state, action: PayloadAction<Customer>) => {
           state.isLoading = false;
           const index = state.items.findIndex(item => item._id === action.payload._id);

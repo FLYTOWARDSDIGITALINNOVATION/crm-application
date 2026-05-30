@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store';
-import { updateCustomer, addCustomerTimelineEntry, deleteCustomer } from '../../store/slices/customerSlice';
+import { updateCustomer, addCustomerTimelineEntry, deleteCustomer, fetchCustomerById } from '../../store/slices/customerSlice';
 import { cn } from '../../utils/cn';
 import EditCustomerModal from './EditCustomerModal';
 
@@ -31,6 +31,16 @@ const CustomerDetail: React.FC = () => {
       setEditableNotes(customer.notes || '');
     }
   }, [customer]);
+
+  useEffect(() => {
+    if (id) {
+      dispatch(fetchCustomerById(id));
+      const intervalId = setInterval(() => {
+        dispatch(fetchCustomerById(id));
+      }, 5000);
+      return () => clearInterval(intervalId);
+    }
+  }, [dispatch, id]);
 
   const handleRemoveCustomer = async () => {
     if (window.confirm('Are you sure you want to remove this customer? This action cannot be undone.')) {
