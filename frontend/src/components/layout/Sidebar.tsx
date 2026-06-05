@@ -1,4 +1,5 @@
 import React from 'react';
+import logo from '../../assets/logo.jpg';
 import { NavLink } from 'react-router-dom';
 import { 
   BarChart3, 
@@ -52,16 +53,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
       <div className="flex items-center justify-between p-6">
         {!isCollapsed && (
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-              <span className="text-white font-bold text-xl">F</span>
-            </div>
+            <img src={logo} alt="Fly-Towards Logo" className="w-8 h-8 rounded-lg object-contain bg-white" />
             <span className="font-bold text-xl tracking-tight text-slate-800">FlyTowards</span>
           </div>
         )}
         {isCollapsed && (
-          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center mx-auto">
-            <span className="text-white font-bold text-xl">F</span>
-          </div>
+          <img src={logo} alt="Fly-Towards Logo" className="w-8 h-8 rounded-lg object-contain bg-white mx-auto" />
         )}
       </div>
 
