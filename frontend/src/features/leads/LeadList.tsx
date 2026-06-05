@@ -147,8 +147,57 @@ const LeadList: React.FC = () => {
         </div>
       </div>
 
-      {/* Leads Table */}
-      <div className="glass rounded-2xl overflow-hidden">
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-3">
+        {filteredLeads.length === 0 ? (
+          <div className="glass rounded-2xl p-8 text-center text-slate-400 text-sm">No leads found.</div>
+        ) : filteredLeads.map((lead) => (
+          <div
+            key={lead._id}
+            className="glass rounded-2xl p-4 cursor-pointer hover:shadow-md transition-all"
+            onClick={() => navigate(`/leads/${lead._id}`)}
+          >
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-slate-900 truncate">{lead.name}</p>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <Mail className="w-3 h-3 text-slate-400 shrink-0" />
+                  <span className="text-xs text-slate-500 truncate">{lead.email}</span>
+                </div>
+              </div>
+              <span className={cn(
+                "px-2.5 py-1 rounded-full text-xs font-bold border shrink-0",
+                statusColors[lead.status as keyof typeof statusColors]
+              )}>
+                {lead.status}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs text-slate-500">
+              <div className="flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className="truncate">{lead.company || '—'}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className="truncate">{lead.createdAt}</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
+              <span className="text-xs text-slate-400 font-medium">Source: {lead.source || '—'}</span>
+              <button
+                onClick={(e) => handleDelete(e, lead._id)}
+                className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                title="Delete Lead"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table */}
+      <div className="hidden md:block glass rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
