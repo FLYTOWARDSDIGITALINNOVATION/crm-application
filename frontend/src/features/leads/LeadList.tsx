@@ -92,31 +92,30 @@ const LeadList: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Leads Management</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Leads Management</h1>
           <p className="text-slate-500 text-sm">Track and manage your potential customers lifecycle.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button 
             onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
           >
             <Download className="w-4 h-4" />
-            Export
+            <span className="hidden sm:inline">Export</span>
           </button>
           <button 
             onClick={() => navigate('/leads/create')}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 rounded-xl text-sm font-semibold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-indigo-600 rounded-xl text-sm font-semibold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all"
           >
             <Plus className="w-4 h-4" />
-            Add New Lead
+            <span className="hidden sm:inline">Add New Lead</span>
           </button>
         </div>
       </div>
 
-
       {/* Filters & Search */}
-      <div className="glass p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-md">
+      <div className="glass p-4 rounded-2xl flex flex-col gap-4">
+        <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
@@ -126,17 +125,17 @@ const LeadList: React.FC = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-3 overflow-x-auto pb-2 md:pb-0">
-          <div className="flex items-center gap-2 mr-2 border-r border-slate-200 pr-4">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <div className="flex items-center gap-2 mr-2 border-r border-slate-200 pr-3 shrink-0">
             <Filter className="w-4 h-4 text-slate-400" />
-            <span className="text-sm font-medium text-slate-500 whitespace-nowrap">Filter by:</span>
+            <span className="text-xs font-medium text-slate-500 whitespace-nowrap">Filter:</span>
           </div>
           {['All', 'New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Converted', 'Lost'].map((status) => (
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap",
+                "px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap shrink-0",
                 statusFilter === status 
                   ? "bg-indigo-600 text-white shadow-md shadow-indigo-100" 
                   : "text-slate-500 hover:bg-slate-50"
@@ -222,8 +221,8 @@ const LeadList: React.FC = () => {
         </div>
 
         {/* Pagination */}
-        <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
-          <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Showing 6 of 1,284 leads</span>
+        <div className="px-4 sm:px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Showing {filteredLeads.length} leads</span>
           <div className="flex items-center gap-2">
             <button className="p-2 text-slate-400 hover:text-slate-900 bg-white border border-slate-200 rounded-lg disabled:opacity-50" disabled>
               <ChevronLeft className="w-4 h-4" />

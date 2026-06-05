@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Mail, Phone, Building2, Tag, MessageSquare, History, 
-  PhoneCall, MailPlus, AlertCircle, Star, TrendingUp, Calendar,
-  Send, User, Award, ShieldCheck, CheckCircle2
+  PhoneCall, MailPlus, AlertCircle, TrendingUp, Calendar,
+  Send, Award, CheckCircle2
 } from 'lucide-react';
 import { useAppSelector } from '../../store';
 import api from '../../utils/api';
@@ -117,12 +117,6 @@ const CustomerDashboard: React.FC = () => {
     );
   }
 
-  const statusColors = {
-    'Active': 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    'VIP': 'bg-amber-100 text-amber-700 border-amber-200',
-    'New': 'bg-blue-100 text-blue-700 border-blue-200',
-    'Inactive': 'bg-slate-100 text-slate-700 border-slate-200',
-  };
 
   return (
     <div className="space-y-8 animate-fade-in pb-16">

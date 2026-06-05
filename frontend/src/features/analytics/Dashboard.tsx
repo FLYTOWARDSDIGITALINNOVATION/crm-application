@@ -39,9 +39,9 @@ const Dashboard: React.FC = () => {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Dashboard Overview</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Dashboard Overview</h1>
           <p className="text-slate-500">Welcome back, John! Here's what's happening today.</p>
         </div>
         <div className="flex gap-3">
