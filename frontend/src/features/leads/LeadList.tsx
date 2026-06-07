@@ -9,6 +9,13 @@ import { useAppDispatch, useAppSelector } from '../../store';
 import { fetchLeads, deleteLead } from '../../store/slices/leadSlice';
 import { cn } from '../../utils/cn';
 
+const formatDate = (raw: string) => {
+  if (!raw) return '—';
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) return raw;
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
 const LeadList: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -172,14 +179,14 @@ const LeadList: React.FC = () => {
                 {lead.status}
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-2 text-xs text-slate-500">
+            <div className="flex flex-col gap-1.5 text-xs text-slate-500">
               <div className="flex items-center gap-1.5">
                 <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <span className="truncate">{lead.company || '—'}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span className="truncate">{lead.createdAt}</span>
+                <span className="whitespace-nowrap">{formatDate(lead.createdAt)}</span>
               </div>
             </div>
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
@@ -246,7 +253,7 @@ const LeadList: React.FC = () => {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2 text-sm text-slate-500">
                       <Calendar className="w-4 h-4" />
-                      {lead.createdAt}
+                      {formatDate(lead.createdAt)}
                     </div>
                   </td>
                   <td className="px-6 py-4">
