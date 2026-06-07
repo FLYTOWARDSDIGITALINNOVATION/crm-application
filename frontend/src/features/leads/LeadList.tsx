@@ -121,7 +121,7 @@ const LeadList: React.FC = () => {
       </div>
 
       {/* Filters & Search */}
-      <div className="glass p-4 rounded-2xl flex flex-col gap-4">
+      <div className="glass p-4 rounded-2xl flex flex-col gap-3">
         <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
@@ -132,20 +132,20 @@ const LeadList: React.FC = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          <div className="flex items-center gap-2 mr-2 border-r border-slate-200 pr-3 shrink-0">
-            <Filter className="w-4 h-4 text-slate-400" />
-            <span className="text-xs font-medium text-slate-500 whitespace-nowrap">Filter:</span>
-          </div>
+        <div className="flex items-center gap-1.5 mb-1">
+          <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+          <span className="text-xs font-medium text-slate-500">Filter by status:</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
           {['All', 'New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Converted', 'Lost'].map((status) => (
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap shrink-0",
-                statusFilter === status 
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-100" 
-                  : "text-slate-500 hover:bg-slate-50"
+                "px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap",
+                statusFilter === status
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-100"
+                  : "text-slate-500 bg-slate-100 hover:bg-slate-200"
               )}
             >
               {status}
