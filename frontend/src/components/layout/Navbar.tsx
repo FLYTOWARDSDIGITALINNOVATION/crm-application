@@ -1,13 +1,14 @@
 import React from 'react';
-import { Search, Bell, Sun, Moon, Clock } from 'lucide-react';
+import { Search, Bell, Sun, Moon, Clock, Menu } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAppSelector } from '../../store';
 
 interface NavbarProps {
   isSidebarCollapsed: boolean;
+  onMenuToggle?: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ isSidebarCollapsed }) => {
+const Navbar: React.FC<NavbarProps> = ({ isSidebarCollapsed, onMenuToggle }) => {
   const { user } = useAppSelector((state) => state.auth);
   const [isDark, setIsDark] = React.useState(false);
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);
@@ -43,21 +44,30 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarCollapsed }) => {
   return (
     <header
       className={cn(
-        "fixed top-0 right-0 h-20 glass z-40 transition-all duration-300 px-8 flex items-center justify-between",
-        isSidebarCollapsed ? "left-20" : "left-64"
+        "fixed top-0 right-0 h-20 glass z-40 transition-all duration-300 px-4 sm:px-8 flex items-center justify-between",
+        "left-0 lg:left-64",
+        isSidebarCollapsed && "lg:left-20"
       )}
     >
-      <div className="flex-1 max-w-xl">
+      <div className="flex items-center gap-2 flex-1 max-w-xl">
+        <button
+          onClick={onMenuToggle}
+          className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-all lg:hidden mr-1"
+          aria-label="Toggle menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
         <div 
-          className="relative group cursor-pointer"
+          className="relative group cursor-pointer flex-1 max-w-[160px] sm:max-w-md"
           onClick={() => setIsSearchOpen(true)}
         >
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
           <input
             type="text"
             readOnly
-            placeholder="Search leads, tasks, or customers (⌘K)..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all duration-200 cursor-pointer pointer-events-none"
+            placeholder="Search... (⌘K)"
+            className="w-full pl-9 pr-4 py-2 bg-slate-100 border-none rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 transition-all duration-200 cursor-pointer pointer-events-none"
           />
         </div>
       </div>

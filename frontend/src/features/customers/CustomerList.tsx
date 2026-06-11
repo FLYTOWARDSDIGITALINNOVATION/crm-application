@@ -83,16 +83,16 @@ const CustomerList: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Customer Directory</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Customer Directory</h1>
           <p className="text-slate-500 text-sm">Manage your long-term business relationships and lifetime value.</p>
         </div>
         <div className="flex items-center gap-3">
           <button 
             onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
           >
             <Download className="w-4 h-4" />
-            Export data
+            <span className="hidden sm:inline">Export data</span>
           </button>
         </div>
       </div>
@@ -129,8 +129,8 @@ const CustomerList: React.FC = () => {
       </div>
 
       {/* Search & Filter */}
-      <div className="glass p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-md">
+      <div className="glass p-4 rounded-2xl">
+        <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"

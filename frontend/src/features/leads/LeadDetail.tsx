@@ -93,17 +93,17 @@ const LeadDetail: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {/* Header / Breadcrumb */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Link 
             to="/leads" 
-            className="p-2 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-slate-900 transition-all hover:translate-x-[-2px]"
+            className="p-2 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-slate-900 transition-all hover:translate-x-[-2px] shrink-0"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-slate-900">{lead.name}</h1>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{lead.name}</h1>
               <span className={cn(
                 "px-2.5 py-1 rounded-full text-xs font-bold border",
                 statusColors[lead.status as keyof typeof statusColors]
@@ -111,8 +111,8 @@ const LeadDetail: React.FC = () => {
                 {lead.status}
               </span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-slate-500 mt-0.5">
-              <Building2 className="w-4 h-4" />
+            <div className="flex items-center gap-2 text-sm text-slate-500 mt-0.5 flex-wrap">
+              <Building2 className="w-4 h-4 shrink-0" />
               <span>{lead.company || 'No Company'}</span>
               {lead.source && (
                 <>
@@ -123,16 +123,17 @@ const LeadDetail: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <button className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-all">
             Edit
           </button>
           <button 
             onClick={() => setIsConvertModalOpen(true)}
-            className="px-4 py-2 bg-indigo-600 rounded-xl text-sm font-semibold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all flex items-center gap-2"
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 rounded-xl text-sm font-semibold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all"
           >
             <CheckCircle2 className="w-4 h-4" />
-            Mark as Converted
+            <span className="hidden sm:inline">Mark as Converted</span>
+            <span className="sm:hidden">Convert</span>
           </button>
         </div>
       </div>

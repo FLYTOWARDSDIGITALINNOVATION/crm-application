@@ -38,10 +38,10 @@ const TaskList: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Task Management</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Task Management</h1>
           <p className="text-slate-500 text-sm">Stay on top of your deals and follow-ups.</p>
         </div>
-        <button className="flex items-center gap-2 px-6 py-3 bg-indigo-600 rounded-2xl text-sm font-bold text-white hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all">
+        <button className="flex items-center gap-2 px-5 py-3 bg-indigo-600 rounded-2xl text-sm font-bold text-white hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all self-start sm:self-auto">
           <Plus className="w-5 h-5" />
           Create New Task
         </button>

@@ -12,6 +12,7 @@ const MainLayout: React.FC = () => {
   const dispatch = useAppDispatch();
   const { isAuthenticated, user } = useAppSelector((state) => state.auth);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -56,7 +57,7 @@ const MainLayout: React.FC = () => {
         </header>
 
         {/* Content */}
-        <main className="flex-1 mt-20 p-8 animate-fade-in bg-slate-50/50">
+        <main className="flex-1 mt-20 p-4 sm:p-8 animate-fade-in bg-slate-50/50">
           <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>
@@ -70,23 +71,36 @@ const MainLayout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      {/* Sidebar - Fix position and size */}
+    <div className="min-h-screen bg-slate-50 flex overflow-x-hidden">
+      {/* Sidebar - Drawer style on mobile, fixed on desktop */}
       <Sidebar 
         isCollapsed={isSidebarCollapsed} 
         toggleSidebar={toggleSidebar} 
+        isMobileOpen={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
+
+      {/* Backdrop overlay for mobile sidebar */}
+      {isMobileSidebarOpen && (
+        <div 
+          onClick={() => setIsMobileSidebarOpen(false)}
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-45 lg:hidden transition-opacity duration-300"
+        />
+      )}
 
       {/* Content Area */}
       <div 
         className={cn(
           "flex-1 flex flex-col transition-all duration-300 min-h-screen",
-          isSidebarCollapsed ? "ml-20" : "ml-64"
+          isSidebarCollapsed ? "lg:ml-20 ml-0" : "lg:ml-64 ml-0"
         )}
       >
-        <Navbar isSidebarCollapsed={isSidebarCollapsed} />
+        <Navbar 
+          isSidebarCollapsed={isSidebarCollapsed} 
+          onMenuToggle={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+        />
 
-        <main className="flex-1 mt-20 p-8 animate-fade-in">
+        <main className="flex-1 mt-20 p-4 sm:p-8 animate-fade-in">
           <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>

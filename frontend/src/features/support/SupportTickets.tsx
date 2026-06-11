@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   MessageSquare, MoreVertical, Search, 
   Plus, CheckCircle2, AlertCircle, Clock, 
-  User, Send, Paperclip, Smile, X
+  User, Send, Paperclip, Smile, X, ArrowLeft
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAppDispatch, useAppSelector } from '../../store';
@@ -10,6 +10,7 @@ import { addTicket, addMessageToTicket, updateTicketStatus } from '../../store/s
 
 const SupportTickets: React.FC = () => {
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
+  const [mobileView, setMobileView] = useState<'list' | 'conversation'>('list');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newTicket, setNewTicket] = useState({ subject: '', description: '', priority: 'Medium' });
   const [searchQuery, setSearchQuery] = useState('');
@@ -35,6 +36,7 @@ const SupportTickets: React.FC = () => {
       customer: 'Current User', // Mock user for now
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      messages: [],
     }));
     setIsModalOpen(false);
     setNewTicket({ subject: '', description: '', priority: 'Medium' });
@@ -69,26 +71,44 @@ const SupportTickets: React.FC = () => {
     }
   };
 
+  const handleSelectTicket = (id: string) => {
+    setSelectedTicket(id);
+    setMobileView('conversation');
+  };
+
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)] animate-fade-in space-y-6">
+    <div className="flex flex-col h-[calc(100vh-140px)] animate-fade-in space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between shrink-0">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 font-inter tracking-tight">Support Center</h1>
-          <p className="text-slate-500 text-sm">Resolve customer inquiries and maintain high satisfaction.</p>
+          {/* Back button on mobile when viewing conversation */}
+          {mobileView === 'conversation' && selectedTicket && (
+            <button
+              onClick={() => { setMobileView('list'); setSelectedTicket(null); }}
+              className="flex items-center gap-2 text-sm font-bold text-indigo-600 mb-2 md:hidden hover:underline"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to Tickets
+            </button>
+          )}
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 font-inter tracking-tight">Support Center</h1>
+          <p className="text-slate-500 text-sm hidden sm:block">Resolve customer inquiries and maintain high satisfaction.</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-6 py-3 bg-indigo-600 rounded-2xl text-sm font-bold text-white hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all"
+          className="flex items-center gap-2 px-3 sm:px-6 py-2 sm:py-3 bg-indigo-600 rounded-2xl text-sm font-bold text-white hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all"
         >
           <Plus className="w-5 h-5" />
-          New Ticket
+          <span className="hidden sm:inline">New Ticket</span>
         </button>
       </div>
 
       <div className="flex-1 flex gap-6 min-h-0">
-        {/* Ticket List */}
-        <div className="w-1/3 flex flex-col gap-4 min-h-0 overflow-hidden">
+        {/* Ticket List - hidden on mobile when viewing conversation */}
+        <div className={cn(
+          "flex-col gap-4 min-h-0 overflow-hidden",
+          "w-full md:w-1/3",
+          mobileView === 'list' ? "flex" : "hidden md:flex"
+        )}>
           <div className="glass p-3 rounded-2xl shrink-0 flex items-center gap-2">
             <Search className="w-4 h-4 text-slate-400 ml-2" />
             <input 
@@ -102,7 +122,7 @@ const SupportTickets: React.FC = () => {
             {tickets.map((ticket) => (
               <div 
                 key={ticket.id}
-                onClick={() => setSelectedTicket(ticket.id)}
+                onClick={() => handleSelectTicket(ticket.id)}
                 className={cn(
                   "p-4 rounded-2xl cursor-pointer transition-all border-2",
                   selectedTicket === ticket.id 
@@ -129,8 +149,12 @@ const SupportTickets: React.FC = () => {
           </div>
         </div>
 
-        {/* Conversation View */}
-        <div className="flex-1 glass rounded-3xl flex flex-col min-h-0 overflow-hidden shadow-2xl">
+        {/* Conversation View - hidden on mobile when viewing ticket list */}
+        <div className={cn(
+          "glass rounded-3xl flex flex-col min-h-0 overflow-hidden shadow-2xl",
+          "flex-1 w-full",
+          mobileView === 'conversation' ? "flex" : "hidden md:flex"
+        )}>
           {selectedTicket ? (
             <>
               {/* Converation Header */}

@@ -102,17 +102,17 @@ const CustomerDetail: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {/* Header / Breadcrumb */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Link 
             to="/customers" 
-            className="p-2 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-slate-900 transition-all hover:translate-x-[-2px]"
+            className="p-2 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-slate-900 transition-all hover:translate-x-[-2px] shrink-0"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-slate-900">{customer.name}</h1>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{customer.name}</h1>
               <span className={cn(
                 "px-2.5 py-1 rounded-full text-xs font-bold border",
                 statusColors[customer.status as keyof typeof statusColors]
@@ -120,31 +120,32 @@ const CustomerDetail: React.FC = () => {
                 {customer.status}
               </span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-slate-500 mt-0.5">
-              <Building2 className="w-4 h-4" />
+            <div className="flex items-center gap-2 text-sm text-slate-500 mt-0.5 flex-wrap">
+              <Building2 className="w-4 h-4 shrink-0" />
               <span>{customer.company || 'No Company'}</span>
               <span className="mx-1 opacity-20">•</span>
               <span>Joined {new Date(customer.joinedAt).toLocaleDateString()}</span>
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <button 
             onClick={handleRemoveCustomer}
-            className="px-4 py-2 bg-white border border-rose-200 rounded-xl text-sm font-semibold text-rose-600 hover:bg-rose-50 hover:border-rose-300 transition-all flex items-center gap-2"
+            className="px-3 sm:px-4 py-2 bg-white border border-rose-200 rounded-xl text-sm font-semibold text-rose-600 hover:bg-rose-50 hover:border-rose-300 transition-all flex items-center gap-2"
           >
             <Trash2 className="w-4 h-4" />
-            Remove
+            <span className="hidden sm:inline">Remove</span>
           </button>
           <button 
             onClick={() => setIsEditModalOpen(true)}
-            className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-all"
+            className="px-3 sm:px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-all"
           >
-            Edit Profile
+            <span className="hidden sm:inline">Edit Profile</span>
+            <span className="sm:hidden">Edit</span>
           </button>
-          <button className="px-4 py-2 bg-indigo-600 rounded-xl text-sm font-semibold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all flex items-center gap-2">
+          <button className="px-3 sm:px-4 py-2 bg-indigo-600 rounded-xl text-sm font-semibold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all flex items-center gap-2">
             <DollarSign className="w-4 h-4" />
-            Create Invoice
+            <span className="hidden sm:inline">Create Invoice</span>
           </button>
         </div>
       </div>

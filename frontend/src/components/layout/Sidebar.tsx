@@ -1,4 +1,5 @@
 import React from 'react';
+import logo from '../../assets/logo.jpg';
 import { NavLink } from 'react-router-dom';
 import { 
   BarChart3, 
@@ -19,9 +20,11 @@ import { useNavigate } from 'react-router-dom';
 interface SidebarProps {
   isCollapsed: boolean;
   toggleSidebar: () => void;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileOpen, onCloseMobile }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
@@ -42,22 +45,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
     <div
       className={cn(
         "fixed left-0 top-0 h-screen glass z-50 transition-all duration-300 flex flex-col",
-        isCollapsed ? "w-20" : "w-64"
+        "w-64 -translate-x-full lg:translate-x-0",
+        isMobileOpen && "translate-x-0",
+        isCollapsed ? "lg:w-20" : "lg:w-64"
       )}
     >
       <div className="flex items-center justify-between p-6">
         {!isCollapsed && (
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-              <span className="text-white font-bold text-xl">F</span>
-            </div>
+            <img src={logo} alt="Fly-Towards Logo" className="w-8 h-8 rounded-lg object-contain bg-white" />
             <span className="font-bold text-xl tracking-tight text-slate-800">FlyTowards</span>
           </div>
         )}
         {isCollapsed && (
-          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center mx-auto">
-            <span className="text-white font-bold text-xl">F</span>
-          </div>
+          <img src={logo} alt="Fly-Towards Logo" className="w-8 h-8 rounded-lg object-contain bg-white mx-auto" />
         )}
       </div>
 
@@ -66,6 +67,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
           <NavLink
             key={item.path}
             to={item.path}
+            onClick={onCloseMobile}
             className={({ isActive }) =>
               cn(
                 "flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group",
@@ -76,7 +78,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
             }
           >
             <item.icon className="w-5 h-5 min-w-[20px]" />
-            {!isCollapsed && <span className="font-medium">{item.title}</span>}
+            <span className={cn("font-medium", isCollapsed ? "lg:hidden block" : "block")}>{item.title}</span>
           </NavLink>
         ))}
       </nav>
@@ -84,7 +86,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
       <div className="p-4 border-t border-slate-100 space-y-2">
         <button
           onClick={toggleSidebar}
-          className="flex items-center gap-3 w-full px-3 py-3 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-all duration-200"
+          className="hidden lg:flex items-center gap-3 w-full px-3 py-3 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-all duration-200"
         >
           {isCollapsed ? <ChevronRight className="w-5 h-5 mx-auto" /> : (
             <>
@@ -98,7 +100,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
           className="flex items-center gap-3 w-full px-3 py-3 rounded-xl text-rose-500 hover:bg-rose-50/50 transition-all duration-200"
         >
           <LogOut className="w-5 h-5" />
-          {!isCollapsed && <span className="font-medium">Logout</span>}
+          <span className={cn("font-medium", isCollapsed ? "lg:hidden block" : "block")}>Logout</span>
         </button>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import logo from '../../assets/logo.jpg';
 import { Mail, Lock, Briefcase, Globe, AlertCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store';
@@ -36,9 +37,7 @@ const Login: React.FC = () => {
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-hero-gradient">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <div className="w-12 h-12 rounded-2xl bg-white shadow-xl flex items-center justify-center text-indigo-600">
-            <span className="text-2xl font-black">F</span>
-          </div>
+          <img src={logo} alt="Fly-Towards Logo" className="w-20 h-20 object-contain rounded-2xl bg-white shadow-xl p-1" />
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
           Welcome back
