@@ -1,4 +1,6 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+
+const API_URL = 'http://localhost:5000/api/tasks';
 
 export interface Task {
   id: string;
@@ -10,6 +12,17 @@ export interface Task {
   relatedTo: string;
 }
 
+// Helper to map MongoDB _id -> id
+const mapTask = (doc: any): Task => ({
+  id: doc._id,
+  title: doc.title,
+  dueDate: doc.dueDate,
+  priority: doc.priority,
+  status: doc.status,
+  assignedTo: doc.assignedTo,
+  relatedTo: doc.relatedTo,
+});
+
 interface TaskState {
   items: Task[];
   isLoading: boolean;
@@ -17,40 +30,99 @@ interface TaskState {
 }
 
 const initialState: TaskState = {
-  items: [
-    { id: 't1', title: 'Follow up with Alice Johnson', dueDate: '2026-04-07', priority: 'High', status: 'Pending', assignedTo: 'John Doe', relatedTo: 'TechCorp' },
-    { id: 't2', title: 'Prepare demo for Bob Smith', dueDate: '2026-04-08', priority: 'Medium', status: 'In Progress', assignedTo: 'John Doe', relatedTo: 'Build-it Inc' },
-    { id: 't3', title: 'Contract review for Apex Logistics', dueDate: '2026-04-06', priority: 'High', status: 'Completed', assignedTo: 'Sarah Miller', relatedTo: 'Apex Logistics' },
-    { id: 't4', title: 'Initial discovery call - Fiona', dueDate: '2026-04-10', priority: 'Low', status: 'Pending', assignedTo: 'John Doe', relatedTo: 'Southside Deli' },
-  ],
+  items: [],
   isLoading: false,
   error: null,
 };
 
-const taskSlice = createSlice({
-  name: 'tasks',
-  initialState,
-  reducers: {
-    addTask: (state, action: PayloadAction<Task>) => {
-      state.items.unshift(action.payload);
-    },
-    updateTask: (state, action: PayloadAction<Task>) => {
-      const index = state.items.findIndex(t => t.id === action.payload.id);
-      if (index !== -1) {
-        state.items[index] = action.payload;
-      }
-    },
-    deleteTask: (state, action: PayloadAction<string>) => {
-      state.items = state.items.filter(t => t.id !== action.payload);
-    },
-    toggleTaskStatus: (state, action: PayloadAction<string>) => {
-      const task = state.items.find(t => t.id === action.payload);
-      if (task) {
-        task.status = task.status === 'Completed' ? 'Pending' : 'Completed';
-      }
-    }
+// ─── Async Thunks ───────────────────────────────────────────────────────────
+
+export const fetchTasks = createAsyncThunk('tasks/fetchAll', async (_, { rejectWithValue }) => {
+  try {
+    const res = await fetch(API_URL);
+    if (!res.ok) throw new Error('Failed to fetch tasks');
+    const data = await res.json();
+    return data.map(mapTask);
+  } catch (err: any) {
+    return rejectWithValue(err.message);
   }
 });
 
-export const { addTask, updateTask, deleteTask, toggleTaskStatus } = taskSlice.actions;
+export const createTask = createAsyncThunk(
+  'tasks/create',
+  async (task: Omit<Task, 'id'>, { rejectWithValue }) => {
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(task),
+      });
+      if (!res.ok) throw new Error('Failed to create task');
+      const data = await res.json();
+      return mapTask(data);
+    } catch (err: any) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+export const toggleTaskStatus = createAsyncThunk(
+  'tasks/toggle',
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const res = await fetch(`${API_URL}/${id}/toggle`, { method: 'PATCH' });
+      if (!res.ok) throw new Error('Failed to toggle task');
+      const data = await res.json();
+      return mapTask(data);
+    } catch (err: any) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+export const deleteTask = createAsyncThunk(
+  'tasks/delete',
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete task');
+      return id;
+    } catch (err: any) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+// ─── Slice ───────────────────────────────────────────────────────────────────
+
+const taskSlice = createSlice({
+  name: 'tasks',
+  initialState,
+  reducers: {},
+  extraReducers: (builder) => {
+    // fetchTasks
+    builder
+      .addCase(fetchTasks.pending, (state) => { state.isLoading = true; state.error = null; })
+      .addCase(fetchTasks.fulfilled, (state, action) => { state.isLoading = false; state.items = action.payload; })
+      .addCase(fetchTasks.rejected, (state, action) => { state.isLoading = false; state.error = action.payload as string; });
+
+    // createTask
+    builder
+      .addCase(createTask.fulfilled, (state, action) => { state.items.unshift(action.payload); });
+
+    // toggleTaskStatus
+    builder
+      .addCase(toggleTaskStatus.fulfilled, (state, action: PayloadAction<Task>) => {
+        const idx = state.items.findIndex(t => t.id === action.payload.id);
+        if (idx !== -1) state.items[idx] = action.payload;
+      });
+
+    // deleteTask
+    builder
+      .addCase(deleteTask.fulfilled, (state, action: PayloadAction<string>) => {
+        state.items = state.items.filter(t => t.id !== action.payload);
+      });
+  },
+});
+
 export default taskSlice.reducer;
