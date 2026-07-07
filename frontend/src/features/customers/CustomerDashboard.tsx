@@ -147,7 +147,7 @@ const CustomerDashboard: React.FC = () => {
           </div>
           <div>
             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest block">Account Balance Spent</span>
-            <span className="text-2xl font-black text-slate-900 mt-1 block">${customer.totalSpent?.toLocaleString()}</span>
+            <span className="text-2xl font-black text-slate-900 mt-1 block">₹{customer.totalSpent?.toLocaleString()}</span>
           </div>
         </div>
 

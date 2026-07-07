@@ -167,7 +167,7 @@ const CustomerDetail: React.FC = () => {
               </div>
               <div>
                 <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Total Spent</span>
-                <span className="text-lg font-bold text-slate-900">${customer.totalSpent?.toLocaleString()}</span>
+                <span className="text-lg font-bold text-slate-900">₹{customer.totalSpent?.toLocaleString()}</span>
               </div>
             </div>
             <div className="glass p-4 rounded-2xl flex items-center gap-3">

@@ -170,7 +170,7 @@ const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({ isOpen, onClose, le
               <div className="space-y-4">
                 {/* Deal Value */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Deal Value ($)</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Deal Value (₹)</label>
                   <div className="relative group">
                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input

@@ -123,7 +123,7 @@ const CustomerList: React.FC = () => {
           </div>
           <div>
             <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Revenue</span>
-            <h3 className="text-2xl font-bold text-slate-900">${(totalSpent / 1000).toFixed(1)}k</h3>
+            <h3 className="text-2xl font-bold text-slate-900">₹{(totalSpent / 1000).toFixed(1)}k</h3>
           </div>
         </div>
       </div>
@@ -178,7 +178,7 @@ const CustomerList: React.FC = () => {
             <div className="grid grid-cols-2 gap-4 mt-8">
               <div className="space-y-1">
                 <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Total Spent</span>
-                <p className="text-sm font-bold text-slate-900">${customer.totalSpent?.toLocaleString() || 0}</p>
+                <p className="text-sm font-bold text-slate-900">₹{customer.totalSpent?.toLocaleString() || 0}</p>
               </div>
               <div className="space-y-1">
                 <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Sector</span>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { 
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   AreaChart, Area, PieChart, Pie, Cell 
@@ -8,33 +8,80 @@ import {
   ArrowUpRight, ArrowDownRight, MoreVertical 
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { useAppSelector, useAppDispatch } from '../../store';
+import { fetchLeads } from '../../store/slices/leadSlice';
+import { fetchCustomers } from '../../store/slices/customerSlice';
 
 const Dashboard: React.FC = () => {
-  // Mock data for charts
-  const monthlyData = [
-    { name: 'Jan', leads: 40, customers: 24 },
-    { name: 'Feb', leads: 30, customers: 13 },
-    { name: 'Mar', leads: 20, customers: 98 },
-    { name: 'Apr', leads: 27, customers: 39 },
-    { name: 'May', leads: 18, customers: 48 },
-    { name: 'Jun', leads: 23, customers: 38 },
-  ];
+  const dispatch = useAppDispatch();
+  const leads = useAppSelector((state) => state.leads.items);
+  const customers = useAppSelector((state) => state.customers.items);
 
-  const sourceData = [
-    { name: 'Google', value: 400 },
-    { name: 'Facebook', value: 300 },
-    { name: 'Referral', value: 300 },
-    { name: 'Website', value: 200 },
-  ];
+  // Fetch data on mount if not already loaded
+  useEffect(() => {
+    if (leads.length === 0) dispatch(fetchLeads());
+    if (customers.length === 0) dispatch(fetchCustomers());
+  }, [dispatch]);
 
-  const COLORS = ['#6366f1', '#3b82f6', '#10b981', '#f59e0b'];
+  // Compute real stats
+  const totalLeads = leads.length;
+  const convertedLeads = leads.filter((l) => l.status === 'Converted').length;
+  const conversionRate = totalLeads > 0 ? ((convertedLeads / totalLeads) * 100).toFixed(1) : '0.0';
+  const leadsWithValue = leads.filter((l) => l.value && l.value > 0);
+  const avgDealSize = leadsWithValue.length > 0
+    ? Math.round(leadsWithValue.reduce((sum, l) => sum + (l.value || 0), 0) / leadsWithValue.length)
+    : 0;
 
   const stats = [
-    { title: 'Total Leads', value: '1,284', change: '+12.5%', isPositive: true, icon: UserPlus, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-    { title: 'Converted', value: '432', change: '+8.2%', isPositive: true, icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { title: 'Conversion Rate', value: '33.6%', change: '-2.4%', isPositive: false, icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { title: 'Avg Deal Size', value: '$2.4k', change: '+4.1%', isPositive: true, icon: DollarSign, color: 'text-amber-600', bg: 'bg-amber-50' },
+    { title: 'Total Leads', value: totalLeads.toLocaleString(), change: '', isPositive: true, icon: UserPlus, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+    { title: 'Converted', value: convertedLeads.toLocaleString(), change: '', isPositive: true, icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { title: 'Conversion Rate', value: `${conversionRate}%`, change: '', isPositive: true, icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { title: 'Avg Deal Size', value: avgDealSize > 0 ? `₹${avgDealSize.toLocaleString()}` : 'N/A', change: '', isPositive: true, icon: DollarSign, color: 'text-amber-600', bg: 'bg-amber-50' },
   ];
+
+  // Build monthly chart data from real lead creation dates (last 6 months)
+  const monthlyData = useMemo(() => {
+    const now = new Date();
+    const months = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+      return {
+        name: d.toLocaleString('default', { month: 'short' }),
+        year: d.getFullYear(),
+        month: d.getMonth(),
+        leads: 0,
+        customers: 0,
+      };
+    });
+
+    leads.forEach((lead) => {
+      const d = new Date(lead.createdAt);
+      const entry = months.find((m) => m.year === d.getFullYear() && m.month === d.getMonth());
+      if (entry) entry.leads += 1;
+    });
+
+    customers.forEach((customer) => {
+      const d = new Date(customer.createdAt);
+      const entry = months.find((m) => m.year === d.getFullYear() && m.month === d.getMonth());
+      if (entry) entry.customers += 1;
+    });
+
+    return months;
+  }, [leads, customers]);
+
+  // Build lead source data from real leads
+  const sourceData = useMemo(() => {
+    const sourceCounts: Record<string, number> = {};
+    leads.forEach((lead) => {
+      const source = lead.source || 'Unknown';
+      sourceCounts[source] = (sourceCounts[source] || 0) + 1;
+    });
+    const entries = Object.entries(sourceCounts).map(([name, value]) => ({ name, value }));
+    return entries.length > 0 ? entries : [{ name: 'No Data', value: 1 }];
+  }, [leads]);
+
+  const totalSourceValue = sourceData.reduce((sum, s) => sum + s.value, 0);
+
+  const COLORS = ['#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -62,13 +109,15 @@ const Dashboard: React.FC = () => {
               <div className={cn("p-3 rounded-xl", stat.bg)}>
                 <stat.icon className={cn("w-6 h-6", stat.color)} />
               </div>
-              <div className={cn(
-                "flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full",
-                stat.isPositive ? "text-emerald-600 bg-emerald-50" : "text-rose-600 bg-rose-50"
-              )}>
-                {stat.isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                {stat.change}
-              </div>
+              {stat.change && (
+                <div className={cn(
+                  "flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full",
+                  stat.isPositive ? "text-emerald-600 bg-emerald-50" : "text-rose-600 bg-rose-50"
+                )}>
+                  {stat.isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                  {stat.change}
+                </div>
+              )}
             </div>
             <div className="mt-4">
               <span className="text-slate-500 text-sm font-medium">{stat.title}</span>
@@ -137,7 +186,7 @@ const Dashboard: React.FC = () => {
                   <div className="w-3 h-3 rounded-full" style={{backgroundColor: COLORS[index]}}></div>
                   <span className="text-slate-600">{source.name}</span>
                 </div>
-                <span className="font-bold text-slate-900">{((source.value / 1200) * 100).toFixed(0)}%</span>
+                <span className="font-bold text-slate-900">{totalSourceValue > 0 ? ((source.value / totalSourceValue) * 100).toFixed(0) : 0}%</span>
               </div>
             ))}
           </div>
