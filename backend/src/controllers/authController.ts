@@ -21,10 +21,14 @@ export const registerUser = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    const userCount = await User.countDocuments({});
+    const role = userCount === 0 ? 'admin' : (req.body.role || 'sales');
+
     const user = await User.create({
       name,
       email,
       password,
+      role,
     });
 
     if (user) {

@@ -13,7 +13,7 @@ import {
   LayoutDashboard
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import { useAppDispatch } from '../../store';
+import { useAppDispatch, useAppSelector } from '../../store';
 import { logout } from '../../store/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
 
@@ -32,7 +32,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
     dispatch(logout());
     navigate('/login');
   };
-  const navItems = [
+  const { user } = useAppSelector((state) => state.auth);
+
+  let navItems = [
     { title: 'Dashboard', icon: LayoutDashboard, path: '/' },
     { title: 'Leads', icon: UserPlus, path: '/leads' },
     { title: 'Customers', icon: Users, path: '/customers' },
@@ -40,6 +42,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
     { title: 'Support', icon: MessageSquare, path: '/support' },
     { title: 'Analytics', icon: BarChart3, path: '/analytics' },
   ];
+
+  if (user?.role === 'employee') {
+    navItems = [
+      { title: 'Dashboard', icon: LayoutDashboard, path: '/' },
+      { title: 'Support', icon: MessageSquare, path: '/support' },
+    ];
+  } else if (user?.role === 'admin') {
+    navItems.push({ title: 'Employees', icon: Users, path: '/employees' });
+  }
 
   return (
     <div

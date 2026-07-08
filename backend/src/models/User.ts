@@ -5,7 +5,11 @@ export interface IUser extends Document {
   name: string;
   email: string;
   password?: string;
-  role: 'admin' | 'sales' | 'customer';
+  role: 'admin' | 'sales' | 'customer' | 'employee';
+  phone?: string;
+  designation?: string;
+  department?: string;
+  joiningDate?: string;
   createdAt: Date;
   updatedAt: Date;
   matchPassword(enteredPassword: string): Promise<boolean>;
@@ -18,9 +22,13 @@ const UserSchema: Schema = new Schema(
     password: { type: String, required: true },
     role: {
       type: String,
-      enum: ['admin', 'sales', 'customer'],
+      enum: ['admin', 'sales', 'customer', 'employee'],
       default: 'sales',
     },
+    phone: { type: String },
+    designation: { type: String },
+    department: { type: String },
+    joiningDate: { type: String },
   },
   { timestamps: true }
 );

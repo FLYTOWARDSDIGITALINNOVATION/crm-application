@@ -80,6 +80,24 @@ export const toggleTaskStatus = createAsyncThunk(
   }
 );
 
+export const updateTask = createAsyncThunk(
+  'tasks/update',
+  async ({ id, status }: { id: string; status: string }, { rejectWithValue }) => {
+    try {
+      const res = await fetch(`${API_URL}/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error('Failed to update task');
+      const data = await res.json();
+      return mapTask(data);
+    } catch (err: any) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 export const deleteTask = createAsyncThunk(
   'tasks/delete',
   async (id: string, { rejectWithValue }) => {
@@ -113,6 +131,13 @@ const taskSlice = createSlice({
     // toggleTaskStatus
     builder
       .addCase(toggleTaskStatus.fulfilled, (state, action: PayloadAction<Task>) => {
+        const idx = state.items.findIndex(t => t.id === action.payload.id);
+        if (idx !== -1) state.items[idx] = action.payload;
+      });
+
+    // updateTask
+    builder
+      .addCase(updateTask.fulfilled, (state, action: PayloadAction<Task>) => {
         const idx = state.items.findIndex(t => t.id === action.payload.id);
         if (idx !== -1) state.items[idx] = action.payload;
       });

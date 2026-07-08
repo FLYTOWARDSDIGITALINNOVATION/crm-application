@@ -11,6 +11,8 @@ import SupportTickets from './features/support/SupportTickets';
 import Login from './features/auth/Login';
 import Signup from './features/auth/Signup';
 import CustomerDashboard from './features/customers/CustomerDashboard';
+import EmployeeManagement from './features/employees/EmployeeManagement';
+import EmployeeDashboard from './features/employees/EmployeeDashboard';
 import { useAppSelector } from './store';
 
 function App() {
@@ -26,13 +28,18 @@ function App() {
       <Route path="/" element={<MainLayout />}>
         <Route 
           index 
-          element={user?.role === 'customer' ? <CustomerDashboard /> : <Dashboard />} 
+          element={
+            user?.role === 'customer' ? <CustomerDashboard /> : 
+            user?.role === 'employee' ? <EmployeeDashboard /> : 
+            <Dashboard />
+          } 
         />
         <Route path="leads" element={<LeadList />} />
         <Route path="leads/create" element={<CreateLead />} />
         <Route path="leads/:id" element={<LeadDetail />} />
         <Route path="customers" element={<CustomerList />} />
         <Route path="customers/:id" element={<CustomerDetail />} />
+        <Route path="employees" element={user?.role === 'admin' ? <EmployeeManagement /> : <Navigate to="/" replace />} />
         <Route path="tasks" element={<TaskList />} />
         <Route path="support" element={<SupportTickets />} />
         <Route path="analytics" element={<Navigate to="/" replace />} />

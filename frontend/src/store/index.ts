@@ -5,6 +5,7 @@ import leadReducer from './slices/leadSlice';
 import customerReducer from './slices/customerSlice';
 import taskReducer from './slices/taskSlice';
 import supportReducer from './slices/supportSlice';
+import userReducer from './slices/userSlice';
 
 export const store = configureStore({
   reducer: {
@@ -13,6 +14,7 @@ export const store = configureStore({
     customers: customerReducer,
     tasks: taskReducer,
     support: supportReducer,
+    users: userReducer,
   },
 });
 
