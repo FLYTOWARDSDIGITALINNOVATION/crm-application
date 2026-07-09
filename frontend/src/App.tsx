@@ -10,6 +10,7 @@ import TaskList from './features/tasks/TaskList';
 import SupportTickets from './features/support/SupportTickets';
 import Login from './features/auth/Login';
 import Signup from './features/auth/Signup';
+import ForgotPassword from './features/auth/ForgotPassword';
 import CustomerDashboard from './features/customers/CustomerDashboard';
 import EmployeeManagement from './features/employees/EmployeeManagement';
 import EmployeeDashboard from './features/employees/EmployeeDashboard';
@@ -23,6 +24,7 @@ function App() {
       {/* Auth routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
 
       {/* Main Layout wrap for authenticated routes */}
       <Route path="/" element={<MainLayout />}>

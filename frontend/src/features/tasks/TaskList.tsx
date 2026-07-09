@@ -1,13 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  CheckSquare, Clock, AlertCircle, Plus, 
+import {
+  CheckSquare, Clock, AlertCircle, Plus,
   Search, Filter, MoreVertical, Calendar,
   User, CheckCircle2, Circle, X, Trash2, Loader2
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAppDispatch, useAppSelector } from '../../store';
-import { fetchTasks, createTask, updateTask, deleteTask } from '../../store/slices/taskSlice';
-import { fetchEmployees } from '../../store/slices/userSlice';
+import { fetchTasks, createTask, toggleTaskStatus, deleteTask } from '../../store/slices/taskSlice';
 import type { Task } from '../../store/slices/taskSlice';
 
 const defaultForm = {
@@ -39,13 +38,10 @@ const TaskList: React.FC = () => {
 
   const dispatch = useAppDispatch();
   const { items: tasks, isLoading } = useAppSelector((state) => state.tasks);
-  const { employees } = useAppSelector((state) => state.users);
-  const { user } = useAppSelector((state) => state.auth);
 
-  // Fetch tasks and employees on mount
+  // Fetch tasks from MongoDB on mount
   useEffect(() => {
     dispatch(fetchTasks());
-    dispatch(fetchEmployees());
   }, [dispatch]);
 
   // Derived stats
@@ -54,14 +50,10 @@ const TaskList: React.FC = () => {
   const todayStr = new Date().toISOString().split('T')[0];
   const dueTodayCount = tasks.filter(t => t.dueDate === todayStr).length;
 
-  const filteredTasks = tasks.filter(task => {
-    const searchMatch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        task.assignedTo.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const roleMatch = user?.role !== 'employee' || task.assignedTo === user?.name || task.assignedTo === user?.email;
-    
-    return searchMatch && roleMatch;
-  });
+  const filteredTasks = tasks.filter(task =>
+    task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    task.assignedTo.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const getPriorityStyle = (priority: string) => {
     switch (priority) {
@@ -187,19 +179,16 @@ const TaskList: React.FC = () => {
           <div key={task.id} className="glass p-4 sm:p-6 rounded-3xl group hover:shadow-lg transition-all border-l-4 border-transparent hover:border-indigo-500">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-4">
-                <select
-                  value={task.status}
-                  onChange={(e) => dispatch(updateTask({ id: task.id, status: e.target.value }))}
-                  className={cn(
-                    "mt-1 text-sm font-bold bg-transparent border-none cursor-pointer focus:ring-0 outline-none transition-colors",
-                    task.status === 'Completed' ? "text-emerald-500" :
-                    task.status === 'In Progress' ? "text-blue-500" : "text-slate-400 hover:text-indigo-600"
-                  )}
+                <button
+                  onClick={() => dispatch(toggleTaskStatus(task.id))}
+                  className="mt-1 text-slate-300 hover:text-indigo-600 transition-colors"
                 >
-                  <option value="Pending">Pending</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Completed">Completed</option>
-                </select>
+                  {task.status === 'Completed' ? (
+                    <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                  ) : (
+                    <Circle className="w-6 h-6" />
+                  )}
+                </button>
                 <div className="space-y-1">
                   <h3 className={cn(
                     "text-lg font-bold transition-all",
@@ -341,19 +330,16 @@ const TaskList: React.FC = () => {
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                   Assigned To <span className="text-rose-500">*</span>
                 </label>
-                <select
+                <input
+                  type="text"
+                  placeholder="e.g. John Doe"
                   value={form.assignedTo}
                   onChange={(e) => setForm({ ...form, assignedTo: e.target.value })}
                   className={cn(
                     "w-full px-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all",
                     errors.assignedTo ? "border-rose-400 bg-rose-50" : "border-slate-200 bg-slate-50"
                   )}
-                >
-                  <option value="" disabled>Select an employee</option>
-                  {employees.map(emp => (
-                    <option key={emp._id} value={emp.name}>{emp.name}</option>
-                  ))}
-                </select>
+                />
                 {errors.assignedTo && <p className="text-rose-500 text-xs mt-1">{errors.assignedTo}</p>}
               </div>
 
