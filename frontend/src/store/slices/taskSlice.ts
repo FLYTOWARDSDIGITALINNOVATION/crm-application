@@ -82,12 +82,12 @@ export const toggleTaskStatus = createAsyncThunk(
 
 export const updateTask = createAsyncThunk(
   'tasks/update',
-  async ({ id, status }: { id: string; status: string }, { rejectWithValue }) => {
+  async ({ id, status, assignedTo }: { id: string; status?: string; assignedTo?: string }, { rejectWithValue }) => {
     try {
       const res = await fetch(`${API_URL}/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, assignedTo }),
       });
       if (!res.ok) throw new Error('Failed to update task');
       const data = await res.json();

@@ -136,33 +136,6 @@ const Login: React.FC = () => {
             </div>
           </form>
 
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white/70 text-slate-500 uppercase tracking-widest font-bold text-[10px]">Or continue with</span>
-              </div>
-            </div>
-
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <button className="w-full flex items-center justify-center gap-2 py-2.5 border border-slate-200 rounded-xl shadow-sm bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all">
-                <Globe className="w-4 h-4 text-rose-500" />
-                Google
-              </button>
-              <button className="w-full flex items-center justify-center gap-2 py-2.5 border border-slate-200 rounded-xl shadow-sm bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all">
-                <Briefcase className="w-4 h-4 text-slate-900" />
-                GitHub
-              </button>
-            </div>
-          </div>
-          <div className="mt-8 text-center text-sm text-slate-500 font-medium pt-6 border-t border-slate-100">
-            Don't have an account?{' '}
-            <Link to="/signup" className="text-indigo-600 hover:text-indigo-500 font-bold transition-colors">
-              Create an account
-            </Link>
-          </div>
         </div>
       </div>
     </div>

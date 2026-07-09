@@ -6,8 +6,9 @@ import {
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAppDispatch, useAppSelector } from '../../store';
-import { fetchTasks, createTask, toggleTaskStatus, deleteTask } from '../../store/slices/taskSlice';
+import { fetchTasks, createTask, toggleTaskStatus, deleteTask, updateTask } from '../../store/slices/taskSlice';
 import type { Task } from '../../store/slices/taskSlice';
+import { fetchEmployees } from '../../store/slices/userSlice';
 
 const defaultForm = {
   title: '',
@@ -38,10 +39,13 @@ const TaskList: React.FC = () => {
 
   const dispatch = useAppDispatch();
   const { items: tasks, isLoading } = useAppSelector((state) => state.tasks);
+  const { employees } = useAppSelector((state) => state.users);
+  const [allocationTask, setAllocationTask] = useState<Task | null>(null);
 
   // Fetch tasks from MongoDB on mount
   useEffect(() => {
     dispatch(fetchTasks());
+    dispatch(fetchEmployees());
   }, [dispatch]);
 
   // Derived stats
@@ -229,7 +233,17 @@ const TaskList: React.FC = () => {
                   </button>
 
                   {openMenuId === task.id && (
-                    <div className="absolute right-0 top-10 z-20 w-40 bg-white border border-slate-100 rounded-2xl shadow-xl py-1.5 animate-fade-in">
+                    <div className="absolute right-0 top-10 z-20 w-48 bg-white border border-slate-100 rounded-2xl shadow-xl py-1.5 animate-fade-in">
+                      <button
+                        onClick={() => {
+                          setAllocationTask(task);
+                          setOpenMenuId(null);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-indigo-600 hover:bg-indigo-50 transition-colors"
+                      >
+                        <User className="w-4 h-4" />
+                        Allocate Task
+                      </button>
                       <button
                         onClick={() => {
                           dispatch(deleteTask(task.id));
@@ -379,6 +393,56 @@ const TaskList: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Allocate Task Modal */}
+      {allocationTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setAllocationTask(null)} />
+          <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-6 sm:p-8 animate-fade-in max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between mb-6 shrink-0">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Allocate Task</h2>
+                <p className="text-slate-400 text-sm mt-0.5 line-clamp-1">{allocationTask.title}</p>
+              </div>
+              <button
+                onClick={() => setAllocationTask(null)}
+                className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-2">
+              {employees.length === 0 ? (
+                <div className="text-center text-slate-500 py-8 text-sm italic">No employees found.</div>
+              ) : (
+                employees.map(emp => (
+                  <button
+                    key={emp._id}
+                    onClick={() => {
+                      dispatch(updateTask({ id: allocationTask.id, assignedTo: emp.name }));
+                      setAllocationTask(null);
+                    }}
+                    className="w-full flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-indigo-200 hover:bg-indigo-50 transition-all group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">
+                        {emp.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="text-left">
+                        <div className="text-sm font-bold text-slate-800">{emp.name}</div>
+                        <div className="text-xs text-slate-500 capitalize">{emp.role}</div>
+                      </div>
+                    </div>
+                    <div className="text-xs font-bold text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                      Select
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
           </div>
         </div>
       )}

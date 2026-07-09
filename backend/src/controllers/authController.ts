@@ -23,7 +23,7 @@ export const registerUser = async (req: Request, res: Response) => {
     }
 
     const userCount = await User.countDocuments({});
-    const role = userCount === 0 ? 'admin' : (req.body.role || 'sales');
+    const role = userCount === 0 ? 'admin' : (req.body.role || 'customer');
 
     const user = await User.create({
       name,

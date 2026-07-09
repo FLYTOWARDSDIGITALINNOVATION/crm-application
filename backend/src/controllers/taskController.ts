@@ -47,7 +47,7 @@ export const toggleTask = async (req: Request, res: Response) => {
 // @access  Public
 export const updateTask = async (req: Request, res: Response) => {
   try {
-    const { status } = req.body;
+    const { status, assignedTo } = req.body;
     const task = await Task.findById(req.params.id);
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
@@ -55,6 +55,9 @@ export const updateTask = async (req: Request, res: Response) => {
     
     if (status) {
       task.status = status;
+    }
+    if (assignedTo) {
+      task.assignedTo = assignedTo;
     }
     
     await task.save();
