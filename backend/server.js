@@ -21,11 +21,13 @@ const authRoutes = require('./src/routes/authRoutes').default;
 const customerRoutes = require('./src/routes/customerRoutes').default;
 const taskRoutes = require('./src/routes/taskRoutes').default;
 const userRoutes = require('./src/routes/userRoutes').default;
+const supportRoutes = require('./src/routes/supportRoutes').default;
 app.use('/api/leads', leadRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/support', supportRoutes);
 
 // Database Connection
 const connectDB = async () => {

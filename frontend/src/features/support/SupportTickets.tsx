@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   MessageSquare, MoreVertical, Search, 
   Plus, CheckCircle2, AlertCircle, Clock, 
-  User, Send, Paperclip, Smile, X, ArrowLeft
+  User, Send, Paperclip, Smile, X, ArrowLeft, Loader2
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAppDispatch, useAppSelector } from '../../store';
-import { addTicket, addMessageToTicket, updateTicketStatus } from '../../store/slices/supportSlice';
+import { fetchTickets, createTicket, addMessageToTicket, updateTicketStatus } from '../../store/slices/supportSlice';
 
 const SupportTickets: React.FC = () => {
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
@@ -17,7 +17,13 @@ const SupportTickets: React.FC = () => {
   const [inputText, setInputText] = useState('');
   
   const dispatch = useAppDispatch();
-  const allTickets = useAppSelector(state => state.support.items);
+  const { user } = useAppSelector(state => state.auth);
+  const { items: allTickets, isLoading, error } = useAppSelector(state => state.support);
+
+  useEffect(() => {
+    dispatch(fetchTickets());
+  }, [dispatch]);
+
   const tickets = allTickets.filter(t => 
     t.subject.toLowerCase().includes(searchQuery.toLowerCase()) || 
     t.customer.toLowerCase().includes(searchQuery.toLowerCase())
@@ -25,18 +31,12 @@ const SupportTickets: React.FC = () => {
 
   const currentTicket = allTickets.find(t => t.id === selectedTicket);
 
-  const handleCreateTicket = () => {
+  const handleCreateTicket = async () => {
     if (!newTicket.subject.trim()) return;
-    dispatch(addTicket({
-      id: `sup${Date.now()}`,
+    await dispatch(createTicket({
       subject: newTicket.subject,
       description: newTicket.description,
-      status: 'Open',
       priority: newTicket.priority,
-      customer: 'Current User', // Mock user for now
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      messages: [],
     }));
     setIsModalOpen(false);
     setNewTicket({ subject: '', description: '', priority: 'Medium' });
@@ -54,12 +54,7 @@ const SupportTickets: React.FC = () => {
     if (!inputText.trim() || !selectedTicket) return;
     dispatch(addMessageToTicket({
       ticketId: selectedTicket,
-      message: {
-        id: Date.now(),
-        sender: 'agent',
-        text: inputText,
-        timestamp: new Date().toISOString()
-      }
+      text: inputText,
     }));
     setInputText('');
   };
@@ -87,7 +82,7 @@ const SupportTickets: React.FC = () => {
               onClick={() => { setMobileView('list'); setSelectedTicket(null); }}
               className="flex items-center gap-2 text-sm font-bold text-indigo-600 mb-2 md:hidden hover:underline"
             >
-              <ArrowLeft className="w-4 h-4" /> Back to Tickets
+              <ArrowLeft className="w-4 h-4" /> Back to Messages
             </button>
           )}
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 font-inter tracking-tight">Support Center</h1>
@@ -95,12 +90,18 @@ const SupportTickets: React.FC = () => {
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-3 sm:px-6 py-2 sm:py-3 bg-indigo-600 rounded-2xl text-sm font-bold text-white hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all"
+          className="flex items-center gap-2 px-3 sm:px-6 py-2 sm:py-3 bg-indigo-600 rounded-2xl text-sm font-bold text-white hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all self-start sm:self-auto"
         >
           <Plus className="w-5 h-5" />
-          <span className="hidden sm:inline">New Ticket</span>
+          <span className="hidden sm:inline">New Message</span>
         </button>
       </div>
+
+      {error && (
+        <div className="p-4 bg-rose-50 text-rose-600 rounded-2xl text-sm font-medium">
+          {error}
+        </div>
+      )}
 
       <div className="flex-1 flex gap-6 min-h-0">
         {/* Ticket List - hidden on mobile when viewing conversation */}
@@ -112,41 +113,64 @@ const SupportTickets: React.FC = () => {
           <div className="glass p-3 rounded-2xl shrink-0 flex items-center gap-2">
             <Search className="w-4 h-4 text-slate-400 ml-2" />
             <input 
-              placeholder="Search tickets..." 
+              placeholder="Search messages..." 
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="bg-transparent border-none text-sm focus:ring-0 w-full outline-none"
             />
           </div>
-          <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
-            {tickets.map((ticket) => (
-              <div 
-                key={ticket.id}
-                onClick={() => handleSelectTicket(ticket.id)}
-                className={cn(
-                  "p-4 rounded-2xl cursor-pointer transition-all border-2",
-                  selectedTicket === ticket.id 
-                    ? "glass border-indigo-500 bg-white shadow-lg" 
-                    : "glass border-transparent hover:border-slate-100"
-                )}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <span className={cn(
-                    "px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border",
-                    getPriorityStyle(ticket.priority)
-                  )}>
-                    {ticket.priority}
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">{new Date(ticket.updatedAt).toLocaleDateString()}</span>
+
+          {isLoading && allTickets.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center">
+              <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+              {tickets.map((ticket) => (
+                <div 
+                  key={ticket.id}
+                  onClick={() => handleSelectTicket(ticket.id)}
+                  className={cn(
+                    "p-4 rounded-2xl cursor-pointer transition-all border-2",
+                    selectedTicket === ticket.id 
+                      ? "glass border-indigo-500 bg-white shadow-lg" 
+                      : "glass border-transparent hover:border-slate-100"
+                  )}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <span className={cn(
+                      "px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border",
+                      getPriorityStyle(ticket.priority)
+                    )}>
+                      {ticket.priority}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">
+                      {new Date(ticket.updatedAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-900 leading-snug line-clamp-2">{ticket.subject}</h3>
+                  <div className="flex items-center justify-between mt-3 text-xs text-slate-500 font-medium">
+                    <div className="flex items-center gap-2">
+                      <User className="w-3 h-3 text-slate-400" />
+                      {ticket.customer}
+                    </div>
+                    <span className={cn(
+                      "px-2 py-0.5 rounded-md text-[10px] font-bold",
+                      ticket.status === 'Resolved' ? "bg-emerald-50 text-emerald-700" :
+                      ticket.status === 'In Progress' ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-700"
+                    )}>
+                      {ticket.status}
+                    </span>
+                  </div>
                 </div>
-                <h3 className="text-sm font-bold text-slate-900 leading-snug line-clamp-2">{ticket.subject}</h3>
-                <div className="flex items-center gap-2 mt-3 text-xs text-slate-500 font-medium">
-                  <User className="w-3 h-3 text-slate-400" />
-                  {ticket.customer}
+              ))}
+              {tickets.length === 0 && (
+                <div className="text-center py-12 text-slate-500 italic text-sm">
+                  No messages found.
                 </div>
-              </div>
-            ))}
-          </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Conversation View - hidden on mobile when viewing ticket list */}
@@ -157,7 +181,7 @@ const SupportTickets: React.FC = () => {
         )}>
           {selectedTicket ? (
             <>
-              {/* Converation Header */}
+              {/* Conversation Header */}
               <div className="p-6 border-b border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/50">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
@@ -178,7 +202,7 @@ const SupportTickets: React.FC = () => {
                         }));
                       }
                     }}
-                    title={currentTicket?.status === 'Resolved' ? "Reopen Ticket" : "Resolve Ticket"}
+                    title={currentTicket?.status === 'Resolved' ? "Reopen Message" : "Resolve Message"}
                     className={cn(
                       "p-2 rounded-xl transition-all border",
                       currentTicket?.status === 'Resolved' 
@@ -199,19 +223,33 @@ const SupportTickets: React.FC = () => {
 
               {/* Chat Area */}
               <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col custom-scrollbar bg-slate-50/50">
-                {currentTicket?.messages?.length ? currentTicket.messages.map((msg) => (
-                  <div 
-                    key={msg.id} 
-                    className={cn(
-                      "max-w-[80%] p-4 text-sm leading-relaxed shadow-sm",
-                      msg.sender === 'agent' 
-                        ? "self-end bg-indigo-600 text-white rounded-2xl rounded-tr-none shadow-indigo-100" 
-                        : "self-start bg-white border border-slate-100 text-slate-700 rounded-2xl rounded-tl-none"
-                    )}
-                  >
-                    {msg.text}
-                  </div>
-                )) : (
+                {currentTicket?.messages?.length ? currentTicket.messages.map((msg) => {
+                  const isMe = msg.senderId === user?._id;
+                  return (
+                    <div 
+                      key={msg.id} 
+                      className={cn(
+                        "max-w-[80%] p-4 text-sm leading-relaxed shadow-sm flex flex-col gap-1",
+                        isMe
+                          ? "self-end bg-indigo-600 text-white rounded-2xl rounded-tr-none shadow-indigo-100" 
+                          : "self-start bg-white border border-slate-100 text-slate-700 rounded-2xl rounded-tl-none"
+                      )}
+                    >
+                      {!isMe && (
+                        <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide">
+                          {msg.sender} ({msg.senderRole})
+                        </span>
+                      )}
+                      <div>{msg.text}</div>
+                      <span className={cn(
+                        "text-[9px] mt-1 self-end opacity-70",
+                        isMe ? "text-indigo-200" : "text-slate-400"
+                      )}>
+                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  );
+                }) : (
                   <div className="flex-1 flex items-center justify-center text-slate-400 text-sm italic">
                     No messages in this ticket yet.
                   </div>
@@ -258,7 +296,7 @@ const SupportTickets: React.FC = () => {
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-12 opacity-50">
               <MessageSquare className="w-16 h-16 text-slate-200 mb-4" />
-              <h3 className="text-xl font-bold text-slate-400 italic">Select a ticket to view conversation</h3>
+              <h3 className="text-xl font-bold text-slate-400 italic">Select a message to view conversation</h3>
               <p className="text-slate-300 mt-2 text-sm max-w-xs">Connecting with your customers is just a click away.</p>
             </div>
           )}
@@ -275,7 +313,7 @@ const SupportTickets: React.FC = () => {
             >
               <X className="w-5 h-5" />
             </button>
-            <h2 className="text-2xl font-bold mb-6 text-slate-900 font-inter">Create New Ticket</h2>
+            <h2 className="text-2xl font-bold mb-6 text-slate-900 font-inter">Create New Message</h2>
             <div className="space-y-5">
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Subject</label>
@@ -321,7 +359,7 @@ const SupportTickets: React.FC = () => {
                 onClick={handleCreateTicket}
                 className="w-full bg-indigo-600 text-white rounded-xl py-3.5 text-sm font-bold mt-2 hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all"
               >
-                Submit Ticket
+                Send Message
               </button>
             </div>
           </div>
