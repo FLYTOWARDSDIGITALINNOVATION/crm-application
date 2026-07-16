@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --color-primary: var(--color-indigo-600);
@@ -26,8 +27,16 @@
   font-family: var(--font-inter);
 }
 
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
 body {
-  @apply bg-slate-50 text-slate-900 antialiased overflow-x-hidden;
+  @apply bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100 antialiased overflow-x-hidden transition-colors duration-300;
   min-height: 100vh;
 }
 
@@ -39,7 +48,7 @@ body {
   @apply bg-transparent;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
+  @apply bg-slate-300 dark:bg-slate-700 rounded-full hover:bg-slate-400 dark:hover:bg-slate-600 transition-colors;
 }
 
 /* Glassmorphism Classes */
@@ -48,7 +57,7 @@ body {
 }
 
 .dark .glass {
-  @apply bg-slate-900/70 border-slate-800/50 shadow-2xl;
+  @apply bg-slate-900/80 border-slate-700/50 shadow-2xl backdrop-blur-xl;
 }
 
 /* Hero Gradient */

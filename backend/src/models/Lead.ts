@@ -5,7 +5,7 @@ export interface ILead extends Document {
   email: string;
   phone?: string;
   company?: string;
-  status: 'New' | 'Contacted' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Converted' | 'Lost';
+  status: 'New' | 'Contacted' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Converted' | 'Not Interested' | 'Follow Up' | 'Direct Visit';
   source?: string;
   assignedTo?: string;
   value?: number;
@@ -28,7 +28,7 @@ const LeadSchema: Schema = new Schema(
     company: { type: String },
     status: {
       type: String,
-      enum: ['New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Converted', 'Lost'],
+      enum: ['New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Converted', 'Not Interested', 'Follow Up', 'Direct Visit'],
       default: 'New',
     },
     source: { type: String },

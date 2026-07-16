@@ -176,7 +176,7 @@ export const bulkCreateLeads = async (req: Request, res: Response) => {
       // Normalize status: Capitalize first letter (e.g., 'new' -> 'New')
       const status = statusInput.charAt(0).toUpperCase() + statusInput.slice(1).toLowerCase();
       
-      const allowedStatuses = ['New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Converted', 'Lost'];
+      const allowedStatuses = ['New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Converted', 'Not Interested', 'Follow Up', 'Direct Visit'];
       const finalStatus = allowedStatuses.includes(status) ? status : 'New';
 
       return {
@@ -198,12 +198,66 @@ export const bulkCreateLeads = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'No valid leads found (Name and Email are required)' });
     }
 
+    // Duplicate Validation Optimization
+    const emails = validLeads.map(l => l.email);
+    const phones = validLeads.map(l => l.phone).filter(p => p); // non-empty phones
+
+    // Fetch existing records in one query
+    const existingRecords = await Lead.find({
+      $or: [
+        { email: { $in: emails } },
+        { phone: { $in: phones } }
+      ]
+    }).select('email phone');
+
+    const existingEmails = new Set(existingRecords.map(r => r.email));
+    const existingPhones = new Set(existingRecords.filter(r => r.phone).map(r => r.phone));
+
+    const leadsToInsert = [];
+    const duplicateRecords = [];
+    
+    // Also track within the uploaded file itself
+    const fileSeenEmails = new Set();
+    const fileSeenPhones = new Set();
+
+    for (const lead of validLeads) {
+      if (existingEmails.has(lead.email) || fileSeenEmails.has(lead.email)) {
+        duplicateRecords.push({
+          name: lead.name,
+          email: lead.email,
+          phone: lead.phone,
+          reason: 'Email already exists'
+        });
+        continue;
+      }
+      
+      if (lead.phone && (existingPhones.has(lead.phone) || fileSeenPhones.has(lead.phone))) {
+        duplicateRecords.push({
+          name: lead.name,
+          email: lead.email,
+          phone: lead.phone,
+          reason: 'Phone number already exists'
+        });
+        continue;
+      }
+
+      leadsToInsert.push(lead);
+      fileSeenEmails.add(lead.email);
+      if (lead.phone) fileSeenPhones.add(lead.phone);
+    }
+
     // Insert into database
-    const createdLeads = await Lead.insertMany(validLeads);
+    let createdLeads: any[] = [];
+    if (leadsToInsert.length > 0) {
+      createdLeads = await Lead.insertMany(leadsToInsert);
+    }
 
     res.status(201).json({
-      message: `Successfully imported ${createdLeads.length} leads`,
-      count: createdLeads.length,
+      message: `Successfully imported ${createdLeads.length} leads. Skipped ${duplicateRecords.length} duplicates.`,
+      totalRecords: validLeads.length,
+      imported: createdLeads.length,
+      duplicates: duplicateRecords.length,
+      duplicateRecords,
       leads: createdLeads
     });
   } catch (error) {

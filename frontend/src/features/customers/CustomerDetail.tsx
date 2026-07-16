@@ -106,13 +106,13 @@ const CustomerDetail: React.FC = () => {
         <div className="flex items-center gap-4">
           <Link 
             to="/customers" 
-            className="p-2 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-slate-900 transition-all hover:translate-x-[-2px] shrink-0"
+            className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all hover:translate-x-[-2px] shrink-0"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{customer.name}</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{customer.name}</h1>
               <span className={cn(
                 "px-2.5 py-1 rounded-full text-xs font-bold border",
                 statusColors[customer.status as keyof typeof statusColors]
@@ -120,7 +120,7 @@ const CustomerDetail: React.FC = () => {
                 {customer.status}
               </span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-slate-500 mt-0.5 flex-wrap">
+            <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mt-0.5 flex-wrap">
               <Building2 className="w-4 h-4 shrink-0" />
               <span>{customer.company || 'No Company'}</span>
               <span className="mx-1 opacity-20">•</span>
@@ -131,14 +131,14 @@ const CustomerDetail: React.FC = () => {
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <button 
             onClick={handleRemoveCustomer}
-            className="px-3 sm:px-4 py-2 bg-white border border-rose-200 rounded-xl text-sm font-semibold text-rose-600 hover:bg-rose-50 hover:border-rose-300 transition-all flex items-center gap-2"
+            className="px-3 sm:px-4 py-2 bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-900/50 rounded-xl text-sm font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:border-rose-300 dark:hover:border-rose-800 transition-all flex items-center gap-2"
           >
             <Trash2 className="w-4 h-4" />
             <span className="hidden sm:inline">Remove</span>
           </button>
           <button 
             onClick={() => setIsEditModalOpen(true)}
-            className="px-3 sm:px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-all"
+            className="px-3 sm:px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
           >
             <span className="hidden sm:inline">Edit Profile</span>
             <span className="sm:hidden">Edit</span>
@@ -166,8 +166,8 @@ const CustomerDetail: React.FC = () => {
                 <TrendingUp className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Total Spent</span>
-                <span className="text-lg font-bold text-slate-900">₹{customer.totalSpent?.toLocaleString()}</span>
+                <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider block">Total Spent</span>
+                <span className="text-lg font-bold text-slate-900 dark:text-white">₹{customer.totalSpent?.toLocaleString()}</span>
               </div>
             </div>
             <div className="glass p-4 rounded-2xl flex items-center gap-3">
@@ -175,8 +175,8 @@ const CustomerDetail: React.FC = () => {
                 <Star className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Tier</span>
-                <span className="text-lg font-bold text-slate-900">{customer.status === 'VIP' ? 'Platinum' : 'Standard'}</span>
+                <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider block">Tier</span>
+                <span className="text-lg font-bold text-slate-900 dark:text-white">{customer.status === 'VIP' ? 'Platinum' : 'Standard'}</span>
               </div>
             </div>
             <div className="glass p-4 rounded-2xl flex items-center gap-3">
@@ -184,52 +184,52 @@ const CustomerDetail: React.FC = () => {
                 <Calendar className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Last Activity</span>
-                <span className="text-lg font-bold text-slate-900">2 days ago</span>
+                <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider block">Last Activity</span>
+                <span className="text-lg font-bold text-slate-900 dark:text-white">2 days ago</span>
               </div>
             </div>
           </div>
 
           <div className="glass p-6 rounded-2xl space-y-4">
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest opacity-40">Customer Insights</h3>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest opacity-40">Customer Insights</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-slate-500 dark:text-slate-400">
                     <Mail className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-xs text-slate-400 block font-bold">Email</span>
-                    <span className="text-sm font-bold text-slate-700">{customer.email}</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 block font-bold">Email</span>
+                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{customer.email}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-slate-500 dark:text-slate-400">
                     <Phone className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-xs text-slate-400 block font-bold">Phone</span>
-                    <span className="text-sm font-bold text-slate-700">{customer.phone || 'N/A'}</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 block font-bold">Phone</span>
+                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{customer.phone || 'N/A'}</span>
                   </div>
                 </div>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-slate-500 dark:text-slate-400">
                     <Tag className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-xs text-slate-400 block font-bold">Industry Sector</span>
-                    <span className="text-sm font-bold text-slate-700">{customer.sector || 'General'}</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 block font-bold">Industry Sector</span>
+                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{customer.sector || 'General'}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-slate-500 dark:text-slate-400">
                     <Building2 className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-xs text-slate-400 block font-bold">Business Name</span>
-                    <span className="text-sm font-bold text-slate-700">{customer.company || 'Private Individual'}</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 block font-bold">Business Name</span>
+                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{customer.company || 'Private Individual'}</span>
                   </div>
                 </div>
               </div>
@@ -238,27 +238,27 @@ const CustomerDetail: React.FC = () => {
 
           {/* Portal Credentials */}
           <div className="glass p-6 rounded-2xl space-y-4">
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest opacity-40">Portal Credentials</h3>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest opacity-40">Portal Credentials</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-500 dark:text-indigo-400">
                     <Mail className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-xs text-indigo-400/80 block font-bold">User ID / Email</span>
-                    <span className="text-sm font-bold text-slate-700">{customer.email}</span>
+                    <span className="text-xs text-indigo-400/80 dark:text-indigo-300/80 block font-bold">User ID / Email</span>
+                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{customer.email}</span>
                   </div>
                 </div>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-500 dark:text-indigo-400">
                     <Lock className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-xs text-indigo-400/80 block font-bold">Initial Password</span>
-                    <span className="text-sm font-mono font-bold text-slate-700">{customer.portalPassword || 'Not Available'}</span>
+                    <span className="text-xs text-indigo-400/80 dark:text-indigo-300/80 block font-bold">Initial Password</span>
+                    <span className="text-sm font-mono font-bold text-slate-700 dark:text-slate-300">{customer.portalPassword || 'Not Available'}</span>
                   </div>
                 </div>
               </div>
@@ -268,17 +268,17 @@ const CustomerDetail: React.FC = () => {
           {/* Activity Logs */}
           <div className="glass p-6 rounded-3xl">
             <div className="flex items-center justify-between mb-8">
-              <h3 className="text-lg font-bold text-slate-900">Communication History</h3>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Communication History</h3>
               <button 
                 onClick={() => setIsAddingTimeline(!isAddingTimeline)}
-                className="text-indigo-600 text-sm font-bold hover:underline"
+                className="text-indigo-600 dark:text-indigo-400 text-sm font-bold hover:underline"
               >
                 {isAddingTimeline ? 'Cancel' : '+ Log Interaction'}
               </button>
             </div>
 
             {isAddingTimeline && (
-              <div className="mb-8 p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-4 animate-slide-down">
+              <div className="mb-8 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 space-y-4 animate-slide-down">
                 <div className="flex gap-2">
                   {(['note', 'call', 'email'] as const).map((type) => (
                     <button
@@ -286,7 +286,7 @@ const CustomerDetail: React.FC = () => {
                       onClick={() => setTimelineType(type)}
                       className={cn(
                         "px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all",
-                        timelineType === type ? "bg-indigo-600 text-white shadow-md" : "bg-white text-slate-500 border border-slate-200"
+                        timelineType === type ? "bg-indigo-600 text-white shadow-md" : "bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
                       )}
                     >
                       {type}
@@ -296,7 +296,7 @@ const CustomerDetail: React.FC = () => {
                 <textarea
                   value={newTimelineContent}
                   onChange={(e) => setNewTimelineContent(e.target.value)}
-                  className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full p-3 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
                   placeholder="Summarize the interaction..."
                   rows={2}
                 />
@@ -309,18 +309,18 @@ const CustomerDetail: React.FC = () => {
               </div>
             )}
 
-            <div className="relative space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
+            <div className="relative space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100 dark:before:bg-slate-800">
               {customer.timeline && customer.timeline.length > 0 ? customer.timeline.map((entry) => (
                 <div key={entry._id || Math.random().toString()} className="relative pl-10">
-                  <div className="absolute left-0 top-1 w-6 h-6 rounded-full bg-white border-2 border-slate-200 flex items-center justify-center z-10 shadow-sm">
-                    {entry.type === 'note' && <MessageSquare className="w-3 h-3 text-slate-400" />}
-                    {entry.type === 'call' && <PhoneCall className="w-3 h-3 text-slate-400" />}
-                    {entry.type === 'email' && <MailPlus className="w-3 h-3 text-slate-400" />}
-                    {entry.type === 'status' && <History className="w-3 h-3 text-slate-400" />}
+                  <div className="absolute left-0 top-1 w-6 h-6 rounded-full bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center z-10 shadow-sm">
+                    {entry.type === 'note' && <MessageSquare className="w-3 h-3 text-slate-400 dark:text-slate-500" />}
+                    {entry.type === 'call' && <PhoneCall className="w-3 h-3 text-slate-400 dark:text-slate-500" />}
+                    {entry.type === 'email' && <MailPlus className="w-3 h-3 text-slate-400 dark:text-slate-500" />}
+                    {entry.type === 'status' && <History className="w-3 h-3 text-slate-400 dark:text-slate-500" />}
                   </div>
-                  <div className="bg-slate-50/50 rounded-2xl p-4 hover:bg-slate-50 transition-colors">
+                  <div className="bg-slate-50/50 dark:bg-slate-800/50 rounded-2xl p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-bold text-slate-800">{entry.content}</span>
+                      <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{entry.content}</span>
                       <span className="text-xs text-slate-400 font-medium">
                         {new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
@@ -334,7 +334,7 @@ const CustomerDetail: React.FC = () => {
                   </div>
                 </div>
               )) : (
-                <div className="pl-10 text-slate-400 text-sm italic">
+                <div className="pl-10 text-slate-400 dark:text-slate-500 text-sm italic">
                   No interactions recorded yet.
                 </div>
               )}
@@ -345,13 +345,13 @@ const CustomerDetail: React.FC = () => {
         {/* Right Column: Internal Notes */}
         <div className="space-y-6">
           <div className="glass p-6 rounded-2xl relative overflow-hidden">
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest opacity-40 mb-4">Account Notes</h3>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest opacity-40 mb-4">Account Notes</h3>
             {isEditingNotes ? (
               <div className="space-y-3">
                 <textarea
                   value={editableNotes}
                   onChange={(e) => setEditableNotes(e.target.value)}
-                  className="w-full p-4 bg-white border border-indigo-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full p-4 bg-white dark:bg-slate-900/50 border border-indigo-200 dark:border-indigo-900/50 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
                   rows={4}
                 />
                 <div className="flex gap-2">
@@ -363,7 +363,7 @@ const CustomerDetail: React.FC = () => {
                   </button>
                   <button 
                     onClick={() => setIsEditingNotes(false)}
-                    className="flex-1 py-2 bg-slate-100 text-slate-500 text-xs font-bold rounded-lg"
+                    className="flex-1 py-2 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-bold rounded-lg"
                   >
                     Cancel
                   </button>
@@ -371,14 +371,14 @@ const CustomerDetail: React.FC = () => {
               </div>
             ) : (
               <>
-                <div className="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100">
-                  <p className="text-sm text-slate-700 leading-relaxed italic">
+                <div className="p-4 bg-indigo-50/50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-900/30">
+                  <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed italic">
                     "{customer.notes || 'No account notes available.'}"
                   </p>
                 </div>
                 <button 
                   onClick={() => setIsEditingNotes(true)}
-                  className="mt-4 w-full py-2.5 text-indigo-600 text-sm font-bold hover:bg-indigo-50 rounded-xl transition-all"
+                  className="mt-4 w-full py-2.5 text-indigo-600 dark:text-indigo-400 text-sm font-bold hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-xl transition-all"
                 >
                   Edit Notes
                 </button>
@@ -387,19 +387,19 @@ const CustomerDetail: React.FC = () => {
           </div>
 
           <div className="glass p-6 rounded-2xl space-y-4">
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest opacity-40">System Record</h3>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest opacity-40">System Record</h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Record Created</span>
-                <span className="font-bold text-slate-700">{new Date(customer.createdAt).toLocaleDateString()}</span>
+                <span className="text-slate-500 dark:text-slate-400">Record Created</span>
+                <span className="font-bold text-slate-700 dark:text-slate-300">{new Date(customer.createdAt).toLocaleDateString()}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Last Synced</span>
-                <span className="font-bold text-slate-700">{new Date(customer.updatedAt).toLocaleDateString()}</span>
+                <span className="text-slate-500 dark:text-slate-400">Last Synced</span>
+                <span className="font-bold text-slate-700 dark:text-slate-300">{new Date(customer.updatedAt).toLocaleDateString()}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Customer ID</span>
-                <span className="font-mono text-[10px] font-bold text-slate-400 uppercase">{customer._id}</span>
+                <span className="text-slate-500 dark:text-slate-400">Customer ID</span>
+                <span className="font-mono text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">{customer._id}</span>
               </div>
             </div>
           </div>

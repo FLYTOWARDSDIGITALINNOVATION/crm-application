@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ITask extends Document {
   title: string;
+  description?: string;
   dueDate: string;
   priority: 'High' | 'Medium' | 'Low';
   status: 'Pending' | 'In Progress' | 'Completed';
@@ -14,6 +15,7 @@ export interface ITask extends Document {
 const TaskSchema: Schema = new Schema(
   {
     title: { type: String, required: true },
+    description: { type: String, required: false },
     dueDate: { type: String, required: true },
     priority: {
       type: String,

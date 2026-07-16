@@ -6,8 +6,12 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store';
-import { fetchLeads, deleteLead } from '../../store/slices/leadSlice';
+import { fetchLeads, deleteLead, updateLead } from '../../store/slices/leadSlice';
 import { cn } from '../../utils/cn';
+import ScheduleNotificationModal from './ScheduleNotificationModal';
+import StatusDropdown from './StatusDropdown';
+import SourceDropdown from './SourceDropdown';
+import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 const formatDate = (raw: string) => {
   if (!raw) return '—';
@@ -19,31 +23,72 @@ const formatDate = (raw: string) => {
 const LeadList: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { items: leads, isLoading } = useAppSelector((state) => state.leads);
+  const { items: leads, isLoading, error } = useAppSelector((state) => state.leads);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 30;
+  
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [selectedLeadData, setSelectedLeadData] = useState({ id: '', name: '', status: '' });
+  
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [leadToDelete, setLeadToDelete] = useState<string | null>(null);
 
   React.useEffect(() => {
     dispatch(fetchLeads());
   }, [dispatch]);
 
   const statusColors = {
-    'New': 'bg-blue-50 text-blue-700 border-blue-100',
-    'Contacted': 'bg-amber-50 text-amber-700 border-amber-100',
-    'Qualified': 'bg-indigo-50 text-indigo-700 border-indigo-100',
-    'Lost': 'bg-slate-50 text-slate-700 border-slate-100',
-    'Converted': 'bg-emerald-50 text-emerald-700 border-emerald-100',
-    'Proposal': 'bg-violet-50 text-violet-700 border-violet-100',
-    'Negotiation': 'bg-rose-50 text-rose-700 border-rose-100',
+    'New': 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-100 dark:border-blue-800/50',
+    'Contacted': 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-100 dark:border-amber-800/50',
+    'Qualified': 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800/50',
+    'Converted': 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800/50',
+    'Proposal': 'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 border-violet-100 dark:border-violet-800/50',
+    'Negotiation': 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-100 dark:border-rose-800/50',
+    'Not Interested': 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-100 dark:border-red-800/50',
+    'Follow Up': 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 border-cyan-100 dark:border-cyan-800/50',
+    'Direct Visit': 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 border-teal-100 dark:border-teal-800/50',
+  };
+
+  const statusOptions = ['New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Converted', 'Not Interested', 'Follow Up', 'Direct Visit'];
+
+  const handleStatusChange = async (newStatus: string, lead: any) => {
+    try {
+      await dispatch(updateLead({ id: lead._id, data: { status: newStatus } })).unwrap();
+      if (newStatus === 'Follow Up' || newStatus === 'Converted') {
+        setSelectedLeadData({ id: lead._id, name: lead.name, status: newStatus });
+        setIsScheduleModalOpen(true);
+      }
+    } catch (err) {
+      console.error('Failed to update status', err);
+    }
+  };
+
+  const handleSourceChange = async (newSource: string, lead: any) => {
+    try {
+      await dispatch(updateLead({ id: lead._id, data: { source: newSource } })).unwrap();
+    } catch (err) {
+      console.error('Failed to update source', err);
+    }
   };
 
   const filteredLeads = leads.filter(lead => {
-    const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (lead.company && lead.company.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesSearch = (lead.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         (lead.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (lead.company ? lead.company.toLowerCase().includes(searchTerm.toLowerCase()) : false);
     const matchesStatus = statusFilter === 'All' || lead.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  // Reset to first page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredLeads.length / ITEMS_PER_PAGE));
+  const paginatedLeads = filteredLeads.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   const handleExport = () => {
     if (filteredLeads.length === 0) {
@@ -75,15 +120,22 @@ const LeadList: React.FC = () => {
     link.click();
     document.body.removeChild(link);
   };
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this lead?')) {
+  const confirmDelete = async () => {
+    if (leadToDelete) {
       try {
-        await dispatch(deleteLead(id)).unwrap();
+        await dispatch(deleteLead(leadToDelete)).unwrap();
+        setDeleteModalOpen(false);
+        setLeadToDelete(null);
       } catch (error) {
         console.error('Failed to delete lead:', error);
       }
     }
+  };
+
+  const handleDelete = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setLeadToDelete(id);
+    setDeleteModalOpen(true);
   };
 
   if (isLoading && leads.length === 0) {
@@ -94,25 +146,50 @@ const LeadList: React.FC = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="p-8 text-red-500 bg-red-50 dark:bg-red-900/30 rounded-xl border border-red-200 dark:border-red-900/50">
+        <h3 className="font-bold">Failed to load leads</h3>
+        <p>{error}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
+      <ScheduleNotificationModal
+        isOpen={isScheduleModalOpen}
+        onClose={() => setIsScheduleModalOpen(false)}
+        leadId={selectedLeadData.id}
+        leadName={selectedLeadData.name}
+        status={selectedLeadData.status}
+      />
+      
+      <DeleteConfirmationModal 
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setLeadToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+      />
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Leads Management</h1>
-          <p className="text-slate-500 text-sm">Track and manage your potential customers lifecycle.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Leads Management</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Track and manage your potential customers lifecycle.</p>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
           <button 
             onClick={handleExport}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm"
           >
             <Download className="w-4 h-4" />
             <span className="hidden sm:inline">Export</span>
           </button>
           <button 
             onClick={() => navigate('/leads/create')}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-indigo-600 rounded-xl text-sm font-semibold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-indigo-600 rounded-xl text-sm font-semibold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/50 transition-all"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Add New Lead</span>
@@ -123,29 +200,29 @@ const LeadList: React.FC = () => {
       {/* Filters & Search */}
       <div className="glass p-4 rounded-2xl flex flex-col gap-3">
         <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
           <input
             type="text"
             placeholder="Search leads by name, email, or company..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all"
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <div className="flex items-center gap-1.5 mb-1">
-          <Filter className="w-4 h-4 text-slate-400 shrink-0" />
-          <span className="text-xs font-medium text-slate-500">Filter by status:</span>
+          <Filter className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Filter by status:</span>
         </div>
         <div className="flex flex-wrap gap-2">
-          {['All', 'New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Converted', 'Lost'].map((status) => (
+          {['All', ...statusOptions].map((status) => (
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
               className={cn(
                 "px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap",
                 statusFilter === status
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-100"
-                  : "text-slate-500 bg-slate-100 hover:bg-slate-200"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-100 dark:shadow-indigo-900/50"
+                  : "text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700"
               )}
             >
               {status}
@@ -156,9 +233,9 @@ const LeadList: React.FC = () => {
 
       {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
-        {filteredLeads.length === 0 ? (
+        {paginatedLeads.length === 0 ? (
           <div className="glass rounded-2xl p-8 text-center text-slate-400 text-sm">No leads found.</div>
-        ) : filteredLeads.map((lead) => (
+        ) : paginatedLeads.map((lead) => (
           <div
             key={lead._id}
             className="glass rounded-2xl p-4 cursor-pointer hover:shadow-md transition-all"
@@ -172,12 +249,12 @@ const LeadList: React.FC = () => {
                   <span className="text-xs text-slate-500 truncate">{lead.email}</span>
                 </div>
               </div>
-              <span className={cn(
-                "px-2.5 py-1 rounded-full text-xs font-bold border shrink-0",
-                statusColors[lead.status as keyof typeof statusColors]
-              )}>
-                {lead.status}
-              </span>
+              <StatusDropdown 
+                currentStatus={lead.status}
+                onStatusChange={(status) => handleStatusChange(status, lead)}
+                statusColors={statusColors}
+                statusOptions={statusOptions}
+              />
             </div>
             <div className="flex flex-col gap-1.5 text-xs text-slate-500">
               <div className="flex items-center gap-1.5">
@@ -190,7 +267,14 @@ const LeadList: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
-              <span className="text-xs text-slate-400 font-medium">Source: {lead.source || '—'}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400 font-medium">Source:</span>
+                <SourceDropdown 
+                  currentSource={lead.source}
+                  onSourceChange={(source) => handleSourceChange(source, lead)}
+                  disabled={lead.status === 'Not Interested'}
+                />
+              </div>
               <button
                 onClick={(e) => handleDelete(e, lead._id)}
                 className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
@@ -204,11 +288,11 @@ const LeadList: React.FC = () => {
       </div>
 
       {/* Desktop Table */}
-      <div className="hidden md:block glass rounded-2xl overflow-hidden">
+      <div className="hidden md:block glass rounded-2xl overflow-hidden border border-white/40 dark:border-slate-700/50 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50/50 border-b border-slate-100">
+              <tr className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700/50">
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Lead Info</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Company</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
@@ -217,41 +301,45 @@ const LeadList: React.FC = () => {
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredLeads.map((lead) => (
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+              {paginatedLeads.map((lead) => (
                 <tr 
                   key={lead._id} 
-                  className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
+                  className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer"
                   onClick={() => navigate(`/leads/${lead._id}`)}
                 >
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
-                      <span className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{lead.name}</span>
+                      <span className="font-bold text-slate-900 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{lead.name}</span>
                       <div className="flex items-center gap-2 mt-1">
-                        <Mail className="w-3 h-3 text-slate-400" />
-                        <span className="text-xs text-slate-500">{lead.email}</span>
+                        <Mail className="w-3 h-3 text-slate-400 dark:text-slate-500" />
+                        <span className="text-xs text-slate-500 dark:text-slate-400">{lead.email}</span>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <Building2 className="w-4 h-4 text-slate-400" />
-                      <span className="text-sm font-medium text-slate-700">{lead.company}</span>
+                      <Building2 className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{lead.company}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={cn(
-                      "px-2.5 py-1 rounded-full text-xs font-bold border",
-                      statusColors[lead.status as keyof typeof statusColors]
-                    )}>
-                      {lead.status}
-                    </span>
+                    <StatusDropdown 
+                      currentStatus={lead.status}
+                      onStatusChange={(status) => handleStatusChange(status, lead)}
+                      statusColors={statusColors}
+                      statusOptions={statusOptions}
+                    />
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm text-slate-600">{lead.source}</span>
+                    <SourceDropdown 
+                      currentSource={lead.source}
+                      onSourceChange={(source) => handleSourceChange(source, lead)}
+                      disabled={lead.status === 'Not Interested'}
+                    />
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                    <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                       <Calendar className="w-4 h-4" />
                       {formatDate(lead.createdAt)}
                     </div>
@@ -260,12 +348,12 @@ const LeadList: React.FC = () => {
                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
                         onClick={(e) => handleDelete(e, lead._id)}
-                        className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                        className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-all"
                         title="Delete Lead"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
-                      <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all">
+                      <button className="p-2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all">
                         <MoreHorizontal className="w-4 h-4" />
                       </button>
                     </div>
@@ -277,18 +365,59 @@ const LeadList: React.FC = () => {
         </div>
 
         {/* Pagination */}
-        <div className="px-4 sm:px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Showing {filteredLeads.length} leads</span>
+        <div className="px-4 sm:px-6 py-4 bg-slate-50/50 dark:bg-slate-800/30 border-t border-slate-100 dark:border-slate-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredLeads.length)} of {filteredLeads.length} leads
+          </span>
           <div className="flex items-center gap-2">
-            <button className="p-2 text-slate-400 hover:text-slate-900 bg-white border border-slate-200 rounded-lg disabled:opacity-50" disabled>
+            <button 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="p-2 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <div className="flex items-center gap-1">
-              <button className="w-8 h-8 flex items-center justify-center text-sm font-bold bg-indigo-600 text-white rounded-lg shadow-sm">1</button>
-              <button className="w-8 h-8 flex items-center justify-center text-sm font-bold text-slate-500 hover:bg-white hover:shadow-sm rounded-lg">2</button>
-              <button className="w-8 h-8 flex items-center justify-center text-sm font-bold text-slate-500 hover:bg-white hover:shadow-sm rounded-lg">3</button>
+              {Array.from({ length: totalPages }).map((_, idx) => {
+                const pageNum = idx + 1;
+                // Simple logic to show a few pages around current page
+                if (
+                  pageNum === 1 ||
+                  pageNum === totalPages ||
+                  (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                ) {
+                  return (
+                    <button 
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={cn(
+                        "w-8 h-8 flex items-center justify-center text-sm font-bold rounded-lg transition-all",
+                        currentPage === pageNum 
+                          ? "bg-indigo-600 text-white shadow-sm shadow-indigo-100 dark:shadow-none" 
+                          : "text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm bg-transparent"
+                      )}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                }
+                
+                // Show ellipsis if there's a gap
+                if (
+                  (pageNum === currentPage - 2 && pageNum > 1) ||
+                  (pageNum === currentPage + 2 && pageNum < totalPages)
+                ) {
+                  return <span key={pageNum} className="text-slate-400 px-1">...</span>;
+                }
+                
+                return null;
+              })}
             </div>
-            <button className="p-2 text-slate-400 hover:text-slate-900 bg-white border border-slate-200 rounded-lg">
+            <button 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="p-2 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
