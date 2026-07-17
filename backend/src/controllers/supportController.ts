@@ -1,21 +1,6 @@
 import { Request, Response } from 'express';
 import SupportTicket from '../models/SupportTicket';
-import jwt from 'jsonwebtoken';
-import User from '../models/User';
-
-// Helper: decode token and get user from DB
-const getUserFromToken = async (req: Request) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
-  const token = authHeader.split(' ')[1];
-  try {
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'secret');
-    const user = await User.findById(decoded.id).select('-password');
-    return user;
-  } catch {
-    return null;
-  }
-};
+import { getAuthenticatedUser } from '../utils/auth';
 
 // @desc    Get all tickets
 //          Admin/Sales see all; Employee sees only their own
@@ -23,7 +8,7 @@ const getUserFromToken = async (req: Request) => {
 // @access  Private
 export const getTickets = async (req: Request, res: Response) => {
   try {
-    const user = await getUserFromToken(req);
+    const user = await getAuthenticatedUser(req);
     if (!user) return res.status(401).json({ message: 'Not authorised' });
 
     let tickets;
@@ -45,7 +30,7 @@ export const getTickets = async (req: Request, res: Response) => {
 // @access  Private
 export const createTicket = async (req: Request, res: Response) => {
   try {
-    const user = await getUserFromToken(req);
+    const user = await getAuthenticatedUser(req);
     if (!user) return res.status(401).json({ message: 'Not authorised' });
 
     const { subject, description, priority } = req.body;
@@ -74,7 +59,7 @@ export const createTicket = async (req: Request, res: Response) => {
 // @access  Private
 export const addMessage = async (req: Request, res: Response) => {
   try {
-    const user = await getUserFromToken(req);
+    const user = await getAuthenticatedUser(req);
     if (!user) return res.status(401).json({ message: 'Not authorised' });
 
     const { text } = req.body;
@@ -109,7 +94,7 @@ export const addMessage = async (req: Request, res: Response) => {
 // @access  Private (admin/sales)
 export const updateTicketStatus = async (req: Request, res: Response) => {
   try {
-    const user = await getUserFromToken(req);
+    const user = await getAuthenticatedUser(req);
     if (!user) return res.status(401).json({ message: 'Not authorised' });
 
     const { status } = req.body;

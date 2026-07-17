@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import logo from '../../assets/logo.jpg';
-import { Mail, Lock, Briefcase, Globe, AlertCircle } from 'lucide-react';
+import { Mail, Lock, AlertCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { login, clearError } from '../../store/slices/authSlice';

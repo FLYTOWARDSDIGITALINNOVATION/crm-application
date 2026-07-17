@@ -10,6 +10,9 @@ export interface IUser extends Document {
   designation?: string;
   department?: string;
   joiningDate?: string;
+  currentSessionId?: mongoose.Types.ObjectId;
+  lastLoginAt?: Date;
+  lastLogoutAt?: Date;
   createdAt: Date;
   updatedAt: Date;
   matchPassword(enteredPassword: string): Promise<boolean>;
@@ -29,6 +32,9 @@ const UserSchema: Schema = new Schema(
     designation: { type: String },
     department: { type: String },
     joiningDate: { type: String },
+    currentSessionId: { type: Schema.Types.ObjectId, ref: 'EmployeeSession' },
+    lastLoginAt: { type: Date },
+    lastLogoutAt: { type: Date },
   },
   { timestamps: true }
 );

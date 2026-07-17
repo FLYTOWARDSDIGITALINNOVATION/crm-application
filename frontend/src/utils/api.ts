@@ -15,6 +15,19 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData && config.headers) {
+    const headers = config.headers as any;
+
+    if (typeof headers.delete === 'function') {
+      headers.delete('Content-Type');
+      headers.delete('content-type');
+    } else {
+      delete headers['Content-Type'];
+      delete headers['content-type'];
+    }
+  }
+
   return config;
 });
 

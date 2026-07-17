@@ -1,16 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { 
   CheckSquare, Clock, AlertCircle, Calendar, 
-  CheckCircle2, Circle, MoreVertical, LayoutDashboard
+  CheckCircle2, Circle, LayoutDashboard
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { fetchTasks, updateTask } from '../../store/slices/taskSlice';
+import EmployeeWorkHistory from './EmployeeWorkHistory';
 
 const EmployeeDashboard: React.FC = () => {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
   const { items: tasks, isLoading } = useAppSelector((state) => state.tasks);
+  const sessionStartedAt = user?.lastLoginAt
+    ? new Date(user.lastLoginAt).toLocaleString('en-IN', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      })
+    : 'Not recorded yet';
 
   // Filter tasks specifically for this employee
   // Note: assignedTo matches the user's name or email based on how Admin assigned it
@@ -52,7 +59,7 @@ const EmployeeDashboard: React.FC = () => {
       </div>
 
       {/* Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <div className="glass p-6 rounded-2xl flex items-center gap-4 hover:shadow-lg transition-all border border-transparent hover:border-orange-200">
           <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
             <Clock className="w-6 h-6" />
@@ -78,6 +85,15 @@ const EmployeeDashboard: React.FC = () => {
           <div>
             <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Completed</span>
             <h3 className="text-2xl font-bold text-slate-900">{completedCount}</h3>
+          </div>
+        </div>
+        <div className="glass p-6 rounded-2xl flex items-center gap-4 hover:shadow-lg transition-all border border-transparent hover:border-violet-200">
+          <div className="w-12 h-12 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600">
+            <Clock className="w-6 h-6" />
+          </div>
+          <div className="min-w-0">
+            <span className="text-slate-400 text-xs font-bold uppercase tracking-wider block">Session Started</span>
+            <h3 className="text-sm font-bold text-slate-900 break-words">{sessionStartedAt}</h3>
           </div>
         </div>
       </div>
@@ -164,6 +180,8 @@ const EmployeeDashboard: React.FC = () => {
           </div>
         )}
       </div>
+
+      <EmployeeWorkHistory employeeId={user?._id} />
     </div>
   );
 };

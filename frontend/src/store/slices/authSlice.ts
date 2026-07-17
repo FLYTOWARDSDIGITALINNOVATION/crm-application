@@ -6,6 +6,18 @@ interface User {
   name: string;
   email: string;
   role: 'admin' | 'sales' | 'customer' | 'employee';
+  phone?: string;
+  designation?: string;
+  department?: string;
+  joiningDate?: string;
+  lastLoginAt?: string | null;
+  lastLogoutAt?: string | null;
+}
+
+interface EmployeeLogoutPayload {
+  workSummary?: string;
+  gitLink?: string;
+  screenshot?: File | null;
 }
 
 interface AuthState {
@@ -53,6 +65,30 @@ export const register = createAsyncThunk('auth/register', async (userData: any, 
   }
 });
 
+export const employeeLogout = createAsyncThunk(
+  'auth/employeeLogout',
+  async (payload: EmployeeLogoutPayload, { rejectWithValue }) => {
+    try {
+      const formData = new FormData();
+      if (payload.workSummary) {
+        formData.append('workSummary', payload.workSummary);
+      }
+      if (payload.gitLink) {
+        formData.append('gitLink', payload.gitLink);
+      }
+      if (payload.screenshot) {
+        formData.append('screenshot', payload.screenshot);
+      }
+
+      const response = await api.post('/auth/logout', formData);
+
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Logout failed');
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -61,6 +97,8 @@ const authSlice = createSlice({
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
+      state.isLoading = false;
+      state.error = null;
       localStorage.removeItem('token');
       localStorage.removeItem('user');
     },
@@ -100,6 +138,16 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       });
+      // Employee Logout
+      builder
+        .addCase(employeeLogout.pending, (state) => {
+          state.isLoading = true;
+          state.error = null;
+        })
+        .addCase(employeeLogout.rejected, (state, action) => {
+          state.isLoading = false;
+          state.error = action.payload as string;
+        });
   },
 });
 

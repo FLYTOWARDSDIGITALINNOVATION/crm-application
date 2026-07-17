@@ -5,6 +5,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const employeeRoutes = require('./src/routes/employeeRoutes').default;
 
 // Configure environment variables
 dotenv.config();
@@ -28,6 +29,7 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/employees', employeeRoutes);
 
 // Database Connection
 const connectDB = async () => {

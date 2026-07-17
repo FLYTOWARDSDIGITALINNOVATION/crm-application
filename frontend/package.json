@@ -4,11 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "start": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "vite --config vite.config.mjs",
+    "start": "vite --config vite.config.mjs",
+    "build": "tsc -b && vite build --config vite.config.mjs",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview --config vite.config.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

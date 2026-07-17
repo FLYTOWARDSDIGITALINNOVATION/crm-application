@@ -1,8 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { fetchEmployees, createEmployee } from '../../store/slices/userSlice';
-import { UserPlus, Mail, Shield, Loader2, X, Phone, Building2, Calendar, Briefcase, ChevronRight } from 'lucide-react';
-import { cn } from '../../utils/cn';
+import { UserPlus, Mail, Shield, Loader2, X, Phone, Building2, Calendar, Briefcase, ChevronRight, Clock } from 'lucide-react';
+
+const formatDateTime = (value?: string | null) => {
+  if (!value) return 'Not recorded';
+
+  return new Date(value).toLocaleString('en-IN', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+};
 
 const EmployeeManagement = () => {
   const dispatch = useAppDispatch();
@@ -287,6 +295,22 @@ const EmployeeManagement = () => {
                   <div>
                     <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 block mb-0.5">Date of Joining</span>
                     <span className="text-sm font-bold text-slate-800">{selectedEmployee.joiningDate ? new Date(selectedEmployee.joiningDate).toLocaleDateString() : 'Unknown'}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                  <Clock className="w-5 h-5 text-emerald-500 mt-0.5" />
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 block mb-0.5">Last Login</span>
+                    <span className="text-sm font-bold text-slate-800">{formatDateTime(selectedEmployee.lastLoginAt)}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                  <Clock className="w-5 h-5 text-rose-500 mt-0.5" />
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 block mb-0.5">Last Logout</span>
+                    <span className="text-sm font-bold text-slate-800">{formatDateTime(selectedEmployee.lastLogoutAt)}</span>
                   </div>
                 </div>
               </div>
