@@ -5,7 +5,7 @@ interface User {
   _id: string;
   name: string;
   email: string;
-  role: 'admin' | 'sales' | 'customer' | 'employee';
+  role: 'superadmin' | 'admin' | 'sales' | 'customer' | 'employee';
 }
 
 interface AuthState {
@@ -51,6 +51,17 @@ export const register = createAsyncThunk('auth/register', async (userData: any, 
   } catch (error: any) {
     return rejectWithValue(error.response?.data?.message || 'Registration failed');
   }
+});
+
+export const logoutUser = createAsyncThunk('auth/logout', async () => {
+  try {
+    await api.post('/auth/logout');
+  } catch {
+    // Ignore error and proceed
+  }
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  return null;
 });
 
 const authSlice = createSlice({
@@ -99,6 +110,12 @@ const authSlice = createSlice({
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
+      })
+      // Logout
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
       });
   },
 });

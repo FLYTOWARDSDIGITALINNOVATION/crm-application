@@ -6,6 +6,10 @@ import customerReducer from './slices/customerSlice';
 import taskReducer from './slices/taskSlice';
 import supportReducer from './slices/supportSlice';
 import userReducer from './slices/userSlice';
+import projectReducer from './slices/projectSlice';
+import workLogReducer from './slices/workLogSlice';
+import leaveReducer from './slices/leaveSlice';
+import superAdminReducer from './slices/superAdminSlice';
 
 export const store = configureStore({
   reducer: {
@@ -15,6 +19,10 @@ export const store = configureStore({
     tasks: taskReducer,
     support: supportReducer,
     users: userReducer,
+    projects: projectReducer,
+    workLogs: workLogReducer,
+    leaves: leaveReducer,
+    superAdmin: superAdminReducer,
   },
 });
 

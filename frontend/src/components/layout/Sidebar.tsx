@@ -10,11 +10,14 @@ import {
   ChevronLeft, 
   ChevronRight,
   LogOut,
-  LayoutDashboard
+  LayoutDashboard,
+  FolderKanban,
+  CalendarDays,
+  ShieldCheck
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAppDispatch, useAppSelector } from '../../store';
-import { logout } from '../../store/slices/authSlice';
+import { logoutUser } from '../../store/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
 
 interface SidebarProps {
@@ -29,7 +32,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    dispatch(logout());
+    dispatch(logoutUser());
     navigate('/login');
   };
   const { user } = useAppSelector((state) => state.auth);
@@ -46,10 +49,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
   if (user?.role === 'employee') {
     navItems = [
       { title: 'Dashboard', icon: LayoutDashboard, path: '/' },
+      { title: 'Projects', icon: FolderKanban, path: '/projects' },
+      { title: 'Leaves', icon: CalendarDays, path: '/leaves' },
       { title: 'Support', icon: MessageSquare, path: '/support' },
     ];
   } else if (user?.role === 'admin') {
     navItems.push({ title: 'Employees', icon: Users, path: '/employees' });
+    navItems.push({ title: 'Projects', icon: FolderKanban, path: '/projects' });
+    navItems.push({ title: 'Leaves', icon: CalendarDays, path: '/leaves' });
+  } else if (user?.role === 'superadmin') {
+    navItems = [
+      { title: 'Monitoring', icon: ShieldCheck, path: '/super-admin' },
+    ];
   }
 
   return (

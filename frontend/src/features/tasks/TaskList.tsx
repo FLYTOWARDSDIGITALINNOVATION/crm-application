@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   CheckSquare, Clock, AlertCircle, Plus,
   Search, Filter, MoreVertical, Calendar,
-  User, CheckCircle2, Circle, X, Trash2, Loader2
+  User, CheckCircle2, Circle, X, Trash2, Loader2, Lock
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAppDispatch, useAppSelector } from '../../store';
@@ -40,6 +40,8 @@ const TaskList: React.FC = () => {
   const dispatch = useAppDispatch();
   const { items: tasks, isLoading } = useAppSelector((state) => state.tasks);
   const { employees } = useAppSelector((state) => state.users);
+  const { user } = useAppSelector((state) => state.auth);
+  const isAdmin = user?.role === 'admin';
   const [allocationTask, setAllocationTask] = useState<Task | null>(null);
 
   // Fetch tasks from MongoDB on mount
@@ -48,16 +50,20 @@ const TaskList: React.FC = () => {
     dispatch(fetchEmployees());
   }, [dispatch]);
 
-  // Derived stats
-  const pendingCount = tasks.filter(t => t.status === 'Pending').length;
-  const completedCount = tasks.filter(t => t.status === 'Completed').length;
-  const todayStr = new Date().toISOString().split('T')[0];
-  const dueTodayCount = tasks.filter(t => t.dueDate === todayStr).length;
+  // Only show standalone (non-project) tasks on this global page
+  const standaloneTasks = tasks.filter(t => !t.projectId);
 
-  const filteredTasks = tasks.filter(task =>
+  // Derived stats (from standalone tasks)
+  const pendingCount = standaloneTasks.filter(t => t.status === 'Pending').length;
+  const completedCount = standaloneTasks.filter(t => t.status === 'Completed').length;
+  const todayStr = new Date().toISOString().split('T')[0];
+  const dueTodayCount = standaloneTasks.filter(t => t.dueDate === todayStr).length;
+
+  const filteredTasks = standaloneTasks.filter(task =>
     task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     task.assignedTo.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
 
   const getPriorityStyle = (priority: string) => {
     switch (priority) {
@@ -109,6 +115,7 @@ const TaskList: React.FC = () => {
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Task Management</h1>
           <p className="text-slate-500 text-sm">Stay on top of your deals and follow-ups.</p>
         </div>
+        {isAdmin && (
         <button
           onClick={() => setShowModal(true)}
           className="flex items-center gap-2 px-5 py-3 bg-indigo-600 rounded-2xl text-sm font-bold text-white hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all self-start sm:self-auto"
@@ -116,6 +123,7 @@ const TaskList: React.FC = () => {
           <Plus className="w-5 h-5" />
           Create New Task
         </button>
+        )}
       </div>
 
       {/* Loading state */}
@@ -184,11 +192,19 @@ const TaskList: React.FC = () => {
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-4">
                 <button
-                  onClick={() => dispatch(toggleTaskStatus(task.id))}
-                  className="mt-1 text-slate-300 hover:text-indigo-600 transition-colors"
+                  onClick={() => isAdmin && dispatch(toggleTaskStatus(task.id))}
+                  disabled={!isAdmin && task.status === 'Completed'}
+                  className={cn(
+                    "mt-1 transition-colors",
+                    isAdmin ? "text-slate-300 hover:text-indigo-600" : "cursor-default"
+                  )}
                 >
                   {task.status === 'Completed' ? (
-                    <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                    isAdmin ? (
+                      <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                    ) : (
+                      <Lock className="w-5 h-5 text-emerald-400 mt-0.5" />
+                    )
                   ) : (
                     <Circle className="w-6 h-6" />
                   )}
@@ -223,7 +239,8 @@ const TaskList: React.FC = () => {
                 )}>
                   {task.priority}
                 </span>
-                {/* Action Menu */}
+                {/* Action Menu — admin only */}
+                {isAdmin && (
                 <div className="relative" ref={openMenuId === task.id ? menuRef : null}>
                   <button
                     onClick={() => setOpenMenuId(openMenuId === task.id ? null : task.id)}
@@ -257,6 +274,7 @@ const TaskList: React.FC = () => {
                     </div>
                   )}
                 </div>
+                )}
               </div>
             </div>
           </div>

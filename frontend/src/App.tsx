@@ -14,6 +14,10 @@ import ForgotPassword from './features/auth/ForgotPassword';
 import CustomerDashboard from './features/customers/CustomerDashboard';
 import EmployeeManagement from './features/employees/EmployeeManagement';
 import EmployeeDashboard from './features/employees/EmployeeDashboard';
+import ProjectManagement from './features/projects/ProjectManagement';
+import ProjectDetail from './features/projects/ProjectDetail';
+import LeaveManagement from './features/leaves/LeaveManagement';
+import SuperAdminDashboard from './features/superadmin/SuperAdminDashboard';
 import { useAppSelector } from './store';
 
 function App() {
@@ -44,6 +48,10 @@ function App() {
         <Route path="employees" element={user?.role === 'admin' ? <EmployeeManagement /> : <Navigate to="/" replace />} />
         <Route path="tasks" element={<TaskList />} />
         <Route path="support" element={<SupportTickets />} />
+        <Route path="projects" element={<ProjectManagement />} />
+        <Route path="projects/:id" element={<ProjectDetail />} />
+        <Route path="leaves" element={<LeaveManagement />} />
+        <Route path="super-admin" element={user?.role === 'superadmin' ? <SuperAdminDashboard /> : <Navigate to="/" replace />} />
         <Route path="analytics" element={<Navigate to="/" replace />} />
       </Route>
 

@@ -1,15 +1,23 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import path from 'path';
+import fs from 'fs';
 import { connectDB } from './config/db';
 
 dotenv.config();
 
 const app = express();
 
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
 // Middleware
 app.use(cors());
 app.use(express.json());
+// Serve uploaded images statically
+app.use('/uploads', express.static(uploadsDir));
 
 import leadRoutes from './routes/leadRoutes';
 import authRoutes from './routes/authRoutes';
@@ -17,6 +25,10 @@ import customerRoutes from './routes/customerRoutes';
 import taskRoutes from './routes/taskRoutes';
 import userRoutes from './routes/userRoutes';
 import supportRoutes from './routes/supportRoutes';
+import projectRoutes from './routes/projectRoutes';
+import workLogRoutes from './routes/workLogRoutes';
+import leaveRoutes from './routes/leaveRoutes';
+import superAdminRoutes from './routes/superAdminRoutes';
 
 // Database Connection
 connectDB();
@@ -28,6 +40,10 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/work-logs', workLogRoutes);
+app.use('/api/leaves', leaveRoutes);
+app.use('/api/super-admin', superAdminRoutes);
 
 // Basic Route for testing
 app.get('/api/health', (req, res) => {
