@@ -1,28 +1,33 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   CheckSquare, Clock, AlertCircle, Calendar, 
-  CheckCircle2, Circle, MoreVertical, LayoutDashboard
+  CheckCircle2, Circle, LayoutDashboard, FolderKanban, ChevronRight, Lock
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { fetchTasks, updateTask } from '../../store/slices/taskSlice';
+import { fetchProjects } from '../../store/slices/projectSlice';
 
 const EmployeeDashboard: React.FC = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
   const { items: tasks, isLoading } = useAppSelector((state) => state.tasks);
+  const { items: projects } = useAppSelector((state) => state.projects);
 
-  // Filter tasks specifically for this employee
-  // Note: assignedTo matches the user's name or email based on how Admin assigned it
-  const myTasks = tasks.filter(task => 
-    task.assignedTo === user?.name || task.assignedTo === user?.email
+  // Only tasks NOT linked to a project (general tasks)
+  const myTasks = tasks.filter(task =>
+    (task.assignedTo === user?.name || task.assignedTo === user?.email) && !task.projectId
   );
 
+  // Projects this employee is assigned to
+  const myProjects = projects;
+
   useEffect(() => {
-    if (tasks.length === 0) {
-      dispatch(fetchTasks());
-    }
-  }, [dispatch, tasks.length]);
+    dispatch(fetchTasks());
+    dispatch(fetchProjects());
+  }, [dispatch]);
 
   const pendingCount = myTasks.filter(t => t.status === 'Pending').length;
   const inProgressCount = myTasks.filter(t => t.status === 'In Progress').length;
@@ -82,7 +87,46 @@ const EmployeeDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Task List */}
+      {/* My Projects Section */}
+      <div>
+        <h2 className="text-xl font-bold text-slate-900 mb-4">My Projects</h2>
+        {myProjects.length === 0 ? (
+          <div className="glass p-8 rounded-3xl text-center border border-slate-100">
+            <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-300">
+              <FolderKanban className="w-6 h-6" />
+            </div>
+            <p className="text-slate-500 text-sm">You have not been assigned to any project yet.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {myProjects.map(project => {
+              const projectTaskCount = tasks.filter(t => t.projectId === project._id && (t.assignedTo === user?.name || t.assignedTo === user?.email)).length;
+              const doneCount = tasks.filter(t => t.projectId === project._id && t.status === 'Completed' && (t.assignedTo === user?.name || t.assignedTo === user?.email)).length;
+              return (
+                <div key={project._id} className="glass p-5 rounded-2xl border border-slate-100 hover:border-indigo-200 hover:shadow-lg transition-all flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600">
+                      <FolderKanban className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">{project.name}</h3>
+                      <p className="text-xs text-slate-500">{doneCount}/{projectTaskCount} tasks done</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigate(`/projects/${project._id}`)}
+                    className="flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
+                  >
+                    View <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Task List - General tasks only */}
       <div>
         <h2 className="text-xl font-bold text-slate-900 mb-6">Your Assigned Tasks</h2>
         
@@ -139,24 +183,33 @@ const EmployeeDashboard: React.FC = () => {
                     </div>
                   </div>
                   
-                  {/* Status Dropdown */}
+                  {/* Status — no Completed option for employees */}
                   <div className="flex items-center self-start sm:self-center ml-10 sm:ml-0">
-                    <div className="relative bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 group-hover:border-indigo-200 transition-colors">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-0.5">Status</span>
-                      <select
-                        value={task.status}
-                        onChange={(e) => dispatch(updateTask({ id: task.id, status: e.target.value }))}
-                        className={cn(
-                          "text-sm font-bold bg-transparent border-none cursor-pointer focus:ring-0 outline-none transition-colors pr-4 appearance-none",
-                          task.status === 'Completed' ? "text-emerald-600" :
-                          task.status === 'In Progress' ? "text-blue-600" : "text-slate-600"
-                        )}
-                      >
-                        <option value="Pending">Pending</option>
-                        <option value="In Progress">In Progress</option>
-                        <option value="Completed">Completed</option>
-                      </select>
-                    </div>
+                    {task.status === 'Completed' ? (
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-xl">
+                        <Lock className="w-3 h-3 text-emerald-500" />
+                        <span className="text-xs font-bold text-emerald-600">Completed</span>
+                      </div>
+                    ) : (
+                      <div className="relative bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 group-hover:border-indigo-200 transition-colors">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-0.5">Status</span>
+                        <select
+                          value={task.status}
+                          onChange={(e) => {
+                            if (e.target.value !== 'Completed') {
+                              dispatch(updateTask({ id: task.id, status: e.target.value }));
+                            }
+                          }}
+                          className={cn(
+                            "text-sm font-bold bg-transparent border-none cursor-pointer focus:ring-0 outline-none transition-colors pr-4 appearance-none",
+                            task.status === 'In Progress' ? "text-blue-600" : "text-slate-600"
+                          )}
+                        >
+                          <option value="Pending">Pending</option>
+                          <option value="In Progress">In Progress</option>
+                        </select>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

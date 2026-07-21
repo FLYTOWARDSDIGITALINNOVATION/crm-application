@@ -8,6 +8,8 @@ export interface ITask extends Document {
   status: 'Pending' | 'In Progress' | 'Completed';
   assignedTo: string;
   relatedTo: string;
+  projectId?: mongoose.Types.ObjectId;
+  completedBy?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,7 +30,9 @@ const TaskSchema: Schema = new Schema(
       default: 'Pending',
     },
     assignedTo: { type: String, required: true },
-    relatedTo: { type: String, required: true },
+    relatedTo: { type: String, default: '' },
+    projectId: { type: Schema.Types.ObjectId, ref: 'Project', required: false },
+    completedBy: { type: String, default: '' },
   },
   { timestamps: true }
 );

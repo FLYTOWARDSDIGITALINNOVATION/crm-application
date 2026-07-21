@@ -4,7 +4,7 @@ import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import { cn } from '../../utils/cn';
 import { useAppDispatch, useAppSelector } from '../../store';
-import { logout } from '../../store/slices/authSlice';
+import { logoutUser } from '../../store/slices/authSlice';
 import { LogOut } from 'lucide-react';
 import NotificationManager from './NotificationManager';
 
@@ -46,7 +46,7 @@ const MainLayout: React.FC = () => {
             </div>
             <button
               onClick={() => {
-                dispatch(logout());
+                dispatch(logoutUser());
                 navigate('/login');
               }}
               className="flex items-center gap-2 px-4 py-2 border border-rose-200 text-rose-500 rounded-xl text-xs font-bold hover:bg-rose-50 transition-all"
