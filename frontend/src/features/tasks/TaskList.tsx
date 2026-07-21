@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   CheckSquare, Clock, AlertCircle, Plus,
   Search, Filter, MoreVertical, Calendar,
-  User, CheckCircle2, Circle, X, Trash2, Loader2
+  User, CheckCircle2, Circle, X, Trash2, Loader2, Lock
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAppDispatch, useAppSelector } from '../../store';
@@ -20,6 +20,7 @@ const defaultForm = {
 
 const TaskList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'All' | 'Pending' | 'Completed'>('All');
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState(defaultForm);
   const [errors, setErrors] = useState<Partial<typeof defaultForm>>({});
@@ -40,6 +41,8 @@ const TaskList: React.FC = () => {
   const dispatch = useAppDispatch();
   const { items: tasks, isLoading } = useAppSelector((state) => state.tasks);
   const { employees } = useAppSelector((state) => state.users);
+  const { user } = useAppSelector((state) => state.auth);
+  const isAdmin = user?.role === 'admin';
   const [allocationTask, setAllocationTask] = useState<Task | null>(null);
 
   // Fetch tasks from MongoDB on mount
@@ -48,22 +51,26 @@ const TaskList: React.FC = () => {
     dispatch(fetchEmployees());
   }, [dispatch]);
 
-  // Derived stats
-  const pendingCount = tasks.filter(t => t.status === 'Pending').length;
-  const completedCount = tasks.filter(t => t.status === 'Completed').length;
-  const todayStr = new Date().toISOString().split('T')[0];
-  const dueTodayCount = tasks.filter(t => t.dueDate === todayStr).length;
+  // Only show standalone (non-project) tasks on this global page
+  const standaloneTasks = tasks.filter(t => !t.projectId);
 
-  const filteredTasks = tasks.filter(task =>
+  // Derived stats (from standalone tasks)
+  const pendingCount = standaloneTasks.filter(t => t.status === 'Pending').length;
+  const completedCount = standaloneTasks.filter(t => t.status === 'Completed').length;
+  const todayStr = new Date().toISOString().split('T')[0];
+  const dueTodayCount = standaloneTasks.filter(t => t.dueDate === todayStr).length;
+
+  const filteredTasks = standaloneTasks.filter(task =>
     task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     task.assignedTo.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+
   const getPriorityStyle = (priority: string) => {
     switch (priority) {
-      case 'High': return 'text-rose-600 bg-rose-50 border-rose-100';
-      case 'Medium': return 'text-amber-600 bg-amber-50 border-amber-100';
-      default: return 'text-slate-500 bg-slate-50 border-slate-100';
+      case 'High': return 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 border-rose-100 dark:border-rose-800/50';
+      case 'Medium': return 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border-amber-100 dark:border-amber-800/50';
+      default: return 'text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/30 border-slate-100 dark:border-slate-700';
     }
   };
 
@@ -106,9 +113,10 @@ const TaskList: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Task Management</h1>
-          <p className="text-slate-500 text-sm">Stay on top of your deals and follow-ups.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Task Management</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Stay on top of your deals and follow-ups.</p>
         </div>
+        {isAdmin && (
         <button
           onClick={() => setShowModal(true)}
           className="flex items-center gap-2 px-5 py-3 bg-indigo-600 rounded-2xl text-sm font-bold text-white hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all self-start sm:self-auto"
@@ -116,6 +124,7 @@ const TaskList: React.FC = () => {
           <Plus className="w-5 h-5" />
           Create New Task
         </button>
+        )}
       </div>
 
       {/* Loading state */}
@@ -129,30 +138,30 @@ const TaskList: React.FC = () => {
       {/* Stats row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="glass p-6 rounded-2xl flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
+          <div className="w-12 h-12 rounded-xl bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400">
             <Clock className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Pending</span>
-            <h3 className="text-2xl font-bold text-slate-900">{pendingCount}</h3>
+            <span className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-wider">Pending</span>
+            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{pendingCount}</h3>
           </div>
         </div>
         <div className="glass p-6 rounded-2xl flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
             <AlertCircle className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Due Today</span>
-            <h3 className="text-2xl font-bold text-slate-900">{dueTodayCount}</h3>
+            <span className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-wider">Due Today</span>
+            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{dueTodayCount}</h3>
           </div>
         </div>
         <div className="glass p-6 rounded-2xl flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+          <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
             <CheckCircle2 className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Completed</span>
-            <h3 className="text-2xl font-bold text-slate-900">{completedCount}</h3>
+            <span className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-wider">Completed</span>
+            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{completedCount}</h3>
           </div>
         </div>
       </div>
@@ -160,19 +169,24 @@ const TaskList: React.FC = () => {
       {/* Filters */}
       <div className="glass p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
           <input
             type="text"
             placeholder="Search tasks..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all">
-            <Filter className="w-4 h-4" />
-            Active Tasks
+          <button 
+            onClick={() => setFilterStatus(prev => prev === 'All' ? 'Pending' : prev === 'Pending' ? 'Completed' : 'All')}
+            className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all w-36 justify-center"
+          >
+            <Filter className="w-4 h-4 shrink-0" />
+            <span className="truncate">
+              {filterStatus === 'All' ? 'All Tasks' : filterStatus === 'Pending' ? 'Active Tasks' : 'Completed'}
+            </span>
           </button>
         </div>
       </div>
@@ -184,11 +198,19 @@ const TaskList: React.FC = () => {
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-4">
                 <button
-                  onClick={() => dispatch(toggleTaskStatus(task.id))}
-                  className="mt-1 text-slate-300 hover:text-indigo-600 transition-colors"
+                  onClick={() => isAdmin && dispatch(toggleTaskStatus(task.id))}
+                  disabled={!isAdmin && task.status === 'Completed'}
+                  className={cn(
+                    "mt-1 transition-colors",
+                    isAdmin ? "text-slate-300 hover:text-indigo-600" : "cursor-default"
+                  )}
                 >
                   {task.status === 'Completed' ? (
-                    <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                    isAdmin ? (
+                      <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                    ) : (
+                      <Lock className="w-5 h-5 text-emerald-400 mt-0.5" />
+                    )
                   ) : (
                     <Circle className="w-6 h-6" />
                   )}
@@ -196,11 +218,11 @@ const TaskList: React.FC = () => {
                 <div className="space-y-1">
                   <h3 className={cn(
                     "text-lg font-bold transition-all",
-                    task.status === 'Completed' ? "text-slate-400 line-through" : "text-slate-900 group-hover:text-indigo-600"
+                    task.status === 'Completed' ? "text-slate-400 dark:text-slate-500 line-through" : "text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400"
                   )}>
                     {task.title}
                   </h3>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-400 font-medium">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-400 dark:text-slate-500 font-medium">
                     <div className="flex items-center gap-1.5">
                       <Calendar className="w-3.5 h-3.5" />
                       {task.dueDate}
@@ -223,23 +245,24 @@ const TaskList: React.FC = () => {
                 )}>
                   {task.priority}
                 </span>
-                {/* Action Menu */}
+                {/* Action Menu — admin only */}
+                {isAdmin && (
                 <div className="relative" ref={openMenuId === task.id ? menuRef : null}>
                   <button
                     onClick={() => setOpenMenuId(openMenuId === task.id ? null : task.id)}
-                    className="p-2 text-slate-300 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all"
+                    className="p-2 text-slate-300 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all"
                   >
                     <MoreVertical className="w-5 h-5" />
                   </button>
 
                   {openMenuId === task.id && (
-                    <div className="absolute right-0 top-10 z-20 w-48 bg-white border border-slate-100 rounded-2xl shadow-xl py-1.5 animate-fade-in">
+                    <div className="absolute right-0 top-10 z-20 w-48 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl py-1.5 animate-fade-in">
                       <button
                         onClick={() => {
                           setAllocationTask(task);
                           setOpenMenuId(null);
                         }}
-                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-indigo-600 hover:bg-indigo-50 transition-colors"
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
                       >
                         <User className="w-4 h-4" />
                         Allocate Task
@@ -249,7 +272,7 @@ const TaskList: React.FC = () => {
                           dispatch(deleteTask(task.id));
                           setOpenMenuId(null);
                         }}
-                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors"
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                         Delete Task
@@ -257,6 +280,7 @@ const TaskList: React.FC = () => {
                     </div>
                   )}
                 </div>
+                )}
               </div>
             </div>
           </div>
@@ -273,12 +297,12 @@ const TaskList: React.FC = () => {
           />
 
           {/* Modal */}
-          <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl p-8 animate-fade-in">
+          <div className="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-8 animate-fade-in">
             {/* Modal Header */}
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-xl font-bold text-slate-900">Create New Task</h2>
-                <p className="text-slate-400 text-sm mt-0.5">Fill in the details below to add a task.</p>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Create New Task</h2>
+                <p className="text-slate-400 dark:text-slate-500 text-sm mt-0.5">Fill in the details below to add a task.</p>
               </div>
               <button
                 onClick={handleClose}
@@ -292,7 +316,7 @@ const TaskList: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Title */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   Task Title <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -301,8 +325,8 @@ const TaskList: React.FC = () => {
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
                   className={cn(
-                    "w-full px-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all",
-                    errors.title ? "border-rose-400 bg-rose-50" : "border-slate-200 bg-slate-50"
+                    "w-full px-4 py-2.5 border rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-all",
+                    errors.title ? "border-rose-400 bg-rose-50 dark:bg-rose-900/30 dark:border-rose-800" : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50"
                   )}
                 />
                 {errors.title && <p className="text-rose-500 text-xs mt-1">{errors.title}</p>}
@@ -311,7 +335,7 @@ const TaskList: React.FC = () => {
               {/* Due Date & Priority */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                     Due Date <span className="text-rose-500">*</span>
                   </label>
                   <input
@@ -319,29 +343,29 @@ const TaskList: React.FC = () => {
                     value={form.dueDate}
                     onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
                     className={cn(
-                      "w-full px-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all",
-                      errors.dueDate ? "border-rose-400 bg-rose-50" : "border-slate-200 bg-slate-50"
+                      "w-full px-4 py-2.5 border rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-all",
+                      errors.dueDate ? "border-rose-400 bg-rose-50 dark:bg-rose-900/30 dark:border-rose-800" : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50"
                     )}
                   />
                   {errors.dueDate && <p className="text-rose-500 text-xs mt-1">{errors.dueDate}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Priority</label>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Priority</label>
                   <select
                     value={form.priority}
                     onChange={(e) => setForm({ ...form, priority: e.target.value as Task['priority'] })}
-                    className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                   >
-                    <option value="High">High</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Low">Low</option>
+                    <option value="High" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">High</option>
+                    <option value="Medium" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Medium</option>
+                    <option value="Low" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Low</option>
                   </select>
                 </div>
               </div>
 
               {/* Assigned To */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   Assigned To <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -350,8 +374,8 @@ const TaskList: React.FC = () => {
                   value={form.assignedTo}
                   onChange={(e) => setForm({ ...form, assignedTo: e.target.value })}
                   className={cn(
-                    "w-full px-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all",
-                    errors.assignedTo ? "border-rose-400 bg-rose-50" : "border-slate-200 bg-slate-50"
+                    "w-full px-4 py-2.5 border rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-all",
+                    errors.assignedTo ? "border-rose-400 bg-rose-50 dark:bg-rose-900/30 dark:border-rose-800" : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50"
                   )}
                 />
                 {errors.assignedTo && <p className="text-rose-500 text-xs mt-1">{errors.assignedTo}</p>}
@@ -359,7 +383,7 @@ const TaskList: React.FC = () => {
 
               {/* Related To */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   Related To <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -368,8 +392,8 @@ const TaskList: React.FC = () => {
                   value={form.relatedTo}
                   onChange={(e) => setForm({ ...form, relatedTo: e.target.value })}
                   className={cn(
-                    "w-full px-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all",
-                    errors.relatedTo ? "border-rose-400 bg-rose-50" : "border-slate-200 bg-slate-50"
+                    "w-full px-4 py-2.5 border rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-all",
+                    errors.relatedTo ? "border-rose-400 bg-rose-50 dark:bg-rose-900/30 dark:border-rose-800" : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50"
                   )}
                 />
                 {errors.relatedTo && <p className="text-rose-500 text-xs mt-1">{errors.relatedTo}</p>}
@@ -400,15 +424,15 @@ const TaskList: React.FC = () => {
       {allocationTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setAllocationTask(null)} />
-          <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-6 sm:p-8 animate-fade-in max-h-[80vh] flex flex-col">
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 animate-fade-in max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between mb-6 shrink-0">
               <div>
-                <h2 className="text-xl font-bold text-slate-900">Allocate Task</h2>
-                <p className="text-slate-400 text-sm mt-0.5 line-clamp-1">{allocationTask.title}</p>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Allocate Task</h2>
+                <p className="text-slate-400 dark:text-slate-500 text-sm mt-0.5 line-clamp-1">{allocationTask.title}</p>
               </div>
               <button
                 onClick={() => setAllocationTask(null)}
-                className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all"
+                className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-all"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -416,7 +440,7 @@ const TaskList: React.FC = () => {
             
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-2">
               {employees.length === 0 ? (
-                <div className="text-center text-slate-500 py-8 text-sm italic">No employees found.</div>
+                <div className="text-center text-slate-500 dark:text-slate-400 py-8 text-sm italic">No employees found.</div>
               ) : (
                 employees.map(emp => (
                   <button
@@ -425,15 +449,15 @@ const TaskList: React.FC = () => {
                       dispatch(updateTask({ id: allocationTask.id, assignedTo: emp.name }));
                       setAllocationTask(null);
                     }}
-                    className="w-full flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-indigo-200 hover:bg-indigo-50 transition-all group"
+                    className="w-full flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-500/50 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-all group"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center text-slate-500 dark:text-slate-400 font-bold group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/50 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                         {emp.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="text-left">
-                        <div className="text-sm font-bold text-slate-800">{emp.name}</div>
-                        <div className="text-xs text-slate-500 capitalize">{emp.role}</div>
+                        <div className="text-sm font-bold text-slate-800 dark:text-slate-200">{emp.name}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 capitalize">{emp.role}</div>
                       </div>
                     </div>
                     <div className="text-xs font-bold text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity">

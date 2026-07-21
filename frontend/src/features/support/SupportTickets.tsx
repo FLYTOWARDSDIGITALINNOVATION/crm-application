@@ -44,9 +44,9 @@ const SupportTickets: React.FC = () => {
 
   const getPriorityStyle = (priority: string) => {
     switch (priority) {
-      case 'High': return 'bg-rose-50 text-rose-600 border-rose-100';
-      case 'Medium': return 'bg-amber-50 text-amber-600 border-amber-100';
-      default: return 'bg-slate-50 text-slate-500 border-slate-100';
+      case 'High': return 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-800/50';
+      case 'Medium': return 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/50';
+      default: return 'bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-700/50';
     }
   };
 
@@ -80,13 +80,13 @@ const SupportTickets: React.FC = () => {
           {mobileView === 'conversation' && selectedTicket && (
             <button
               onClick={() => { setMobileView('list'); setSelectedTicket(null); }}
-              className="flex items-center gap-2 text-sm font-bold text-indigo-600 mb-2 md:hidden hover:underline"
+              className="flex items-center gap-2 text-sm font-bold text-indigo-600 dark:text-indigo-400 mb-2 md:hidden hover:underline"
             >
               <ArrowLeft className="w-4 h-4" /> Back to Messages
             </button>
           )}
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 font-inter tracking-tight">Support Center</h1>
-          <p className="text-slate-500 text-sm hidden sm:block">Resolve customer inquiries and maintain high satisfaction.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white font-inter tracking-tight">Support Center</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm hidden sm:block">Resolve customer inquiries and maintain high satisfaction.</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
@@ -110,13 +110,13 @@ const SupportTickets: React.FC = () => {
           "w-full md:w-1/3",
           mobileView === 'list' ? "flex" : "hidden md:flex"
         )}>
-          <div className="glass p-3 rounded-2xl shrink-0 flex items-center gap-2">
-            <Search className="w-4 h-4 text-slate-400 ml-2" />
+          <div className="glass p-3 rounded-2xl shrink-0 flex items-center gap-2 border-slate-200 dark:border-slate-800">
+            <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 ml-2" />
             <input 
               placeholder="Search messages..." 
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="bg-transparent border-none text-sm focus:ring-0 w-full outline-none"
+              className="bg-transparent border-none text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-0 w-full outline-none"
             />
           </div>
 
@@ -133,8 +133,8 @@ const SupportTickets: React.FC = () => {
                   className={cn(
                     "p-4 rounded-2xl cursor-pointer transition-all border-2",
                     selectedTicket === ticket.id 
-                      ? "glass border-indigo-500 bg-white shadow-lg" 
-                      : "glass border-transparent hover:border-slate-100"
+                      ? "glass border-indigo-500 bg-white dark:bg-slate-800 shadow-lg" 
+                      : "glass border-transparent hover:border-slate-100 dark:hover:border-slate-700"
                   )}
                 >
                   <div className="flex items-start justify-between mb-2">
@@ -144,20 +144,20 @@ const SupportTickets: React.FC = () => {
                     )}>
                       {ticket.priority}
                     </span>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">
                       {new Date(ticket.updatedAt).toLocaleDateString()}
                     </span>
                   </div>
-                  <h3 className="text-sm font-bold text-slate-900 leading-snug line-clamp-2">{ticket.subject}</h3>
-                  <div className="flex items-center justify-between mt-3 text-xs text-slate-500 font-medium">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-snug line-clamp-2">{ticket.subject}</h3>
+                  <div className="flex items-center justify-between mt-3 text-xs text-slate-500 dark:text-slate-400 font-medium">
                     <div className="flex items-center gap-2">
-                      <User className="w-3 h-3 text-slate-400" />
+                      <User className="w-3 h-3 text-slate-400 dark:text-slate-500" />
                       {ticket.customer}
                     </div>
                     <span className={cn(
                       "px-2 py-0.5 rounded-md text-[10px] font-bold",
-                      ticket.status === 'Resolved' ? "bg-emerald-50 text-emerald-700" :
-                      ticket.status === 'In Progress' ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-700"
+                      ticket.status === 'Resolved' ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400" :
+                      ticket.status === 'In Progress' ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400" : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
                     )}>
                       {ticket.status}
                     </span>
@@ -182,14 +182,14 @@ const SupportTickets: React.FC = () => {
           {selectedTicket ? (
             <>
               {/* Conversation Header */}
-              <div className="p-6 border-b border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/50">
+              <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50/50 dark:bg-slate-900/50">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold">
                     {currentTicket?.customer.substring(0, 2).toUpperCase()}
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900 line-clamp-1">Conversation regarding: {currentTicket?.subject}</h3>
-                    <p className="text-xs text-slate-500 font-medium">With {currentTicket?.customer}</p>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white line-clamp-1">Conversation regarding: {currentTicket?.subject}</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">With {currentTicket?.customer}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -206,23 +206,23 @@ const SupportTickets: React.FC = () => {
                     className={cn(
                       "p-2 rounded-xl transition-all border",
                       currentTicket?.status === 'Resolved' 
-                        ? "text-green-600 bg-green-50 border-green-200" 
-                        : "text-slate-400 hover:text-slate-600 hover:bg-white border-transparent hover:border-slate-100"
+                        ? "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800/50" 
+                        : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800 border-transparent hover:border-slate-100 dark:hover:border-slate-700"
                     )}
                   >
                     <CheckCircle2 className="w-5 h-5" />
                   </button>
-                  <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-white rounded-xl transition-all border border-transparent hover:border-slate-100">
+                  <button className="p-2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-700">
                     <AlertCircle className="w-5 h-5" />
                   </button>
-                  <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-white rounded-xl transition-all border border-transparent hover:border-slate-100">
+                  <button className="p-2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-700">
                     <MoreVertical className="w-5 h-5" />
                   </button>
                 </div>
               </div>
 
               {/* Chat Area */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col custom-scrollbar bg-slate-50/50">
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col custom-scrollbar bg-slate-50/50 dark:bg-slate-900/50">
                 {currentTicket?.messages?.length ? currentTicket.messages.map((msg) => {
                   const isMe = msg.senderId === user?._id;
                   return (
@@ -231,33 +231,33 @@ const SupportTickets: React.FC = () => {
                       className={cn(
                         "max-w-[80%] p-4 text-sm leading-relaxed shadow-sm flex flex-col gap-1",
                         isMe
-                          ? "self-end bg-indigo-600 text-white rounded-2xl rounded-tr-none shadow-indigo-100" 
-                          : "self-start bg-white border border-slate-100 text-slate-700 rounded-2xl rounded-tl-none"
+                          ? "self-end bg-indigo-600 text-white rounded-2xl rounded-tr-none shadow-indigo-100 dark:shadow-none" 
+                          : "self-start bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl rounded-tl-none"
                       )}
                     >
                       {!isMe && (
-                        <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide">
+                        <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">
                           {msg.sender} ({msg.senderRole})
                         </span>
                       )}
                       <div>{msg.text}</div>
                       <span className={cn(
                         "text-[9px] mt-1 self-end opacity-70",
-                        isMe ? "text-indigo-200" : "text-slate-400"
+                        isMe ? "text-indigo-200" : "text-slate-400 dark:text-slate-500"
                       )}>
                         {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
                   );
                 }) : (
-                  <div className="flex-1 flex items-center justify-center text-slate-400 text-sm italic">
+                  <div className="flex-1 flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm italic">
                     No messages in this ticket yet.
                   </div>
                 )}
               </div>
 
               {/* Input Area */}
-              <div className="p-6 border-t border-slate-100 shrink-0 bg-white">
+              <div className="p-6 border-t border-slate-100 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-800/50">
                 <div className="relative group">
                   <textarea 
                     rows={2}
@@ -265,39 +265,39 @@ const SupportTickets: React.FC = () => {
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-4 pr-32 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all resize-none text-sm"
+                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl py-4 pl-4 pr-32 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all resize-none text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   />
                   <div className="absolute right-3 bottom-4 flex items-center gap-2">
-                    <button className="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
+                    <button className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                       <Paperclip className="w-5 h-5" />
                     </button>
-                    <button className="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
+                    <button className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                       <Smile className="w-5 h-5" />
                     </button>
                     <button 
                       onClick={handleSend}
-                      className="bg-indigo-600 p-2.5 rounded-xl text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"
+                      className="bg-indigo-600 p-2.5 rounded-xl text-white shadow-lg shadow-indigo-100 dark:shadow-none hover:bg-indigo-700 transition-all"
                     >
                       <Send className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
                 <div className="mt-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                     <Clock className="w-3 h-3" />
                     Normal response time: 45 mins
                   </div>
-                  <div className="text-[10px] text-slate-400 italic">
-                    Press <kbd className="font-mono bg-slate-100 px-1 rounded">Enter</kbd> to send
+                  <div className="text-[10px] text-slate-400 dark:text-slate-500 italic">
+                    Press <kbd className="font-mono bg-slate-100 dark:bg-slate-700 px-1 rounded text-slate-600 dark:text-slate-300">Enter</kbd> to send
                   </div>
                 </div>
               </div>
             </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-12 opacity-50">
-              <MessageSquare className="w-16 h-16 text-slate-200 mb-4" />
-              <h3 className="text-xl font-bold text-slate-400 italic">Select a message to view conversation</h3>
-              <p className="text-slate-300 mt-2 text-sm max-w-xs">Connecting with your customers is just a click away.</p>
+              <MessageSquare className="w-16 h-16 text-slate-200 dark:text-slate-700 mb-4" />
+              <h3 className="text-xl font-bold text-slate-400 dark:text-slate-500 italic">Select a message to view conversation</h3>
+              <p className="text-slate-300 dark:text-slate-600 mt-2 text-sm max-w-xs">Connecting with your customers is just a click away.</p>
             </div>
           )}
         </div>
@@ -306,49 +306,49 @@ const SupportTickets: React.FC = () => {
       {/* New Ticket Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
-          <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl relative border border-slate-100">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 w-full max-w-md shadow-2xl relative border border-slate-100 dark:border-slate-700">
             <button 
               onClick={() => setIsModalOpen(false)}
-              className="absolute right-6 top-6 text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 p-2 rounded-xl transition-all"
+              className="absolute right-6 top-6 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 p-2 rounded-xl transition-all"
             >
               <X className="w-5 h-5" />
             </button>
-            <h2 className="text-2xl font-bold mb-6 text-slate-900 font-inter">Create New Message</h2>
+            <h2 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white font-inter">Create New Message</h2>
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Subject</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Subject</label>
                 <input 
                   type="text" 
                   placeholder="E.g., Cannot access dashboard"
                   value={newTicket.subject}
                   onChange={e => setNewTicket({...newTicket, subject: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all placeholder:text-slate-400"
+                  className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Description</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Description</label>
                 <textarea 
                   rows={4}
                   placeholder="Describe the issue in detail..."
                   value={newTicket.description}
                   onChange={e => setNewTicket({...newTicket, description: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none transition-all placeholder:text-slate-400"
+                  className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none transition-all"
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Priority</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Priority</label>
                 <div className="relative">
                   <select 
                     value={newTicket.priority}
                     onChange={e => setNewTicket({...newTicket, priority: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none appearance-none transition-all"
+                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none appearance-none transition-all"
                   >
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                    <option value="Urgent">Urgent</option>
+                    <option value="Low" className="bg-white dark:bg-slate-800">Low</option>
+                    <option value="Medium" className="bg-white dark:bg-slate-800">Medium</option>
+                    <option value="High" className="bg-white dark:bg-slate-800">High</option>
+                    <option value="Urgent" className="bg-white dark:bg-slate-800">Urgent</option>
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500 dark:text-slate-400">
                     <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                       <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
                     </svg>

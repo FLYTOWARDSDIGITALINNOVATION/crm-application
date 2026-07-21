@@ -1,6 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-
-const API_URL = 'http://localhost:5000/api/tasks';
+import api from '../../utils/api';
 
 export interface Task {
   id: string;
@@ -10,6 +9,7 @@ export interface Task {
   status: 'Pending' | 'In Progress' | 'Completed' | string;
   assignedTo: string;
   relatedTo: string;
+  description?: string;
 }
 
 // Helper to map MongoDB _id -> id
@@ -21,6 +21,7 @@ const mapTask = (doc: any): Task => ({
   status: doc.status,
   assignedTo: doc.assignedTo,
   relatedTo: doc.relatedTo,
+  description: doc.description,
 });
 
 interface TaskState {
@@ -37,31 +38,27 @@ const initialState: TaskState = {
 
 // ─── Async Thunks ───────────────────────────────────────────────────────────
 
-export const fetchTasks = createAsyncThunk('tasks/fetchAll', async (_, { rejectWithValue }) => {
-  try {
-    const res = await fetch(API_URL);
-    if (!res.ok) throw new Error('Failed to fetch tasks');
-    const data = await res.json();
-    return data.map(mapTask);
-  } catch (err: any) {
-    return rejectWithValue(err.message);
+export const fetchTasks = createAsyncThunk(
+  'tasks/fetchAll',
+  async (projectId: string | undefined = undefined, { rejectWithValue }) => {
+    try {
+      const params = projectId ? { projectId } : {};
+      const res = await api.get('/tasks', { params });
+      return res.data.map(mapTask);
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
   }
-});
+);
 
 export const createTask = createAsyncThunk(
   'tasks/create',
   async (task: Omit<Task, 'id'>, { rejectWithValue }) => {
     try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(task),
-      });
-      if (!res.ok) throw new Error('Failed to create task');
-      const data = await res.json();
-      return mapTask(data);
+      const res = await api.post('/tasks', task);
+      return mapTask(res.data);
     } catch (err: any) {
-      return rejectWithValue(err.message);
+      return rejectWithValue(err.response?.data?.message || err.message);
     }
   }
 );
@@ -70,30 +67,28 @@ export const toggleTaskStatus = createAsyncThunk(
   'tasks/toggle',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${API_URL}/${id}/toggle`, { method: 'PATCH' });
-      if (!res.ok) throw new Error('Failed to toggle task');
-      const data = await res.json();
-      return mapTask(data);
+      const res = await api.patch(`/tasks/${id}/toggle`);
+      return mapTask(res.data);
     } catch (err: any) {
-      return rejectWithValue(err.message);
+      return rejectWithValue(err.response?.data?.message || err.message);
     }
   }
 );
 
 export const updateTask = createAsyncThunk(
   'tasks/update',
-  async ({ id, status, assignedTo }: { id: string; status?: string; assignedTo?: string }, { rejectWithValue }) => {
+  async ({ id, status, assignedTo, dueDate, description }: { id: string; status?: string; assignedTo?: string; dueDate?: string; description?: string }, { rejectWithValue }) => {
     try {
       const res = await fetch(`${API_URL}/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, assignedTo }),
+        body: JSON.stringify({ status, assignedTo, dueDate, description }),
       });
       if (!res.ok) throw new Error('Failed to update task');
       const data = await res.json();
       return mapTask(data);
     } catch (err: any) {
-      return rejectWithValue(err.message);
+      return rejectWithValue(err.response?.data?.message || err.message);
     }
   }
 );
@@ -102,11 +97,10 @@ export const deleteTask = createAsyncThunk(
   'tasks/delete',
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete task');
+      await api.delete(`/tasks/${id}`);
       return id;
     } catch (err: any) {
-      return rejectWithValue(err.message);
+      return rejectWithValue(err.response?.data?.message || err.message);
     }
   }
 );
@@ -116,7 +110,11 @@ export const deleteTask = createAsyncThunk(
 const taskSlice = createSlice({
   name: 'tasks',
   initialState,
-  reducers: {},
+  reducers: {
+    clearProjectTasks: (state) => {
+      state.items = [];
+    },
+  },
   extraReducers: (builder) => {
     // fetchTasks
     builder
@@ -150,4 +148,5 @@ const taskSlice = createSlice({
   },
 });
 
+export const { clearProjectTasks } = taskSlice.actions;
 export default taskSlice.reducer;

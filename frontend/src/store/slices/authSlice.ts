@@ -18,6 +18,7 @@ interface EmployeeLogoutPayload {
   workSummary?: string;
   gitLink?: string;
   screenshot?: File | null;
+  role: 'superadmin' | 'admin' | 'sales' | 'customer' | 'employee';
 }
 
 interface AuthState {
@@ -88,6 +89,16 @@ export const employeeLogout = createAsyncThunk(
     }
   }
 );
+export const logoutUser = createAsyncThunk('auth/logout', async () => {
+  try {
+    await api.post('/auth/logout');
+  } catch {
+    // Ignore error and proceed
+  }
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  return null;
+});
 
 const authSlice = createSlice({
   name: 'auth',
@@ -137,6 +148,12 @@ const authSlice = createSlice({
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
+      })
+      // Logout
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
       });
       // Employee Logout
       builder

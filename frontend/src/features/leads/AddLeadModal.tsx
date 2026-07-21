@@ -11,6 +11,7 @@ const schema = yup.object({
   phone: yup.string().required('Phone number is required'),
   company: yup.string().required('Company name is required'),
   source: yup.string().required('Lead source is required'),
+  softwareType: yup.string(),
   status: yup.string().required('Status is required'),
   notes: yup.string().default(''),
 }).required();
@@ -23,7 +24,7 @@ interface AddLeadModalProps {
 }
 
 const AddLeadModal: React.FC<AddLeadModalProps> = ({ isOpen, onClose }) => {
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<FormData>({
+  const { register, handleSubmit, formState: { errors }, reset, watch } = useForm<FormData>({
     resolver: yupResolver(schema),
     defaultValues: {
       name: '',
@@ -31,13 +32,19 @@ const AddLeadModal: React.FC<AddLeadModalProps> = ({ isOpen, onClose }) => {
       phone: '',
       company: '',
       status: 'New',
-      source: 'Website',
+      source: 'Software',
+      softwareType: 'Billing',
       notes: '',
     }
   });
 
   const onSubmit = (data: FormData) => {
-    console.log('Lead Data:', data);
+    const finalData = { ...data };
+    if (finalData.source === 'Software' && finalData.softwareType) {
+      finalData.source = `Software - ${finalData.softwareType}`;
+    }
+    delete finalData.softwareType;
+    console.log('Lead Data:', finalData);
     // In a real app, dispatch to Redux/API
     reset();
     onClose();
@@ -145,15 +152,42 @@ const AddLeadModal: React.FC<AddLeadModalProps> = ({ isOpen, onClose }) => {
                 <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <select
                   {...register('source')}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none appearance-none transition-all"
+                  disabled={watch('status') === 'Not Interested'}
+                  className={cn(
+                    "w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none appearance-none transition-all",
+                    watch('status') === 'Not Interested' ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                  )}
                 >
-                  <option value="Website">Website</option>
-                  <option value="Google">Google Ads</option>
-                  <option value="Facebook">Facebook Ads</option>
-                  <option value="Referral">Referral</option>
+                  <option value="Software">Software</option>
+                  <option value="Marketing">Marketing</option>
+                  <option value="Course">Course</option>
+                  <option value="Intern">Intern</option>
+                  <option value="SEO">SEO</option>
                 </select>
               </div>
             </div>
+
+            {/* Software Type (Conditional) */}
+            {watch('source') === 'Software' && (
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Software Type</label>
+                <div className="relative group">
+                  <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <select
+                    {...register('softwareType')}
+                    disabled={watch('status') === 'Not Interested'}
+                    className={cn(
+                      "w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none appearance-none transition-all",
+                      watch('status') === 'Not Interested' ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                    )}
+                  >
+                    <option value="Billing">Billing</option>
+                    <option value="Website">Website</option>
+                    <option value="WebApp">WebApp</option>
+                  </select>
+                </div>
+              </div>
+            )}
 
             {/* Initial Status */}
             <div>
@@ -167,6 +201,12 @@ const AddLeadModal: React.FC<AddLeadModalProps> = ({ isOpen, onClose }) => {
                   <option value="New">New</option>
                   <option value="Contacted">Contacted</option>
                   <option value="Qualified">Qualified</option>
+                  <option value="Proposal">Proposal</option>
+                  <option value="Negotiation">Negotiation</option>
+                  <option value="Converted">Converted</option>
+                  <option value="Not Interested">Not Interested</option>
+                  <option value="Follow Up">Follow Up</option>
+                  <option value="Direct Visit">Direct Visit</option>
                 </select>
               </div>
             </div>

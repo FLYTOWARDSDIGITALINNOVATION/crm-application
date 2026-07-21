@@ -2,11 +2,14 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ITask extends Document {
   title: string;
+  description?: string;
   dueDate: string;
   priority: 'High' | 'Medium' | 'Low';
   status: 'Pending' | 'In Progress' | 'Completed';
   assignedTo: string;
   relatedTo: string;
+  projectId?: mongoose.Types.ObjectId;
+  completedBy?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -14,6 +17,7 @@ export interface ITask extends Document {
 const TaskSchema: Schema = new Schema(
   {
     title: { type: String, required: true },
+    description: { type: String, required: false },
     dueDate: { type: String, required: true },
     priority: {
       type: String,
@@ -26,7 +30,9 @@ const TaskSchema: Schema = new Schema(
       default: 'Pending',
     },
     assignedTo: { type: String, required: true },
-    relatedTo: { type: String, required: true },
+    relatedTo: { type: String, default: '' },
+    projectId: { type: Schema.Types.ObjectId, ref: 'Project', required: false },
+    completedBy: { type: String, default: '' },
   },
   { timestamps: true }
 );

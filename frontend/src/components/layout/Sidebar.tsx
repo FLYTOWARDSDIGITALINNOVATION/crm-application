@@ -10,11 +10,14 @@ import {
   ChevronLeft, 
   ChevronRight,
   LogOut,
-  LayoutDashboard
+  LayoutDashboard,
+  FolderKanban,
+  CalendarDays,
+  ShieldCheck
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAppDispatch, useAppSelector } from '../../store';
-import { logout } from '../../store/slices/authSlice';
+import { logoutUser } from '../../store/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
 import EmployeeLogoutModal from './EmployeeLogoutModal';
 
@@ -38,6 +41,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
     }
 
     dispatch(logout());
+    dispatch(logoutUser());
     navigate('/login');
   };
 
@@ -53,10 +57,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
   if (user?.role === 'employee') {
     navItems = [
       { title: 'Dashboard', icon: LayoutDashboard, path: '/' },
+      { title: 'Projects', icon: FolderKanban, path: '/projects' },
+      { title: 'Leaves', icon: CalendarDays, path: '/leaves' },
       { title: 'Support', icon: MessageSquare, path: '/support' },
     ];
   } else if (user?.role === 'admin') {
     navItems.push({ title: 'Employees', icon: Users, path: '/employees' });
+    navItems.push({ title: 'Projects', icon: FolderKanban, path: '/projects' });
+    navItems.push({ title: 'Leaves', icon: CalendarDays, path: '/leaves' });
+  } else if (user?.role === 'superadmin') {
+    navItems = [
+      { title: 'Monitoring', icon: ShieldCheck, path: '/super-admin' },
+    ];
   }
 
   return (
@@ -72,7 +84,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
         {!isCollapsed && (
           <div className="flex items-center gap-2">
             <img src={logo} alt="Fly-Towards Logo" className="w-8 h-8 rounded-lg object-contain bg-white" />
-            <span className="font-bold text-xl tracking-tight text-slate-800">FlyTowards</span>
+            <span className="font-bold text-xl tracking-tight text-slate-800 dark:text-white">FlyTowards</span>
           </div>
         )}
         {isCollapsed && (
@@ -90,8 +102,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
               cn(
                 "flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group",
                 isActive 
-                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" 
-                  : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-indigo-900/50" 
+                  : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
               )
             }
           >
@@ -101,10 +113,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
         ))}
       </nav>
 
-      <div className="p-4 border-t border-slate-100 space-y-2">
+      <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
         <button
           onClick={toggleSidebar}
-          className="hidden lg:flex items-center gap-3 w-full px-3 py-3 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-all duration-200"
+          className="hidden lg:flex items-center gap-3 w-full px-3 py-3 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-all duration-200"
         >
           {isCollapsed ? <ChevronRight className="w-5 h-5 mx-auto" /> : (
             <>
@@ -115,7 +127,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
         </button>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 w-full px-3 py-3 rounded-xl text-rose-500 hover:bg-rose-50/50 transition-all duration-200"
+          className="flex items-center gap-3 w-full px-3 py-3 rounded-xl text-rose-500 hover:bg-rose-50/50 dark:hover:bg-rose-900/20 transition-all duration-200"
         >
           <LogOut className="w-5 h-5" />
           <span className={cn("font-medium", isCollapsed ? "lg:hidden block" : "block")}>Logout</span>

@@ -5,7 +5,7 @@ export interface IUser extends Document {
   name: string;
   email: string;
   password?: string;
-  role: 'admin' | 'sales' | 'customer' | 'employee';
+  role: 'superadmin' | 'admin' | 'sales' | 'customer' | 'employee';
   phone?: string;
   designation?: string;
   department?: string;
@@ -13,6 +13,9 @@ export interface IUser extends Document {
   currentSessionId?: mongoose.Types.ObjectId;
   lastLoginAt?: Date;
   lastLogoutAt?: Date;
+  lastLoginAt?: Date;
+  lastLogoutAt?: Date;
+  isOnline?: boolean;
   createdAt: Date;
   updatedAt: Date;
   matchPassword(enteredPassword: string): Promise<boolean>;
@@ -25,7 +28,7 @@ const UserSchema: Schema = new Schema(
     password: { type: String, required: true },
     role: {
       type: String,
-      enum: ['admin', 'sales', 'customer', 'employee'],
+      enum: ['superadmin', 'admin', 'sales', 'customer', 'employee'],
       default: 'sales',
     },
     phone: { type: String },
@@ -35,6 +38,9 @@ const UserSchema: Schema = new Schema(
     currentSessionId: { type: Schema.Types.ObjectId, ref: 'EmployeeSession' },
     lastLoginAt: { type: Date },
     lastLogoutAt: { type: Date },
+    lastLoginAt: { type: Date },
+    lastLogoutAt: { type: Date },
+    isOnline: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

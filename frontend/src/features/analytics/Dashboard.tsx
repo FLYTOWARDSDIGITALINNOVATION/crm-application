@@ -11,11 +11,14 @@ import { cn } from '../../utils/cn';
 import { useAppSelector, useAppDispatch } from '../../store';
 import { fetchLeads } from '../../store/slices/leadSlice';
 import { fetchCustomers } from '../../store/slices/customerSlice';
+import { useTheme } from '../../components/ThemeProvider';
+import { Link } from 'react-router-dom';
 
 const Dashboard: React.FC = () => {
   const dispatch = useAppDispatch();
   const leads = useAppSelector((state) => state.leads.items);
   const customers = useAppSelector((state) => state.customers.items);
+  const { isDark } = useTheme();
 
   // Fetch data on mount if not already loaded
   useEffect(() => {
@@ -33,10 +36,10 @@ const Dashboard: React.FC = () => {
     : 0;
 
   const stats = [
-    { title: 'Total Leads', value: totalLeads.toLocaleString(), change: '', isPositive: true, icon: UserPlus, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-    { title: 'Converted', value: convertedLeads.toLocaleString(), change: '', isPositive: true, icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { title: 'Conversion Rate', value: `${conversionRate}%`, change: '', isPositive: true, icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { title: 'Avg Deal Size', value: avgDealSize > 0 ? `₹${avgDealSize.toLocaleString()}` : 'N/A', change: '', isPositive: true, icon: DollarSign, color: 'text-amber-600', bg: 'bg-amber-50' },
+    { title: 'Total Leads', value: totalLeads.toLocaleString(), change: '', isPositive: true, icon: UserPlus, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-900/30' },
+    { title: 'Converted', value: convertedLeads.toLocaleString(), change: '', isPositive: true, icon: Users, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/30' },
+    { title: 'Conversion Rate', value: `${conversionRate}%`, change: '', isPositive: true, icon: TrendingUp, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/30' },
+    { title: 'Avg Deal Size', value: avgDealSize > 0 ? `₹${avgDealSize.toLocaleString()}` : 'N/A', change: '', isPositive: true, icon: DollarSign, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30' },
   ];
 
   // Build monthly chart data from real lead creation dates (last 6 months)
@@ -88,16 +91,16 @@ const Dashboard: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Dashboard Overview</h1>
-          <p className="text-slate-500">Welcome back, John! Here's what's happening today.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Dashboard Overview</h1>
+          <p className="text-slate-500 dark:text-slate-400">Welcome back, John! Here's what's happening today.</p>
         </div>
         <div className="flex gap-3">
-          <button className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all">
+          <button className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">
             Export CSV
           </button>
-          <button className="px-4 py-2 bg-indigo-600 rounded-xl text-sm font-semibold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all">
+          <Link to="/leads/create" className="px-4 py-2 bg-indigo-600 rounded-xl text-sm font-semibold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/50 transition-all flex items-center justify-center">
             Add New Lead
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -112,7 +115,7 @@ const Dashboard: React.FC = () => {
               {stat.change && (
                 <div className={cn(
                   "flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full",
-                  stat.isPositive ? "text-emerald-600 bg-emerald-50" : "text-rose-600 bg-rose-50"
+                  stat.isPositive ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30" : "text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30"
                 )}>
                   {stat.isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                   {stat.change}
@@ -120,8 +123,8 @@ const Dashboard: React.FC = () => {
               )}
             </div>
             <div className="mt-4">
-              <span className="text-slate-500 text-sm font-medium">{stat.title}</span>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{stat.value}</h3>
+              <span className="text-slate-500 dark:text-slate-400 text-sm font-medium">{stat.title}</span>
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{stat.value}</h3>
             </div>
           </div>
         ))}
@@ -131,8 +134,8 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 glass p-6 rounded-2xl">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="text-lg font-bold text-slate-900">Lead Conversion Growth</h3>
-            <button className="p-2 text-slate-400 hover:text-slate-600">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Lead Conversion Growth</h3>
+            <button className="p-2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
               <MoreVertical className="w-5 h-5" />
             </button>
           </div>
@@ -145,11 +148,17 @@ const Dashboard: React.FC = () => {
                     <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? "#334155" : "#f1f5f9"} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: isDark ? '#94a3b8' : '#94a3b8', fontSize: 12}} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: isDark ? '#94a3b8' : '#94a3b8', fontSize: 12}} />
                 <Tooltip 
-                  contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} 
+                  contentStyle={{
+                    borderRadius: '12px', 
+                    border: isDark ? '1px solid #334155' : 'none', 
+                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                    backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                    color: isDark ? '#f8fafc' : '#0f172a'
+                  }} 
                 />
                 <Area type="monotone" dataKey="leads" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorLeads)" />
               </AreaChart>
@@ -158,7 +167,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="glass p-6 rounded-2xl">
-          <h3 className="text-lg font-bold text-slate-900 mb-8">Leads by Source</h3>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-8">Leads by Source</h3>
           <div className="h-[250px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -175,7 +184,14 @@ const Dashboard: React.FC = () => {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip 
+                  contentStyle={{
+                    borderRadius: '12px', 
+                    border: isDark ? '1px solid #334155' : 'none', 
+                    backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                    color: isDark ? '#f8fafc' : '#0f172a'
+                  }} 
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -184,9 +200,9 @@ const Dashboard: React.FC = () => {
               <div key={source.name} className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full" style={{backgroundColor: COLORS[index]}}></div>
-                  <span className="text-slate-600">{source.name}</span>
+                  <span className="text-slate-600 dark:text-slate-300">{source.name}</span>
                 </div>
-                <span className="font-bold text-slate-900">{totalSourceValue > 0 ? ((source.value / totalSourceValue) * 100).toFixed(0) : 0}%</span>
+                <span className="font-bold text-slate-900 dark:text-white">{totalSourceValue > 0 ? ((source.value / totalSourceValue) * 100).toFixed(0) : 0}%</span>
               </div>
             ))}
           </div>

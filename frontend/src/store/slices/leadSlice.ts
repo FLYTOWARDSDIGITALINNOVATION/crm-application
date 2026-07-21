@@ -7,7 +7,7 @@ export interface Lead {
   email: string;
   phone?: string;
   company?: string;
-  status: 'New' | 'Contacted' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Lost' | 'Converted';
+  status: 'New' | 'Contacted' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Converted' | 'Not Interested' | 'Follow Up' | 'Direct Visit';
   source?: string;
   assignedTo?: string;
   value?: number;
@@ -159,7 +159,7 @@ const leadSlice = createSlice({
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(bulkCreateLeads.fulfilled, (state, action: PayloadAction<{ leads: Lead[] }>) => {
+      .addCase(bulkCreateLeads.fulfilled, (state, action: PayloadAction<{ leads: Lead[], totalRecords?: number, imported?: number, duplicates?: number, duplicateRecords?: any[] }>) => {
         state.isLoading = false;
         state.items = [...action.payload.leads, ...state.items];
       })
