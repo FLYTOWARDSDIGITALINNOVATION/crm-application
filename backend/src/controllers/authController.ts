@@ -1,12 +1,46 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import User from '../models/User';
+import User, { IUser } from '../models/User';
+import EmployeeSession, { IEmployeeSession, ProofType } from '../models/EmployeeSession';
+import { ensureEmployeeWorkLogCollection, getEmployeeWorkLogModel } from '../models/EmployeeWorkLog';
+import { getAuthenticatedUser } from '../utils/auth';
 
 const generateToken = (id: string) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || 'secret', {
     expiresIn: '30d',
   });
+};
+
+const buildUserResponse = (user: IUser) => ({
+  _id: user._id,
+  name: user.name,
+  email: user.email,
+  role: user.role,
+  phone: user.phone || '',
+  designation: user.designation || '',
+  department: user.department || '',
+  joiningDate: user.joiningDate || '',
+  lastLoginAt: user.lastLoginAt || null,
+  lastLogoutAt: user.lastLogoutAt || null,
+});
+
+const resolveProofType = (options: {
+  hasWorkSummary: boolean;
+  hasGitLink: boolean;
+  hasScreenshot: boolean;
+}): ProofType => {
+  const proofSources: ProofType[] = [];
+
+  if (options.hasWorkSummary) proofSources.push('text');
+  if (options.hasGitLink) proofSources.push('git-link');
+  if (options.hasScreenshot) proofSources.push('screenshot');
+
+  if (proofSources.length > 1) {
+    return 'multiple';
+  }
+
+  return proofSources[0] || 'text';
 };
 
 // @desc    Register a new user
@@ -34,10 +68,7 @@ export const registerUser = async (req: Request, res: Response) => {
 
     if (user) {
       res.status(201).json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
+        ...buildUserResponse(user),
         token: generateToken((user._id as any).toString()),
       });
     } else {
@@ -58,6 +89,52 @@ export const loginUser = async (req: Request, res: Response) => {
     const user = await User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
+      const now = new Date();
+
+      if (user.role === 'employee') {
+        const employeeLogModel = await ensureEmployeeWorkLogCollection(user._id.toString()).catch(() =>
+          getEmployeeWorkLogModel(user._id.toString())
+        );
+
+        const activeSession = await EmployeeSession.findOne({
+          userId: user._id,
+          status: 'active',
+        }).sort({ loginAt: -1 });
+
+        if (activeSession) {
+          return res.status(409).json({
+            message: 'Employee already has an active session. Please logout before logging in again.',
+          });
+        }
+
+        const session = await EmployeeSession.create({
+          userId: user._id,
+          userName: user.name,
+          userEmail: user.email,
+          loginAt: now,
+          status: 'active',
+        });
+
+        try {
+          await employeeLogModel.create({
+            employeeId: user._id,
+            sharedSessionId: session._id,
+            userName: user.name,
+            userEmail: user.email,
+            loginAt: now,
+            status: 'active',
+          });
+        } catch (error) {
+          console.warn('Unable to create employee work log entry on login:', error);
+        }
+
+        user.currentSessionId = session._id as any;
+      } else {
+        user.currentSessionId = undefined;
+      }
+
+      user.lastLoginAt = now;
+      await user.save();
       // Record session tracking fields
       await User.updateOne(
         { _id: user._id },
@@ -65,10 +142,7 @@ export const loginUser = async (req: Request, res: Response) => {
       );
 
       res.json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
+        ...buildUserResponse(user),
         token: generateToken((user._id as any).toString()),
       });
     } else {
@@ -128,6 +202,137 @@ export const resetPassword = async (req: Request, res: Response) => {
     );
 
     res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+};
+
+// @desc    Save logout proof and mark the session complete
+// @route   POST /api/auth/logout
+// @access  Private
+export const logoutUser = async (req: Request, res: Response) => {
+  try {
+    const user = await getAuthenticatedUser(req);
+
+    if (!user) {
+      return res.status(401).json({ message: 'Not authorised' });
+    }
+
+    const now = new Date();
+
+    if (user.role === 'employee') {
+      const employeeLogModel = await ensureEmployeeWorkLogCollection(user._id.toString()).catch(() =>
+        getEmployeeWorkLogModel(user._id.toString())
+      );
+
+      const workSummary = typeof req.body.workSummary === 'string' ? req.body.workSummary.trim() : '';
+      const gitLink = typeof req.body.gitLink === 'string' ? req.body.gitLink.trim() : '';
+      const screenshotFile = req.file as Express.Multer.File | undefined;
+
+      const hasWorkSummary = workSummary.length > 0;
+      const hasGitLink = gitLink.length > 0;
+      const hasScreenshot = !!screenshotFile;
+
+      if (!hasWorkSummary && !hasGitLink && !hasScreenshot) {
+        return res.status(400).json({
+          message: 'Please provide a work summary, screenshot, or Git push link before logout.',
+        });
+      }
+
+      let session: IEmployeeSession | null = null;
+
+      if (user.currentSessionId) {
+        session = await EmployeeSession.findById(user.currentSessionId);
+      }
+
+      if (!session || session.status !== 'active') {
+        session = await EmployeeSession.findOne({
+          userId: user._id,
+          status: 'active',
+        }).sort({ loginAt: -1 });
+      }
+
+      if (!session) {
+        session = await EmployeeSession.create({
+          userId: user._id,
+          userName: user.name,
+          userEmail: user.email,
+          loginAt: user.lastLoginAt || now,
+          status: 'completed',
+        });
+      }
+
+      let privateLog = await employeeLogModel.findOne({
+        sharedSessionId: session._id,
+      });
+
+      if (!privateLog) {
+        try {
+          privateLog = await employeeLogModel.create({
+            employeeId: user._id,
+            sharedSessionId: session._id,
+            userName: user.name,
+            userEmail: user.email,
+            loginAt: session.loginAt || user.lastLoginAt || now,
+            status: 'active',
+          });
+        } catch (error) {
+          console.warn('Unable to create employee work log entry on logout:', error);
+        }
+      }
+
+      if (hasWorkSummary) {
+        session.workSummary = workSummary;
+        if (privateLog) {
+          privateLog.workSummary = workSummary;
+        }
+      }
+
+      if (hasGitLink) {
+        session.gitLink = gitLink;
+        if (privateLog) {
+          privateLog.gitLink = gitLink;
+        }
+      }
+
+      if (hasScreenshot) {
+        session.screenshot = `data:${screenshotFile.mimetype};base64,${screenshotFile.buffer.toString('base64')}`;
+        if (privateLog) {
+          privateLog.screenshot = `data:${screenshotFile.mimetype};base64,${screenshotFile.buffer.toString('base64')}`;
+        }
+      }
+
+      session.proofType = resolveProofType({
+        hasWorkSummary,
+        hasGitLink,
+        hasScreenshot,
+      });
+      session.logoutAt = now;
+      session.status = 'completed';
+
+      await session.save();
+
+      if (privateLog) {
+        privateLog.proofType = session.proofType;
+        privateLog.logoutAt = now;
+        privateLog.status = 'completed';
+        await privateLog.save();
+      }
+
+      user.lastLogoutAt = now;
+      user.currentSessionId = undefined;
+      await user.save();
+
+      return res.json({
+        message: 'Logout details saved successfully',
+        session,
+      });
+    }
+
+    user.lastLogoutAt = now;
+    await user.save();
+
+    return res.json({ message: 'Logged out successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error });
   }

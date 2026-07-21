@@ -10,6 +10,8 @@ export interface User {
   designation?: string;
   department?: string;
   joiningDate?: string;
+  lastLoginAt?: string | null;
+  lastLogoutAt?: string | null;
 }
 
 interface UserState {

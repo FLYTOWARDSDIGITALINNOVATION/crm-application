@@ -5,6 +5,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const employeeRoutes = require('./src/routes/employeeRoutes').default;
 const path = require('path');
 const fs = require('fs');
 
@@ -40,6 +41,7 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/employees', employeeRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/work-logs', workLogRoutes);
 app.use('/api/leaves', leaveRoutes);

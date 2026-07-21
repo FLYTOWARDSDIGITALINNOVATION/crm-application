@@ -19,6 +19,7 @@ import { cn } from '../../utils/cn';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { logoutUser } from '../../store/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
+import EmployeeLogoutModal from './EmployeeLogoutModal';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -30,12 +31,19 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileOpen, onCloseMobile }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const { user } = useAppSelector((state) => state.auth);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = React.useState(false);
 
   const handleLogout = () => {
+    if (user?.role === 'employee') {
+      setIsLogoutModalOpen(true);
+      return;
+    }
+
+    dispatch(logout());
     dispatch(logoutUser());
     navigate('/login');
   };
-  const { user } = useAppSelector((state) => state.auth);
 
   let navItems = [
     { title: 'Dashboard', icon: LayoutDashboard, path: '/' },
@@ -125,6 +133,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
           <span className={cn("font-medium", isCollapsed ? "lg:hidden block" : "block")}>Logout</span>
         </button>
       </div>
+
+      <EmployeeLogoutModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+      />
     </div>
   );
 };
