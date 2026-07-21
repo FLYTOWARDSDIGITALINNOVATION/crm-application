@@ -5,15 +5,23 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const path = require('path');
+const fs = require('fs');
 
 // Configure environment variables
 dotenv.config();
 
 const app = express();
 
+// Ensure uploads folder exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
 // Middleware
 app.use(cors());
 app.use(express.json());
+// Serve uploaded images statically
+app.use('/uploads', express.static(uploadsDir));
 
 // Routes
 const leadRoutes = require('./src/routes/leadRoutes').default;
@@ -22,12 +30,20 @@ const customerRoutes = require('./src/routes/customerRoutes').default;
 const taskRoutes = require('./src/routes/taskRoutes').default;
 const userRoutes = require('./src/routes/userRoutes').default;
 const supportRoutes = require('./src/routes/supportRoutes').default;
+const projectRoutes = require('./src/routes/projectRoutes').default;
+const workLogRoutes = require('./src/routes/workLogRoutes').default;
+const leaveRoutes = require('./src/routes/leaveRoutes').default;
+const superAdminRoutes = require('./src/routes/superAdminRoutes').default;
 app.use('/api/leads', leadRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/work-logs', workLogRoutes);
+app.use('/api/leaves', leaveRoutes);
+app.use('/api/super-admin', superAdminRoutes);
 
 // Database Connection
 const connectDB = async () => {

@@ -58,6 +58,12 @@ export const loginUser = async (req: Request, res: Response) => {
     const user = await User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
+      // Record session tracking fields
+      await User.updateOne(
+        { _id: user._id },
+        { $set: { lastLoginAt: new Date(), isOnline: true } }
+      );
+
       res.json({
         _id: user._id,
         name: user.name,
@@ -68,6 +74,23 @@ export const loginUser = async (req: Request, res: Response) => {
     } else {
       res.status(401).json({ message: 'Invalid email or password' });
     }
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+};
+
+// @desc    Logout user (records logout time)
+// @route   POST /api/auth/logout
+// @access  Protected
+export const logoutUser = async (req: Request, res: Response) => {
+  try {
+    if (req.user?.id) {
+      await User.updateOne(
+        { _id: req.user.id },
+        { $set: { lastLogoutAt: new Date(), isOnline: false } }
+      );
+    }
+    res.json({ message: 'Logged out successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error });
   }
