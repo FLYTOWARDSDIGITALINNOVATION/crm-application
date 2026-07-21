@@ -16,7 +16,8 @@ const schema = yup.object({
   phone: yup.string().required('Phone number is required'),
   company: yup.string().required('Company name is required'),
   source: yup.string().required('Lead source is required'),
-  status: yup.string().oneOf(['New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Lost', 'Converted'] as const).required('Status is required'),
+  softwareType: yup.string(),
+  status: yup.string().oneOf(['New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Converted', 'Not Interested', 'Follow Up', 'Direct Visit'] as const).required('Status is required'),
   notes: yup.string().default(''),
 }).required();
 
@@ -27,7 +28,7 @@ const CreateLead: React.FC = () => {
   const dispatch = useAppDispatch();
   const [activeTab, setActiveTab] = useState<'manual' | 'bulk'>('manual');
   
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<FormData>({
+  const { register, handleSubmit, formState: { errors }, reset, watch } = useForm<FormData>({
     resolver: yupResolver(schema),
     defaultValues: {
       name: '',
@@ -35,14 +36,20 @@ const CreateLead: React.FC = () => {
       phone: '',
       company: '',
       status: 'New',
-      source: 'Website',
+      source: 'Software',
+      softwareType: 'Billing',
       notes: '',
     }
   });
 
   const onSubmit = async (data: FormData) => {
     try {
-      await dispatch(createLead(data)).unwrap();
+      const finalData = { ...data };
+      if (finalData.source === 'Software' && finalData.softwareType) {
+        finalData.source = `Software - ${finalData.softwareType}`;
+      }
+      delete finalData.softwareType;
+      await dispatch(createLead(finalData as any)).unwrap();
       reset();
       navigate('/leads');
     } catch (error) {
@@ -62,8 +69,8 @@ const CreateLead: React.FC = () => {
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Add New Lead</h1>
-            <p className="text-slate-500 text-sm">Create a new lead manually or upload from an Excel sheet.</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Add New Lead</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-sm">Create a new lead manually or upload from an Excel sheet.</p>
           </div>
         </div>
 
@@ -73,7 +80,7 @@ const CreateLead: React.FC = () => {
             onClick={() => setActiveTab('manual')}
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all",
-              activeTab === 'manual' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              activeTab === 'manual' ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
             )}
           >
             <PlusCircle className="w-4 h-4" />
@@ -83,7 +90,7 @@ const CreateLead: React.FC = () => {
             onClick={() => setActiveTab('bulk')}
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all",
-              activeTab === 'bulk' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              activeTab === 'bulk' ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
             )}
           >
             <FileSpreadsheet className="w-4 h-4" />
@@ -98,14 +105,14 @@ const CreateLead: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Name */}
               <div className="space-y-2">
-                <label className="block text-sm font-bold text-slate-700">Full Name</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Full Name</label>
                 <div className="relative group">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
                   <input
                     {...register('name')}
                     className={cn(
-                      "w-full pl-10 pr-4 py-3 bg-slate-50/50 border rounded-xl text-sm transition-all focus:ring-2 focus:ring-indigo-500 outline-none",
-                      errors.name ? "border-rose-300 ring-rose-100" : "border-slate-200"
+                      "w-full pl-10 pr-4 py-3 bg-slate-50/50 dark:bg-slate-900/50 border rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all",
+                      errors.name ? "border-rose-300 dark:border-rose-700 ring-rose-100 dark:ring-rose-900" : "border-slate-200 dark:border-slate-700"
                     )}
                     placeholder="e.g. John Doe"
                   />
@@ -115,14 +122,14 @@ const CreateLead: React.FC = () => {
 
               {/* Email */}
               <div className="space-y-2">
-                <label className="block text-sm font-bold text-slate-700">Email Address</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Email Address</label>
                 <div className="relative group">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
                   <input
                     {...register('email')}
                     className={cn(
-                      "w-full pl-10 pr-4 py-3 bg-slate-50/50 border rounded-xl text-sm transition-all focus:ring-2 focus:ring-indigo-500 outline-none",
-                      errors.email ? "border-rose-300 ring-rose-100" : "border-slate-200"
+                      "w-full pl-10 pr-4 py-3 bg-slate-50/50 dark:bg-slate-900/50 border rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all",
+                      errors.email ? "border-rose-300 dark:border-rose-700 ring-rose-100 dark:ring-rose-900" : "border-slate-200 dark:border-slate-700"
                     )}
                     placeholder="john@example.com"
                   />
@@ -132,14 +139,14 @@ const CreateLead: React.FC = () => {
 
               {/* Phone */}
               <div className="space-y-2">
-                <label className="block text-sm font-bold text-slate-700">Phone Number</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Phone Number</label>
                 <div className="relative group">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
                   <input
                     {...register('phone')}
                     className={cn(
-                      "w-full pl-10 pr-4 py-3 bg-slate-50/50 border rounded-xl text-sm transition-all focus:ring-2 focus:ring-indigo-500 outline-none",
-                      errors.phone ? "border-rose-300 ring-rose-100" : "border-slate-200"
+                      "w-full pl-10 pr-4 py-3 bg-slate-50/50 dark:bg-slate-900/50 border rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all",
+                      errors.phone ? "border-rose-300 dark:border-rose-700 ring-rose-100 dark:ring-rose-900" : "border-slate-200 dark:border-slate-700"
                     )}
                     placeholder="+1 234 567 890"
                   />
@@ -149,14 +156,14 @@ const CreateLead: React.FC = () => {
 
               {/* Company */}
               <div className="space-y-2">
-                <label className="block text-sm font-bold text-slate-700">Company Name</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Company Name</label>
                 <div className="relative group">
                   <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
                   <input
                     {...register('company')}
                     className={cn(
-                      "w-full pl-10 pr-4 py-3 bg-slate-50/50 border rounded-xl text-sm transition-all focus:ring-2 focus:ring-indigo-500 outline-none",
-                      errors.company ? "border-rose-300 ring-rose-100" : "border-slate-200"
+                      "w-full pl-10 pr-4 py-3 bg-slate-50/50 dark:bg-slate-900/50 border rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all",
+                      errors.company ? "border-rose-300 dark:border-rose-700 ring-rose-100 dark:ring-rose-900" : "border-slate-200 dark:border-slate-700"
                     )}
                     placeholder="TechCorp Solutions"
                   />
@@ -166,44 +173,77 @@ const CreateLead: React.FC = () => {
 
               {/* Lead Source */}
               <div className="space-y-2">
-                <label className="block text-sm font-bold text-slate-700">Lead Source</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Lead Source</label>
                 <div className="relative group">
                   <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <select
                     {...register('source')}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none appearance-none transition-all cursor-pointer"
+                    disabled={watch('status') === 'Not Interested'}
+                    className={cn(
+                      "w-full pl-10 pr-4 py-3 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none appearance-none transition-all",
+                      watch('status') === 'Not Interested' ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                    )}
                   >
-                    <option value="Website">Website</option>
-                    <option value="Google">Google Ads</option>
-                    <option value="Facebook">Facebook Ads</option>
-                    <option value="Referral">Referral</option>
+                    <option value="Software">Software</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Course">Course</option>
+                    <option value="Intern">Intern</option>
+                    <option value="SEO">SEO</option>
                   </select>
                 </div>
               </div>
 
+              {/* Software Type (Conditional) */}
+              {watch('source') === 'Software' && (
+                <div className="space-y-2">
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Software Type</label>
+                  <div className="relative group">
+                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                    <select
+                      {...register('softwareType')}
+                      disabled={watch('status') === 'Not Interested'}
+                      className={cn(
+                        "w-full pl-10 pr-4 py-3 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none appearance-none transition-all",
+                        watch('status') === 'Not Interested' ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                      )}
+                    >
+                      <option value="Billing">Billing</option>
+                      <option value="Website">Website</option>
+                      <option value="WebApp">WebApp</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
               {/* Initial Status */}
               <div className="space-y-2">
-                <label className="block text-sm font-bold text-slate-700">Initial Status</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Initial Status</label>
                 <div className="relative group">
                   <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <select
                     {...register('status')}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none appearance-none transition-all cursor-pointer"
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none appearance-none transition-all cursor-pointer"
                   >
                     <option value="New">New</option>
                     <option value="Contacted">Contacted</option>
                     <option value="Qualified">Qualified</option>
+                    <option value="Proposal">Proposal</option>
+                    <option value="Negotiation">Negotiation</option>
+                    <option value="Converted">Converted</option>
+                    <option value="Not Interested">Not Interested</option>
+                    <option value="Follow Up">Follow Up</option>
+                    <option value="Direct Visit">Direct Visit</option>
                   </select>
                 </div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-bold text-slate-700">Additional Notes</label>
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Additional Notes</label>
               <textarea
                 {...register('notes')}
                 rows={4}
-                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                className="w-full px-4 py-3 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                 placeholder="Enter any initial information or requirements..."
               />
             </div>
@@ -212,7 +252,7 @@ const CreateLead: React.FC = () => {
               <button 
                 type="button"
                 onClick={() => navigate('/leads')}
-                className="px-6 py-3 text-sm font-bold text-slate-600 hover:text-slate-800 transition-all"
+                className="px-6 py-3 text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white transition-all"
               >
                 Cancel
               </button>

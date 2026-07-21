@@ -76,7 +76,7 @@ export const toggleTask = async (req: Request, res: Response) => {
 // @access  Protected
 export const updateTask = async (req: Request, res: Response) => {
   try {
-    const { status, assignedTo, title, dueDate, priority, projectId } = req.body;
+    const { status, assignedTo, dueDate, description } = req.body;
     const task = await Task.findById(req.params.id);
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
@@ -95,12 +95,13 @@ export const updateTask = async (req: Request, res: Response) => {
         task.completedBy = '';
       }
     }
-    if (assignedTo !== undefined) task.assignedTo = assignedTo;
-    if (title !== undefined) task.title = title;
-    if (dueDate !== undefined) task.dueDate = dueDate;
-    if (priority !== undefined) task.priority = priority;
-    if (projectId !== undefined) task.projectId = projectId;
-
+    if (dueDate) {
+      task.dueDate = dueDate;
+    }
+    if (description !== undefined) {
+      task.description = description;
+    }
+    
     await task.save();
     res.status(200).json(task);
   } catch (error) {

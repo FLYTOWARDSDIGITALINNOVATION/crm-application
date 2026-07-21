@@ -9,8 +9,7 @@ export interface Task {
   status: 'Pending' | 'In Progress' | 'Completed' | string;
   assignedTo: string;
   relatedTo: string;
-  projectId?: string;
-  completedBy?: string;
+  description?: string;
 }
 
 // Helper to map MongoDB _id -> id
@@ -21,9 +20,8 @@ const mapTask = (doc: any): Task => ({
   priority: doc.priority,
   status: doc.status,
   assignedTo: doc.assignedTo,
-  relatedTo: doc.relatedTo || '',
-  projectId: doc.projectId || undefined,
-  completedBy: doc.completedBy || '',
+  relatedTo: doc.relatedTo,
+  description: doc.description,
 });
 
 interface TaskState {
@@ -79,13 +77,16 @@ export const toggleTaskStatus = createAsyncThunk(
 
 export const updateTask = createAsyncThunk(
   'tasks/update',
-  async (
-    { id, ...updates }: { id: string; status?: string; assignedTo?: string; projectId?: string },
-    { rejectWithValue }
-  ) => {
+  async ({ id, status, assignedTo, dueDate, description }: { id: string; status?: string; assignedTo?: string; dueDate?: string; description?: string }, { rejectWithValue }) => {
     try {
-      const res = await api.patch(`/tasks/${id}`, updates);
-      return mapTask(res.data);
+      const res = await fetch(`${API_URL}/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, assignedTo, dueDate, description }),
+      });
+      if (!res.ok) throw new Error('Failed to update task');
+      const data = await res.json();
+      return mapTask(data);
     } catch (err: any) {
       return rejectWithValue(err.response?.data?.message || err.message);
     }

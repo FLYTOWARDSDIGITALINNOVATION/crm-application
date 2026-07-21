@@ -41,8 +41,8 @@ const EmployeeManagement = () => {
     <div className="space-y-8 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Employee Management</h1>
-          <p className="text-slate-500 text-sm">Manage your staff and assign them tasks.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Employee Management</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Manage your staff and assign them tasks.</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -69,32 +69,32 @@ const EmployeeManagement = () => {
             <div 
               key={emp._id} 
               onClick={() => setSelectedEmployee(emp)}
-              className="glass p-6 rounded-3xl flex flex-col items-center text-center gap-4 hover:shadow-lg transition-all border border-transparent hover:border-indigo-200 cursor-pointer group"
+              className="glass p-6 rounded-3xl flex flex-col items-center text-center gap-4 hover:shadow-lg dark:hover:shadow-indigo-900/20 transition-all border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 cursor-pointer group"
             >
-              <div className="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 text-xl font-bold group-hover:bg-indigo-100 transition-colors">
+              <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-xl font-bold group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/80 transition-colors">
                 {emp.name.charAt(0).toUpperCase()}
               </div>
               <div className="w-full">
-                <h3 className="text-lg font-bold text-slate-900">{emp.name}</h3>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">{emp.name}</h3>
                 <div className="flex flex-col items-center gap-1.5 mt-2">
-                  <div className="flex items-center justify-center gap-1.5 text-xs text-slate-500">
+                  <div className="flex items-center justify-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                     <Briefcase className="w-3.5 h-3.5" />
                     {emp.designation || 'Staff'}
                   </div>
-                  <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-indigo-600 bg-indigo-50/50 px-2.5 py-1 rounded-full border border-indigo-100/50">
+                  <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/30 px-2.5 py-1 rounded-full border border-indigo-100/50 dark:border-indigo-800/50">
                     <Shield className="w-3 h-3" />
                     Employee
                   </div>
                 </div>
               </div>
-              <div className="w-full pt-4 mt-auto border-t border-slate-100 flex items-center justify-between text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="w-full pt-4 mt-auto border-t border-slate-100 dark:border-slate-700/50 flex items-center justify-between text-indigo-600 dark:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">
                 <span className="text-xs font-bold">View Profile</span>
                 <ChevronRight className="w-4 h-4" />
               </div>
             </div>
           ))}
           {employees.length === 0 && !isLoading && (
-            <div className="col-span-full py-12 text-center text-slate-500">
+            <div className="col-span-full py-12 text-center text-slate-500 dark:text-slate-400">
               No employees found. Add one to get started.
             </div>
           )}
@@ -105,13 +105,13 @@ const EmployeeManagement = () => {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowModal(false)} />
-          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-3xl shadow-2xl p-8 animate-fade-in custom-scrollbar">
-            <div className="flex items-center justify-between mb-6 sticky top-0 bg-white z-10 pb-2">
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-8 animate-fade-in custom-scrollbar">
+            <div className="flex items-center justify-between mb-6 sticky top-0 bg-white dark:bg-slate-800 z-10 pb-2">
               <div>
-                <h2 className="text-xl font-bold text-slate-900">Add New Employee</h2>
-                <p className="text-slate-400 text-sm mt-0.5">Create a new account for your staff.</p>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Add New Employee</h2>
+                <p className="text-slate-400 dark:text-slate-500 text-sm mt-0.5">Create a new account for your staff.</p>
               </div>
-              <button onClick={() => setShowModal(false)} className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all">
+              <button onClick={() => setShowModal(false)} className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-all">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -125,37 +125,37 @@ const EmployeeManagement = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Account Credentials */}
               <div className="space-y-4">
-                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest opacity-50 border-b border-slate-100 pb-2">Account Details</h3>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest opacity-50 border-b border-slate-100 dark:border-slate-700 pb-2">Account Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Full Name *</label>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Full Name *</label>
                     <input
                       type="text"
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                      className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                       placeholder="e.g. Jane Doe"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Email (User ID) *</label>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Email (User ID) *</label>
                     <input
                       type="email"
                       value={form.email}
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                      className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                       placeholder="e.g. jane@company.com"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Password *</label>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Password *</label>
                     <input
                       type="password"
                       value={form.password}
                       onChange={(e) => setForm({ ...form, password: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                      className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                       placeholder="Min. 6 characters"
                       required
                     />
@@ -165,51 +165,51 @@ const EmployeeManagement = () => {
 
               {/* Employee Profile */}
               <div className="space-y-4 pt-2">
-                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest opacity-50 border-b border-slate-100 pb-2">Profile Information</h3>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest opacity-50 border-b border-slate-100 dark:border-slate-700 pb-2">Profile Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Phone Number</label>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Phone Number</label>
                     <input
                       type="tel"
                       value={form.phone}
                       onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                      className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                       placeholder="e.g. +91 9876543210"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Date of Joining</label>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Date of Joining</label>
                     <input
                       type="date"
                       value={form.joiningDate}
                       onChange={(e) => setForm({ ...form, joiningDate: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                      className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Designation</label>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Designation</label>
                     <input
                       type="text"
                       value={form.designation}
                       onChange={(e) => setForm({ ...form, designation: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                      className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                       placeholder="e.g. Support Specialist"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Department</label>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Department</label>
                     <input
                       type="text"
                       value={form.department}
                       onChange={(e) => setForm({ ...form, department: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                      className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                       placeholder="e.g. Customer Service"
                     />
                   </div>
                 </div>
               </div>
               
-              <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-100 dark:border-slate-700">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
@@ -235,7 +235,7 @@ const EmployeeManagement = () => {
       {selectedEmployee && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setSelectedEmployee(null)} />
-          <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden animate-fade-in">
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden animate-fade-in">
             {/* Header Banner */}
             <div className="bg-gradient-to-r from-indigo-500 to-purple-600 h-24 relative">
               <button 
@@ -248,51 +248,51 @@ const EmployeeManagement = () => {
             
             <div className="px-8 pb-8">
               {/* Profile Avatar */}
-              <div className="w-20 h-20 rounded-2xl bg-white border-4 border-white shadow-lg flex items-center justify-center text-indigo-600 text-3xl font-bold -mt-10 mx-auto relative z-10 mb-4">
+              <div className="w-20 h-20 rounded-2xl bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-800 shadow-lg flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-3xl font-bold -mt-10 mx-auto relative z-10 mb-4">
                 {selectedEmployee.name.charAt(0).toUpperCase()}
               </div>
 
               <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-slate-900">{selectedEmployee.name}</h2>
-                <p className="text-slate-500 font-medium mt-1">{selectedEmployee.designation || 'Staff Member'}</p>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{selectedEmployee.name}</h2>
+                <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">{selectedEmployee.designation || 'Staff Member'}</p>
               </div>
 
               <div className="space-y-4">
-                <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700">
                   <Mail className="w-5 h-5 text-indigo-500 mt-0.5" />
                   <div>
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 block mb-0.5">User ID / Email</span>
-                    <span className="text-sm font-bold text-slate-800 break-all">{selectedEmployee.email}</span>
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 dark:text-slate-500 block mb-0.5">User ID / Email</span>
+                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200 break-all">{selectedEmployee.email}</span>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700">
                   <Phone className="w-5 h-5 text-indigo-500 mt-0.5" />
                   <div>
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 block mb-0.5">Phone Number</span>
-                    <span className="text-sm font-bold text-slate-800">{selectedEmployee.phone || 'Not provided'}</span>
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 dark:text-slate-500 block mb-0.5">Phone Number</span>
+                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{selectedEmployee.phone || 'Not provided'}</span>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700">
                   <Building2 className="w-5 h-5 text-indigo-500 mt-0.5" />
                   <div>
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 block mb-0.5">Department</span>
-                    <span className="text-sm font-bold text-slate-800">{selectedEmployee.department || 'Not assigned'}</span>
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 dark:text-slate-500 block mb-0.5">Department</span>
+                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{selectedEmployee.department || 'Not assigned'}</span>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700">
                   <Calendar className="w-5 h-5 text-indigo-500 mt-0.5" />
                   <div>
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 block mb-0.5">Date of Joining</span>
-                    <span className="text-sm font-bold text-slate-800">{selectedEmployee.joiningDate ? new Date(selectedEmployee.joiningDate).toLocaleDateString() : 'Unknown'}</span>
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 dark:text-slate-500 block mb-0.5">Date of Joining</span>
+                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{selectedEmployee.joiningDate ? new Date(selectedEmployee.joiningDate).toLocaleDateString() : 'Unknown'}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-8 pt-6 border-t border-slate-100 text-center">
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs font-bold border border-indigo-100">
+              <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-700 text-center">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full text-xs font-bold border border-indigo-100 dark:border-indigo-800/50">
                   <Shield className="w-3.5 h-3.5" />
                   Verified Employee Account
                 </div>
