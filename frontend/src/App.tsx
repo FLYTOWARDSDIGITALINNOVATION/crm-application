@@ -14,6 +14,9 @@ import ForgotPassword from './features/auth/ForgotPassword';
 import CustomerDashboard from './features/customers/CustomerDashboard';
 import EmployeeManagement from './features/employees/EmployeeManagement';
 import EmployeeDashboard from './features/employees/EmployeeDashboard';
+import CompleteProfile from './features/employees/CompleteProfile';
+import EmployeeApprovalPending from './features/employees/EmployeeApprovalPending';
+import EmployeeApprovalsAdmin from './features/employees/EmployeeApprovalsAdmin';
 import ProjectManagement from './features/projects/ProjectManagement';
 import ProjectDetail from './features/projects/ProjectDetail';
 import LeaveManagement from './features/leaves/LeaveManagement';
@@ -35,8 +38,8 @@ function App() {
         <Route 
           index 
           element={
-            user?.role === 'customer' ? <CustomerDashboard /> : 
-            user?.role === 'employee' ? <EmployeeDashboard /> : 
+            user?.role === 'customer' ? <CustomerDashboard /> :
+            user?.role === 'employee' ? <EmployeeDashboard /> :
             <Dashboard />
           } 
         />
@@ -46,6 +49,9 @@ function App() {
         <Route path="customers" element={<CustomerList />} />
         <Route path="customers/:id" element={<CustomerDetail />} />
         <Route path="employees" element={user?.role === 'admin' ? <EmployeeManagement /> : <Navigate to="/" replace />} />
+        <Route path="complete-profile" element={<CompleteProfile />} />
+        <Route path="approval-status" element={<EmployeeApprovalPending />} />
+        <Route path="employee-approvals" element={user?.role === 'admin' ? <EmployeeApprovalsAdmin /> : <Navigate to="/" replace />} />
         <Route path="tasks" element={<TaskList />} />
         <Route path="support" element={<SupportTickets />} />
         <Route path="projects" element={<ProjectManagement />} />

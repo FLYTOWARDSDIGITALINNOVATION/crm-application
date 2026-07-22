@@ -9,17 +9,14 @@ import {
   MessageSquare, 
   ChevronLeft, 
   ChevronRight,
-  LogOut,
   LayoutDashboard,
   FolderKanban,
   CalendarDays,
   ShieldCheck
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import { useAppDispatch, useAppSelector } from '../../store';
-import { logoutUser } from '../../store/slices/authSlice';
-import { useNavigate } from 'react-router-dom';
-import EmployeeLogoutModal from './EmployeeLogoutModal';
+import { useAppSelector } from '../../store';
+import { isDigitalMarketingEmployee } from '../../utils/employee';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -29,21 +26,8 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileOpen, onCloseMobile }) => {
-  const dispatch = useAppDispatch();
-  const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
-  const [isLogoutModalOpen, setIsLogoutModalOpen] = React.useState(false);
-
-  const handleLogout = () => {
-    if (user?.role === 'employee') {
-      setIsLogoutModalOpen(true);
-      return;
-    }
-
-    dispatch(logout());
-    dispatch(logoutUser());
-    navigate('/login');
-  };
+  const isMarketing = isDigitalMarketingEmployee(user);
 
   let navItems = [
     { title: 'Dashboard', icon: LayoutDashboard, path: '/' },
@@ -57,12 +41,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
   if (user?.role === 'employee') {
     navItems = [
       { title: 'Dashboard', icon: LayoutDashboard, path: '/' },
-      { title: 'Projects', icon: FolderKanban, path: '/projects' },
+      ...(isMarketing ? [{ title: 'Leads', icon: UserPlus, path: '/leads' }] : []),
+      { title: 'Tasks', icon: CheckSquare, path: '/tasks' },
       { title: 'Leaves', icon: CalendarDays, path: '/leaves' },
       { title: 'Support', icon: MessageSquare, path: '/support' },
     ];
   } else if (user?.role === 'admin') {
     navItems.push({ title: 'Employees', icon: Users, path: '/employees' });
+    navItems.push({ title: 'Employee Approvals', icon: Users, path: '/employee-approvals' });
     navItems.push({ title: 'Projects', icon: FolderKanban, path: '/projects' });
     navItems.push({ title: 'Leaves', icon: CalendarDays, path: '/leaves' });
   } else if (user?.role === 'superadmin') {
@@ -92,7 +78,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
         )}
       </div>
 
-      <nav className="flex-1 px-4 space-y-2 mt-4">
+      <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto overflow-x-hidden min-h-0">
         {navItems.map((item) => (
           <NavLink
             key={item.path}
@@ -113,7 +99,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
         ))}
       </nav>
 
-      <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
+      <div className="p-4 border-t border-slate-100 dark:border-slate-800">
         <button
           onClick={toggleSidebar}
           className="hidden lg:flex items-center gap-3 w-full px-3 py-3 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-all duration-200"
@@ -121,23 +107,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
           {isCollapsed ? <ChevronRight className="w-5 h-5 mx-auto" /> : (
             <>
               <ChevronLeft className="w-5 h-5" />
-              <span className="font-medium">Collapse Sidebar</span>
+              <span className="font-medium"></span>
             </>
           )}
         </button>
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 w-full px-3 py-3 rounded-xl text-rose-500 hover:bg-rose-50/50 dark:hover:bg-rose-900/20 transition-all duration-200"
-        >
-          <LogOut className="w-5 h-5" />
-          <span className={cn("font-medium", isCollapsed ? "lg:hidden block" : "block")}>Logout</span>
-        </button>
       </div>
-
-      <EmployeeLogoutModal
-        isOpen={isLogoutModalOpen}
-        onClose={() => setIsLogoutModalOpen(false)}
-      />
     </div>
   );
 };

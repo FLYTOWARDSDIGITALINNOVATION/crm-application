@@ -1,14 +1,16 @@
 import React from 'react';
-import { Search, Bell, Sun, Moon, Clock, Menu, Monitor } from 'lucide-react';
+import { Search, Bell, Sun, Moon, Menu, Monitor, LogOut } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAppDispatch, useAppSelector } from '../../store';
 import GlobalSearch from './GlobalSearch';
 import { useTheme } from '../ThemeProvider';
-import { fetchTasks, deleteTask } from '../../store/slices/taskSlice';
+import { fetchTasks } from '../../store/slices/taskSlice';
+import { logout, logoutUser } from '../../store/slices/authSlice';
 import type { Task } from '../../store/slices/taskSlice';
 import { format, isPast, isToday } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import EditNotificationModal from '../../features/leads/EditNotificationModal';
+import EmployeeLogoutModal from './EmployeeLogoutModal';
 import { Edit2, Trash2 } from 'lucide-react';
 
 interface NavbarProps {
@@ -21,10 +23,11 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarCollapsed, onMenuToggle }) => 
   const { items: tasks } = useAppSelector((state) => state.tasks);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { theme, setTheme, isDark } = useTheme();
+  const { theme, setTheme } = useTheme();
   
   const [isThemeMenuOpen, setIsThemeMenuOpen] = React.useState(false);
   const [isNotifMenuOpen, setIsNotifMenuOpen] = React.useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = React.useState(false);
   const [editingTask, setEditingTask] = React.useState<Task | null>(null);
   
   const themeMenuRef = React.useRef<HTMLDivElement>(null);
@@ -206,7 +209,25 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarCollapsed, onMenuToggle }) => 
 
         <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-2"></div>
 
-        <button className="flex items-center gap-3 p-1.5 pr-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+        <button
+          onClick={() => {
+            if (user?.role === 'employee') {
+              setIsLogoutModalOpen(true);
+              return;
+            }
+            dispatch(logout());
+            dispatch(logoutUser());
+            navigate('/login');
+          }}
+          className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 shadow-sm transition-all hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800"
+        >
+          <LogOut className="w-4 h-4" />
+          <span className="hidden sm:inline text-sm font-medium">Logout</span>
+        </button>
+
+        <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-2"></div>
+
+        <div className="flex items-center gap-3 p-1.5 pr-3 rounded-xl bg-slate-100/80 dark:bg-slate-900/70 transition-all">
           <div className="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-700 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800/50">
             {initials}
           </div>
@@ -214,13 +235,18 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarCollapsed, onMenuToggle }) => 
             <span className="text-sm font-semibold text-slate-900 dark:text-white">{user?.name || 'User'}</span>
             <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">{user?.role || 'Staff'}</span>
           </div>
-        </button>
+        </div>
       </div>
 
       <EditNotificationModal 
         isOpen={!!editingTask}
         onClose={() => setEditingTask(null)}
         task={editingTask}
+      />
+
+      <EmployeeLogoutModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
       />
     </header>
   );

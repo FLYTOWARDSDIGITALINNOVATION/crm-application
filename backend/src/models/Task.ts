@@ -6,7 +6,7 @@ export interface ITask extends Document {
   dueDate: string;
   priority: 'High' | 'Medium' | 'Low';
   status: 'Pending' | 'In Progress' | 'Completed';
-  assignedTo: string;
+  assignedTo: string[];
   relatedTo: string;
   projectId?: mongoose.Types.ObjectId;
   completedBy?: string;
@@ -29,7 +29,8 @@ const TaskSchema: Schema = new Schema(
       enum: ['Pending', 'In Progress', 'Completed'],
       default: 'Pending',
     },
-    assignedTo: { type: String, required: true },
+    // Support multiple assignees as array of strings (names or identifiers)
+    assignedTo: { type: [String], required: true, default: [] },
     relatedTo: { type: String, default: '' },
     projectId: { type: Schema.Types.ObjectId, ref: 'Project', required: false },
     completedBy: { type: String, default: '' },

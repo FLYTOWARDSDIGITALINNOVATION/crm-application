@@ -24,6 +24,7 @@ const TaskList: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState(defaultForm);
   const [errors, setErrors] = useState<Partial<typeof defaultForm>>({});
+  const [selectedCreateAssignees, setSelectedCreateAssignees] = useState<string[]>([]);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -44,6 +45,7 @@ const TaskList: React.FC = () => {
   const { user } = useAppSelector((state) => state.auth);
   const isAdmin = user?.role === 'admin';
   const [allocationTask, setAllocationTask] = useState<Task | null>(null);
+  const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
 
   // Fetch tasks from MongoDB on mount
   useEffect(() => {
@@ -78,7 +80,11 @@ const TaskList: React.FC = () => {
     const newErrors: Partial<typeof defaultForm> = {};
     if (!form.title.trim()) newErrors.title = 'Title is required';
     if (!form.dueDate) newErrors.dueDate = 'Due date is required';
-    if (!form.assignedTo.trim()) newErrors.assignedTo = 'Assignee is required';
+    if (showModal) {
+      if (selectedCreateAssignees.length === 0) newErrors.assignedTo = 'Assignee is required';
+    } else {
+      if (!form.assignedTo.trim()) newErrors.assignedTo = 'Assignee is required';
+    }
     if (!form.relatedTo.trim()) newErrors.relatedTo = 'Related to is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -93,11 +99,12 @@ const TaskList: React.FC = () => {
       dueDate: form.dueDate,
       priority: form.priority,
       status: 'Pending',
-      assignedTo: form.assignedTo.trim(),
+      assignedTo: selectedCreateAssignees.length ? selectedCreateAssignees : (form.assignedTo ? [form.assignedTo.trim()] : []),
       relatedTo: form.relatedTo.trim(),
-    }));
+    } as any));
 
     setForm(defaultForm);
+    setSelectedCreateAssignees([]);
     setErrors({});
     setShowModal(false);
   };
@@ -106,6 +113,7 @@ const TaskList: React.FC = () => {
     setShowModal(false);
     setForm(defaultForm);
     setErrors({});
+    setSelectedCreateAssignees([]);
   };
 
   return (
@@ -260,6 +268,13 @@ const TaskList: React.FC = () => {
                       <button
                         onClick={() => {
                           setAllocationTask(task);
+                          // prefill selections from existing assignedTo values
+                          const existing = Array.isArray(task.assignedTo)
+                            ? task.assignedTo.map(s => s.trim()).filter(Boolean)
+                            : task.assignedTo
+                              ? task.assignedTo.split(',').map(s => s.trim()).filter(Boolean)
+                              : [];
+                          setSelectedAssignees(existing);
                           setOpenMenuId(null);
                         }}
                         className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
@@ -368,16 +383,44 @@ const TaskList: React.FC = () => {
                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   Assigned To <span className="text-rose-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  placeholder="e.g. John Doe"
-                  value={form.assignedTo}
-                  onChange={(e) => setForm({ ...form, assignedTo: e.target.value })}
-                  className={cn(
-                    "w-full px-4 py-2.5 border rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-all",
-                    errors.assignedTo ? "border-rose-400 bg-rose-50 dark:bg-rose-900/30 dark:border-rose-800" : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50"
+                <div className="mb-2 flex flex-wrap gap-2">
+                  {selectedCreateAssignees.map(name => (
+                    <div key={name} className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold">{name}</div>
+                  ))}
+                </div>
+                <div className="max-h-40 overflow-y-auto pr-2 custom-scrollbar space-y-2">
+                  {employees.length === 0 ? (
+                    <div className="text-center text-slate-500 dark:text-slate-400 py-4 text-sm italic">No employees found.</div>
+                  ) : (
+                    employees.map(emp => {
+                      const sel = selectedCreateAssignees.includes(emp.name);
+                      return (
+                        <button
+                          key={emp._id}
+                          type="button"
+                          onClick={() => {
+                            if (sel) setSelectedCreateAssignees(s => s.filter(n => n !== emp.name));
+                            else setSelectedCreateAssignees(s => [...s, emp.name]);
+                          }}
+                          className={cn(
+                            'w-full text-left px-3 py-2 rounded-xl border transition-all',
+                            sel ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/30' : 'border-slate-100 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-500/50 hover:bg-indigo-50 dark:hover:bg-indigo-900/30'
+                          )}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center text-slate-500 dark:text-slate-400 font-bold transition-colors">
+                              {emp.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <div className="text-sm font-bold text-slate-800 dark:text-slate-200">{emp.name}</div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400 capitalize">{emp.role}</div>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })
                   )}
-                />
+                </div>
                 {errors.assignedTo && <p className="text-rose-500 text-xs mt-1">{errors.assignedTo}</p>}
               </div>
 
@@ -423,7 +466,7 @@ const TaskList: React.FC = () => {
       {/* Allocate Task Modal */}
       {allocationTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setAllocationTask(null)} />
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => { setAllocationTask(null); setSelectedAssignees([]); }} />
           <div className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 animate-fade-in max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between mb-6 shrink-0">
               <div>
@@ -431,7 +474,7 @@ const TaskList: React.FC = () => {
                 <p className="text-slate-400 dark:text-slate-500 text-sm mt-0.5 line-clamp-1">{allocationTask.title}</p>
               </div>
               <button
-                onClick={() => setAllocationTask(null)}
+                onClick={() => { setAllocationTask(null); setSelectedAssignees([]); }}
                 className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-all"
               >
                 <X className="w-5 h-5" />
@@ -442,30 +485,60 @@ const TaskList: React.FC = () => {
               {employees.length === 0 ? (
                 <div className="text-center text-slate-500 dark:text-slate-400 py-8 text-sm italic">No employees found.</div>
               ) : (
-                employees.map(emp => (
-                  <button
-                    key={emp._id}
-                    onClick={() => {
-                      dispatch(updateTask({ id: allocationTask.id, assignedTo: emp.name }));
-                      setAllocationTask(null);
-                    }}
-                    className="w-full flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-500/50 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-all group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center text-slate-500 dark:text-slate-400 font-bold group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/50 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                        {emp.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="text-left">
-                        <div className="text-sm font-bold text-slate-800 dark:text-slate-200">{emp.name}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400 capitalize">{emp.role}</div>
-                      </div>
-                    </div>
-                    <div className="text-xs font-bold text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                      Select
-                    </div>
-                  </button>
-                ))
+                <div className="space-y-2">
+                  {employees.map(emp => {
+                    const selected = selectedAssignees.includes(emp.name);
+                    return (
+                      <button
+                        key={emp._id}
+                        type="button"
+                        onClick={() => {
+                          if (selected) setSelectedAssignees(s => s.filter(name => name !== emp.name));
+                          else setSelectedAssignees(s => [...s, emp.name]);
+                        }}
+                        className={cn(
+                          'w-full flex items-center justify-between p-3 rounded-xl border transition-all',
+                          selected ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/30' : 'border-slate-100 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-500/50 hover:bg-indigo-50 dark:hover:bg-indigo-900/30'
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center text-slate-500 dark:text-slate-400 font-bold transition-colors">
+                            {emp.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="text-left">
+                            <div className="text-sm font-bold text-slate-800 dark:text-slate-200">{emp.name}</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400 capitalize">{emp.role}</div>
+                          </div>
+                        </div>
+                        <div className="text-xs font-bold text-indigo-600">
+                          {selected ? 'Selected' : 'Select'}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               )}
+            </div>
+
+            <div className="flex items-center gap-3 mt-4">
+              <button
+                onClick={() => setAllocationTask(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (selectedAssignees.length === 0) return setAllocationTask(null);
+                  // send array of assignee names
+                  dispatch(updateTask({ id: allocationTask.id, assignedTo: selectedAssignees } as any));
+                  setSelectedAssignees([]);
+                  setAllocationTask(null);
+                }}
+                className="px-4 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700"
+              >
+                Assign Selected
+              </button>
             </div>
           </div>
         </div>

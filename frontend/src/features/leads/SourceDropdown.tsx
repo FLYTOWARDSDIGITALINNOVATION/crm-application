@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '../../utils/cn';
 
 interface SourceDropdownProps {
@@ -8,6 +8,7 @@ interface SourceDropdownProps {
 }
 
 const SourceDropdown: React.FC<SourceDropdownProps> = ({ currentSource, onSourceChange, disabled = false }) => {
+  const [otherSource, setOtherSource] = useState("");
   return (
     <div className="relative inline-block" onClick={(e) => disabled && e.stopPropagation()}>
       <select
@@ -33,17 +34,31 @@ const SourceDropdown: React.FC<SourceDropdownProps> = ({ currentSource, onSource
           <option value="Software - Website" className="bg-white text-slate-900 font-bold">Software - Website</option>
           <option value="Software - WebApp" className="bg-white text-slate-900 font-bold">Software - WebApp</option>
         </optgroup>
-        
+        <option value="Other" className="bg-white text-slate-900 font-bold">Other</option>
         {/* Legacy options that might exist in DB but aren't in the new list */}
         {!['Marketing', 'Course', 'Intern', 'SEO', 'Software - Billing', 'Software - Website', 'Software - WebApp'].includes(currentSource) && currentSource && (
            <option value={currentSource} className="hidden">{currentSource}</option>
         )}
       </select>
+      {currentSource === "Other" && (
+  <input
+    type="text"
+    placeholder="Enter Source"
+    value={otherSource}
+    onChange={(e) => {
+      setOtherSource(e.target.value);
+      onSourceChange(e.target.value);
+    }}
+    onClick={(e) => e.stopPropagation()}
+    className="mt-2 w-full px-3 py-2 border rounded-md text-sm outline-none"
+  />
+)}
       <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
         <svg className="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
         </svg>
       </div>
+      
     </div>
   );
 };

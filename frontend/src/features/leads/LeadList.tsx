@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { fetchLeads, deleteLead, updateLead } from '../../store/slices/leadSlice';
 import { cn } from '../../utils/cn';
+import { isDigitalMarketingEmployee } from '../../utils/employee';
 import ScheduleNotificationModal from './ScheduleNotificationModal';
 import StatusDropdown from './StatusDropdown';
 import SourceDropdown from './SourceDropdown';
@@ -20,9 +21,14 @@ const formatDate = (raw: string) => {
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
-const LeadList: React.FC = () => {
+interface LeadListProps {
+  hideHeader?: boolean;
+}
+
+const LeadList: React.FC<LeadListProps> = ({ hideHeader = false }) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
   const { items: leads, isLoading, error } = useAppSelector((state) => state.leads);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -36,9 +42,14 @@ const LeadList: React.FC = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState<string | null>(null);
 
+  const isMarketing = isDigitalMarketingEmployee(user);
+  const canAccessLeads = user?.role === 'admin' || isMarketing;
+
   React.useEffect(() => {
-    dispatch(fetchLeads());
-  }, [dispatch]);
+    if (canAccessLeads) {
+      dispatch(fetchLeads());
+    }
+  }, [dispatch, canAccessLeads]);
 
   const statusColors = {
     'New': 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-100 dark:border-blue-800/50',
@@ -138,6 +149,15 @@ const LeadList: React.FC = () => {
     setDeleteModalOpen(true);
   };
 
+  if (!canAccessLeads) {
+    return (
+      <div className="glass p-8 rounded-3xl text-center border border-slate-100 dark:border-slate-700">
+        <h3 className="text-xl font-bold text-slate-900 dark:text-white">Access Restricted</h3>
+        <p className="text-slate-500 dark:text-slate-400 mt-2">Leads are visible only to Admin and Digital Marketing employees.</p>
+      </div>
+    );
+  }
+
   if (isLoading && leads.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -173,29 +193,35 @@ const LeadList: React.FC = () => {
         }}
         onConfirm={confirmDelete}
       />
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Leads Management</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm">Track and manage your potential customers lifecycle.</p>
-        </div>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <button 
-            onClick={handleExport}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm"
-          >
-            <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">Export</span>
-          </button>
-          <button 
-            onClick={() => navigate('/leads/create')}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-indigo-600 rounded-xl text-sm font-semibold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/50 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Add New Lead</span>
-          </button>
-        </div>
-      </div>
+      {!hideHeader && (
+        <>
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Leads Management</h1>
+              <p className="text-slate-500 dark:text-slate-400 text-sm">Track and manage your potential customers lifecycle.</p>
+            </div>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button 
+                onClick={handleExport}
+                className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm"
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">Export</span>
+              </button>
+              <button 
+                onClick={() => navigate('/leads/create')}
+                className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-indigo-600 rounded-xl text-sm font-semibold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/50 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">Add New Lead</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Filters & Search */}
+        </>
+      )}
 
       {/* Filters & Search */}
       <div className="glass p-4 rounded-2xl flex flex-col gap-3">

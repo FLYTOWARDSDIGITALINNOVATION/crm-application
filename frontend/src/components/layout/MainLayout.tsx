@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, Navigate, useNavigate } from 'react-router-dom';
+import { Outlet, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import { cn } from '../../utils/cn';
@@ -17,6 +17,19 @@ const MainLayout: React.FC = () => {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  const location = useLocation();
+
+  // Employee onboarding / approval guard
+  if (user?.role === 'employee') {
+    if (!user.profileCompleted && location.pathname !== '/complete-profile') {
+      return <Navigate to="/complete-profile" replace />;
+    }
+
+    if (user.profileCompleted && user.approvalStatus !== 'Approved' && location.pathname !== '/approval-status' && location.pathname !== '/complete-profile') {
+      return <Navigate to="/approval-status" replace />;
+    }
   }
 
   const toggleSidebar = () => {

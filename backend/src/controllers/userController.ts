@@ -1,7 +1,8 @@
-import { Request, Response } from 'express';
 import User from '../models/User';
 import EmployeeSession from '../models/EmployeeSession';
 import { ensureEmployeeWorkLogCollection, getEmployeeWorkLogModel } from '../models/EmployeeWorkLog';
+
+import { Request, Response } from 'express';
 
 const buildEmployeeResponse = (user: any) => ({
   _id: user._id,
@@ -118,5 +119,94 @@ export const getEmployeeWorkLogs = async (req: Request, res: Response) => {
     });
   } catch (error) {
     res.status(500).json({ message: 'Server Error fetching employee work logs', error });
+  }
+};
+
+// @desc Submit or update employee profile (first-time submission)
+// @route PUT /api/users/profile
+// @access Protected (employee)
+export const submitEmployeeProfile = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    console.log('[submitEmployeeProfile] incoming request for user:', userId);
+    console.log('[submitEmployeeProfile] body keys:', Object.keys(req.body));
+    console.log('[submitEmployeeProfile] hasFile:', !!(req.file));
+
+    if (!userId) return res.status(401).json({ message: 'Not authorised' });
+
+    const user = await User.findById(userId);
+    if (!user || user.role !== 'employee') return res.status(404).json({ message: 'Employee not found' });
+
+    // Accept fields from body; photo can be base64 or URL
+    const { name, mobile, aadhaar, dob, gender, photo } = req.body;
+
+    user.name = name || user.name;
+    user.profile = user.profile || {};
+    user.profile.mobile = mobile || user.profile.mobile;
+    user.profile.aadhaar = aadhaar || user.profile.aadhaar;
+    user.profile.dob = dob || user.profile.dob;
+    user.profile.gender = gender || user.profile.gender;
+    if (photo) user.profile.photo = photo;
+
+    // Accept multipart file upload (profilePhoto) as well
+    const file = req.file as Express.Multer.File | undefined;
+    if (file && file.buffer) {
+      user.profile.photo = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+    }
+    user.profile.submittedAt = new Date();
+
+    user.profileCompleted = true;
+    user.approvalStatus = 'Pending';
+
+    await user.save();
+
+    return res.status(200).json({ message: 'Profile submitted successfully' });
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error', error });
+  }
+};
+
+// @desc Get pending employee approvals (admin)
+// @route GET /api/users/approvals
+// @access Admin
+export const getEmployeeApprovals = async (req: Request, res: Response) => {
+  try {
+    const approvals = await User.find({ role: 'employee', profileCompleted: true }).select('name email department profile approvalStatus createdAt');
+    return res.status(200).json(approvals);
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error', error });
+  }
+};
+
+// @desc Get single employee approval details (admin)
+// @route GET /api/users/approvals/:id
+// @access Admin
+export const getEmployeeApprovalDetails = async (req: Request, res: Response) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+    if (!user || user.role !== 'employee') return res.status(404).json({ message: 'Employee not found' });
+    return res.status(200).json(user);
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error', error });
+  }
+};
+
+// @desc Update approval status (approve/reject)
+// @route PATCH /api/users/approvals/:id
+// @access Admin
+export const updateEmployeeApproval = async (req: Request, res: Response) => {
+  try {
+    const { status } = req.body; // 'Approved'|'Rejected'
+    if (!['Approved', 'Rejected'].includes(status)) return res.status(400).json({ message: 'Invalid status' });
+
+    const user = await User.findById(req.params.id);
+    if (!user || user.role !== 'employee') return res.status(404).json({ message: 'Employee not found' });
+
+    user.approvalStatus = status as any;
+    await user.save();
+
+    return res.status(200).json({ message: `Employee ${status.toLowerCase()} successfully` });
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error', error });
   }
 };

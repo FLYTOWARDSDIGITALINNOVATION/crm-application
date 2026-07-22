@@ -10,9 +10,18 @@ export interface IUser extends Document {
   designation?: string;
   department?: string;
   joiningDate?: string;
+  // Profile completion & approval workflow
+  profileCompleted?: boolean;
+  approvalStatus?: 'NotSubmitted' | 'Pending' | 'Approved' | 'Rejected';
+  profile?: {
+    mobile?: string;
+    aadhaar?: string;
+    dob?: string;
+    gender?: string;
+    photo?: string; // base64 or url
+    submittedAt?: Date;
+  };
   currentSessionId?: mongoose.Types.ObjectId;
-  lastLoginAt?: Date;
-  lastLogoutAt?: Date;
   lastLoginAt?: Date;
   lastLogoutAt?: Date;
   isOnline?: boolean;
@@ -35,9 +44,17 @@ const UserSchema: Schema = new Schema(
     designation: { type: String },
     department: { type: String },
     joiningDate: { type: String },
+    profileCompleted: { type: Boolean, default: false },
+    approvalStatus: { type: String, enum: ['NotSubmitted', 'Pending', 'Approved', 'Rejected'], default: 'NotSubmitted' },
+    profile: {
+      mobile: { type: String },
+      aadhaar: { type: String },
+      dob: { type: String },
+      gender: { type: String },
+      photo: { type: String },
+      submittedAt: { type: Date },
+    },
     currentSessionId: { type: Schema.Types.ObjectId, ref: 'EmployeeSession' },
-    lastLoginAt: { type: Date },
-    lastLogoutAt: { type: Date },
     lastLoginAt: { type: Date },
     lastLogoutAt: { type: Date },
     isOnline: { type: Boolean, default: false },

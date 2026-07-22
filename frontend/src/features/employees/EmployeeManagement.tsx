@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { fetchEmployees, createEmployee } from '../../store/slices/userSlice';
+import api from '../../utils/api';
 import { UserPlus, Mail, Shield, Loader2, X, Phone, Building2, Calendar, Briefcase, ChevronRight, Clock } from 'lucide-react';
 
 const formatDateTime = (value?: string | null) => {
@@ -18,6 +19,9 @@ const EmployeeManagement = () => {
   
   const [showModal, setShowModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
+  const [selectedEmployeeLogs, setSelectedEmployeeLogs] = useState<any[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logsError, setLogsError] = useState('');
   const [form, setForm] = useState({ 
     name: '', email: '', password: '', 
     phone: '', designation: '', department: '', joiningDate: '' 
@@ -27,6 +31,32 @@ const EmployeeManagement = () => {
   useEffect(() => {
     dispatch(fetchEmployees());
   }, [dispatch]);
+
+  useEffect(() => {
+    const fetchLogs = async () => {
+      if (!selectedEmployee) {
+        setSelectedEmployeeLogs([]);
+        setLogsError('');
+        return;
+      }
+
+      setLogsLoading(true);
+      setLogsError('');
+
+      try {
+        const response = await api.get(`/users/employees/${selectedEmployee._id}/work-logs`);
+        const logs = response.data.logs || [];
+        const sorted = [...logs].sort((a, b) => new Date(a.loginAt).getTime() - new Date(b.loginAt).getTime());
+        setSelectedEmployeeLogs(sorted);
+      } catch (err: any) {
+        setLogsError(err?.response?.data?.message || 'Failed to load employee session history');
+      } finally {
+        setLogsLoading(false);
+      }
+    };
+
+    fetchLogs();
+  }, [selectedEmployee]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -206,13 +236,16 @@ const EmployeeManagement = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Department</label>
-                    <input
-                      type="text"
+                    <select
+                      name="department"
                       value={form.department}
                       onChange={(e) => setForm({ ...form, department: e.target.value })}
                       className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                      placeholder="e.g. Customer Service"
-                    />
+                    >
+                      <option value="">Select Department</option>
+                      <option value="Digital Marketing">Digital Marketing</option>
+                      <option value="Web Development">Web Development</option>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -243,7 +276,7 @@ const EmployeeManagement = () => {
       {selectedEmployee && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setSelectedEmployee(null)} />
-          <div className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden animate-fade-in">
+          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-800 rounded-3xl shadow-2xl animate-fade-in">
             {/* Header Banner */}
             <div className="bg-gradient-to-r from-indigo-500 to-purple-600 h-24 relative">
               <button 
@@ -298,20 +331,66 @@ const EmployeeManagement = () => {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                  <Clock className="w-5 h-5 text-emerald-500 mt-0.5" />
-                  <div>
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 block mb-0.5">Last Login</span>
-                    <span className="text-sm font-bold text-slate-800">{formatDateTime(selectedEmployee.lastLoginAt)}</span>
-                  </div>
+                <div className="rounded-3xl border border-slate-100 bg-slate-50 p-4">
+                  <h3 className="text-sm font-bold text-slate-900">Session History</h3>
+                  <p className="mt-1 text-sm text-slate-500">All recorded login and logout entries for this employee, ordered from first to last.</p>
                 </div>
 
-                <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                  <Clock className="w-5 h-5 text-rose-500 mt-0.5" />
-                  <div>
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 block mb-0.5">Last Logout</span>
-                    <span className="text-sm font-bold text-slate-800">{formatDateTime(selectedEmployee.lastLogoutAt)}</span>
+                <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                  <div className="px-4 py-4 bg-slate-100 text-slate-600 uppercase text-[10px] tracking-[0.25em] font-bold border-b border-slate-200">
+                    Login / Logout History
                   </div>
+
+                  {logsLoading ? (
+                    <div className="p-8 text-center text-slate-500">
+                      Loading session records...
+                    </div>
+                  ) : logsError ? (
+                    <div className="p-8 text-center text-rose-600">
+                      {logsError}
+                    </div>
+                  ) : selectedEmployeeLogs.length === 0 ? (
+                    <div className="p-8 text-center text-slate-500">
+                      No session history available for this employee.
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full text-left text-sm">
+                        <thead>
+                          <tr className="bg-slate-50 text-slate-500 uppercase text-xs tracking-wider">
+                            <th className="px-4 py-3">Login Time</th>
+                            <th className="px-4 py-3">Logout Time</th>
+                            <th className="px-4 py-3">Duration</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedEmployeeLogs.map((log) => {
+                            const login = log.loginAt ? formatDateTime(log.loginAt) : 'Unknown';
+                            const logout = log.logoutAt ? formatDateTime(log.logoutAt) : 'Still active';
+                            const duration = log.loginAt && log.logoutAt
+                              ? (() => {
+                                  const start = new Date(log.loginAt).getTime();
+                                  const end = new Date(log.logoutAt).getTime();
+                                  const diff = Math.max(0, end - start);
+                                  const minutes = Math.floor(diff / 60000);
+                                  const hours = Math.floor(minutes / 60);
+                                  const remaining = minutes % 60;
+                                  return `${hours}h ${remaining}m`;
+                                })()
+                              : '—';
+
+                            return (
+                              <tr key={log._id} className="border-b border-slate-100 hover:bg-slate-50">
+                                <td className="px-4 py-3 text-slate-700">{login}</td>
+                                <td className="px-4 py-3 text-slate-700">{logout}</td>
+                                <td className="px-4 py-3 text-slate-700">{duration}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               </div>
 

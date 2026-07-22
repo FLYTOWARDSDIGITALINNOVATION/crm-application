@@ -21,6 +21,9 @@ const buildUserResponse = (user: IUser) => ({
   designation: user.designation || '',
   department: user.department || '',
   joiningDate: user.joiningDate || '',
+  profileCompleted: !!user.profileCompleted,
+  approvalStatus: user.approvalStatus || 'NotSubmitted',
+  profile: user.profile || {},
   lastLoginAt: user.lastLoginAt || null,
   lastLogoutAt: user.lastLogoutAt || null,
 });
@@ -156,19 +159,19 @@ export const loginUser = async (req: Request, res: Response) => {
 // @desc    Logout user (records logout time)
 // @route   POST /api/auth/logout
 // @access  Protected
-export const logoutUser = async (req: Request, res: Response) => {
-  try {
-    if (req.user?.id) {
-      await User.updateOne(
-        { _id: req.user.id },
-        { $set: { lastLogoutAt: new Date(), isOnline: false } }
-      );
-    }
-    res.json({ message: 'Logged out successfully' });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error });
-  }
-};
+// export const logoutUser = async (req: Request, res: Response) => {
+//   try {
+//     if (req.user?.id) {
+//       await User.updateOne(
+//         { _id: req.user.id },
+//         { $set: { lastLogoutAt: new Date(), isOnline: false } }
+//       );
+//     }
+//     res.json({ message: 'Logged out successfully' });
+//   } catch (error) {
+//     res.status(500).json({ message: 'Server error', error });
+//   }
+// };
 
 // @desc    Reset password by email (direct, no token email required)
 // @route   POST /api/auth/reset-password
@@ -333,6 +336,23 @@ export const logoutUser = async (req: Request, res: Response) => {
     await user.save();
 
     return res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+};
+
+// @desc Get current authenticated user
+// @route GET /api/auth/me
+// @access Protected
+export const getCurrentUser = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ message: 'Not authorised' });
+
+    const user = await User.findById(userId).select('-password');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.json(buildUserResponse(user));
   } catch (error) {
     res.status(500).json({ message: 'Server error', error });
   }
