@@ -10,6 +10,7 @@ export interface IUser extends Document {
   designation?: string;
   department?: string;
   joiningDate?: string;
+  employeeId?: string;
   // Profile completion & approval workflow
   profileCompleted?: boolean;
   approvalStatus?: 'NotSubmitted' | 'Pending' | 'Approved' | 'Rejected';
@@ -20,6 +21,18 @@ export interface IUser extends Document {
     gender?: string;
     photo?: string; // base64 or url
     submittedAt?: Date;
+    address?: string;
+    pan?: string;
+    bank?: {
+      accountNumber?: string;
+      ifsc?: string;
+      accountType?: 'Savings' | 'Current' | 'Salary';
+    };
+    emergencyContact?: {
+      name?: string;
+      relation?: string;
+      phone?: string;
+    };
   };
   currentSessionId?: mongoose.Types.ObjectId;
   lastLoginAt?: Date;
@@ -44,6 +57,7 @@ const UserSchema: Schema = new Schema(
     designation: { type: String },
     department: { type: String },
     joiningDate: { type: String },
+    employeeId: { type: String, unique: true, sparse: true },
     profileCompleted: { type: Boolean, default: false },
     approvalStatus: { type: String, enum: ['NotSubmitted', 'Pending', 'Approved', 'Rejected'], default: 'NotSubmitted' },
     profile: {
@@ -53,6 +67,18 @@ const UserSchema: Schema = new Schema(
       gender: { type: String },
       photo: { type: String },
       submittedAt: { type: Date },
+      address: { type: String },
+      pan: { type: String },
+      bank: {
+        accountNumber: { type: String },
+        ifsc: { type: String },
+        accountType: { type: String, enum: ['Savings', 'Current', 'Salary'] },
+      },
+      emergencyContact: {
+        name: { type: String },
+        relation: { type: String },
+        phone: { type: String },
+      },
     },
     currentSessionId: { type: Schema.Types.ObjectId, ref: 'EmployeeSession' },
     lastLoginAt: { type: Date },

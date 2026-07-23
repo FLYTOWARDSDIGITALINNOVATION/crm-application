@@ -5,11 +5,12 @@ interface User {
   _id: string;
   name: string;
   email: string;
-  role: 'admin' | 'sales' | 'customer' | 'employee';
+  role: 'superadmin' | 'admin' | 'sales' | 'customer' | 'employee';
   phone?: string;
   designation?: string;
   department?: string;
   joiningDate?: string;
+  employeeId?: string;
   lastLoginAt?: string | null;
   lastLogoutAt?: string | null;
   profileCompleted?: boolean;
@@ -20,6 +21,18 @@ interface User {
     dob?: string;
     gender?: string;
     photo?: string;
+    address?: string;
+    pan?: string;
+    bank?: {
+      accountNumber?: string;
+      ifsc?: string;
+      accountType?: 'Savings' | 'Current' | 'Salary';
+    };
+    emergencyContact?: {
+      name?: string;
+      relation?: string;
+      phone?: string;
+    };
   };
 }
 

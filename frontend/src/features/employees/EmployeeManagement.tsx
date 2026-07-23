@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { fetchEmployees, createEmployee } from '../../store/slices/userSlice';
 import api from '../../utils/api';
-import { UserPlus, Mail, Shield, Loader2, X, Phone, Building2, Calendar, Briefcase, ChevronRight, Clock } from 'lucide-react';
+import { UserPlus, Mail, Shield, Loader2, X, Phone, Building2, Calendar, Briefcase, ChevronRight } from 'lucide-react';
 
 const formatDateTime = (value?: string | null) => {
   if (!value) return 'Not recorded';
@@ -30,6 +30,17 @@ const EmployeeManagement = () => {
 
   useEffect(() => {
     dispatch(fetchEmployees());
+  }, [dispatch]);
+
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === 'employeeProfileUpdated') {
+        dispatch(fetchEmployees());
+      }
+    };
+
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, [dispatch]);
 
   useEffect(() => {

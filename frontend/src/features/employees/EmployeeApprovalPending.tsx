@@ -8,22 +8,25 @@ const EmployeeApprovalPending: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
-  // Poll for approval status updates every 8 seconds
+  // Check approval status now and then every 8 seconds
   useEffect(() => {
     let mounted = true;
-    const interval = setInterval(async () => {
-      if (!mounted) return;
+
+    const checkStatus = async () => {
       try {
         const res = await dispatch(refreshUser());
         const updated = (res as any).payload;
+        if (!mounted) return;
         if (updated && updated.approvalStatus === 'Approved') {
-          // Redirect to main dashboard, MainLayout will choose correct dept dashboard
           navigate('/');
         }
       } catch (e) {
         // ignore
       }
-    }, 8000);
+    };
+
+    checkStatus();
+    const interval = setInterval(checkStatus, 8000);
 
     return () => { mounted = false; clearInterval(interval); };
   }, [dispatch, navigate]);

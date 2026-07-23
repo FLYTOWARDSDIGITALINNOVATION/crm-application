@@ -34,7 +34,7 @@ export const createLeaveRequest = async (req: Request, res: Response) => {
 export const getLeaveRequests = async (req: Request, res: Response) => {
   try {
     let requests;
-    if (req.user?.role === 'admin') {
+    if (req.user?.role === 'admin' || req.user?.role === 'superadmin') {
       requests = await LeaveRequest.find().sort({ createdAt: -1 });
     } else {
       requests = await LeaveRequest.find({ employeeId: req.user?.id }).sort({ createdAt: -1 });

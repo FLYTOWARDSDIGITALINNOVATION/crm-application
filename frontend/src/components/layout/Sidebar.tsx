@@ -43,7 +43,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
       { title: 'Dashboard', icon: LayoutDashboard, path: '/' },
       ...(isMarketing ? [{ title: 'Leads', icon: UserPlus, path: '/leads' }] : []),
       { title: 'Tasks', icon: CheckSquare, path: '/tasks' },
-      { title: 'Leaves', icon: CalendarDays, path: '/leaves' },
       { title: 'Support', icon: MessageSquare, path: '/support' },
     ];
   } else if (user?.role === 'admin') {

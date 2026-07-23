@@ -6,9 +6,14 @@ import {
 import { cn } from '../../utils/cn';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { fetchLeaves, createLeave, updateLeaveStatus } from '../../store/slices/leaveSlice';
-import type { LeaveRequest } from '../../store/slices/leaveSlice';
 
 const LEAVE_TYPES = ['Sick', 'Casual', 'Paid', 'Unpaid'] as const;
+const LEAVE_TYPE_OPTIONS = [
+  { value: 'Sick' as const, label: 'Sick', emoji: '🤒' },
+  { value: 'Casual' as const, label: 'Casual', emoji: '🌴' },
+  { value: 'Paid' as const, label: 'Paid', emoji: '💼' },
+  { value: 'Unpaid' as const, label: 'Unpaid', emoji: '🚫' },
+] as const;
 
 const statusStyle = (status: string) => {
   switch (status) {
@@ -38,7 +43,7 @@ const LeaveManagement: React.FC = () => {
   const { user } = useAppSelector((state) => state.auth);
   const { items: leaves, isLoading } = useAppSelector((state) => state.leaves);
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState(defaultForm);
@@ -77,8 +82,13 @@ const LeaveManagement: React.FC = () => {
     setShowModal(false);
   };
 
-  const handleStatusChange = (id: string, status: 'Approved' | 'Rejected') => {
-    dispatch(updateLeaveStatus({ id, status }));
+  const handleStatusChange = async (id: string, status: 'Approved' | 'Rejected') => {
+    try {
+      await dispatch(updateLeaveStatus({ id, status })).unwrap();
+      dispatch(fetchLeaves());
+    } catch (error) {
+      console.error('Failed to update leave status:', error);
+    }
   };
 
   const filteredLeaves = leaves.filter(l => {
@@ -196,14 +206,22 @@ const LeaveManagement: React.FC = () => {
               {isAdmin && leave.status === 'Pending' && (
                 <div className="flex items-center gap-2 shrink-0 self-end md:self-auto border-t md:border-none pt-3 md:pt-0">
                   <button
-                    onClick={() => handleStatusChange(leave._id, 'Approved')}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleStatusChange(leave._id, 'Approved');
+                    }}
                     className="flex items-center gap-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-xl text-white text-xs font-bold transition-all shadow-md shadow-emerald-100"
                   >
                     <ThumbsUp className="w-3.5 h-3.5" />
                     Approve
                   </button>
                   <button
-                    onClick={() => handleStatusChange(leave._id, 'Rejected')}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleStatusChange(leave._id, 'Rejected');
+                    }}
                     className="flex items-center gap-1 px-4 py-2 bg-rose-600 hover:bg-rose-700 rounded-xl text-white text-xs font-bold transition-all shadow-md shadow-rose-100"
                   >
                     <ThumbsDown className="w-3.5 h-3.5" />
@@ -220,7 +238,7 @@ const LeaveManagement: React.FC = () => {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowModal(false)} />
-          <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-6 sm:p-8">
+          <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-6 sm:p-8 max-h-[90vh] overflow-hidden">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-xl font-bold text-slate-900 font-inter">Request Leave</h2>
@@ -234,75 +252,85 @@ const LeaveManagement: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="overflow-y-auto max-h-[70vh] pr-1">
+              <form onSubmit={handleSubmit} className="space-y-4">
               {/* Type */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Leave Type</label>
-                <select
-                  value={form.type}
-                  onChange={e => setForm({ ...form, type: e.target.value as typeof LEAVE_TYPES[number] })}
-                  className="input-field"
-                >
-                  {LEAVE_TYPES.map(t => <option key={t} value={t}>{t} Leave</option>)}
-                </select>
-              </div>
-
-              {/* Start & End Dates */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Start Date <span className="text-rose-500">*</span></label>
-                  <input
-                    type="date"
-                    value={form.startDate}
-                    onChange={e => setForm({ ...form, startDate: e.target.value })}
-                    className={cn('input-field', errors.startDate ? 'border-rose-400 bg-rose-50' : '')}
-                  />
-                  {errors.startDate && <p className="text-rose-500 text-xs mt-1">{errors.startDate}</p>}
+                <label className="block text-sm font-semibold text-slate-700 mb-4">Leave Type</label>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  {LEAVE_TYPE_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setForm({ ...form, type: option.value })}
+                      className={cn(
+                        'rounded-3xl border p-4 text-left transition-all shadow-sm',
+                        form.type === option.value
+                          ? 'border-indigo-600 bg-indigo-50 text-slate-900 shadow-indigo-100'
+                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                      )}
+                    >
+                      <div className="flex items-center justify-center h-11 w-11 rounded-2xl bg-slate-100 text-xl mb-3">{option.emoji}</div>
+                      <p className="text-sm font-semibold">{option.label}</p>
+                    </button>
+                  ))}
                 </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">End Date <span className="text-rose-500">*</span></label>
-                  <input
-                    type="date"
-                    value={form.endDate}
-                    onChange={e => setForm({ ...form, endDate: e.target.value })}
-                    className={cn('input-field', errors.endDate ? 'border-rose-400 bg-rose-50' : '')}
-                  />
-                  {errors.endDate && <p className="text-rose-500 text-xs mt-1">{errors.endDate}</p>}
+
+                <div className="space-y-4 mb-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.24em] text-slate-400 mb-2">From Date</p>
+                    <input
+                      type="date"
+                      value={form.startDate}
+                      onChange={e => setForm({ ...form, startDate: e.target.value })}
+                      className={cn('input-field w-full', errors.startDate ? 'border-rose-400 bg-rose-50' : '')}
+                    />
+                    {errors.startDate && <p className="text-rose-500 text-xs mt-1">{errors.startDate}</p>}
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.24em] text-slate-400 mb-2">To Date</p>
+                    <input
+                      type="date"
+                      value={form.endDate}
+                      onChange={e => setForm({ ...form, endDate: e.target.value })}
+                      className={cn('input-field w-full', errors.endDate ? 'border-rose-400 bg-rose-50' : '')}
+                    />
+                    {errors.endDate && <p className="text-rose-500 text-xs mt-1">{errors.endDate}</p>}
+                  </div>
                 </div>
-              </div>
 
-              {/* Reason */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Reason <span className="text-rose-500">*</span></label>
-                <textarea
-                  rows={4}
-                  placeholder="State the reason for leave..."
-                  value={form.reason}
-                  onChange={e => setForm({ ...form, reason: e.target.value })}
-                  className={cn('input-field resize-none', errors.reason ? 'border-rose-400 bg-rose-50' : '')}
-                />
-                {errors.reason && <p className="text-rose-500 text-xs mt-1">{errors.reason}</p>}
-              </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.24em] text-slate-400 mb-2">Reason</p>
+                  <textarea
+                    rows={4}
+                    placeholder="Brief reason for leave..."
+                    value={form.reason}
+                    onChange={e => setForm({ ...form, reason: e.target.value })}
+                    className={cn('input-field resize-none h-28', errors.reason ? 'border-rose-400 bg-rose-50' : '')}
+                  />
+                  {errors.reason && <p className="text-rose-500 text-xs mt-1">{errors.reason}</p>}
+                </div>
 
-              {/* Actions */}
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all"
-                >
-                  <FileText className="w-4 h-4" />
-                  Submit Request
-                </button>
+                <div className="flex items-center justify-between gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="w-full px-5 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-2xl transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-indigo-600 text-white text-sm font-bold rounded-2xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Submit Request
+                  </button>
+                </div>
               </div>
             </form>
           </div>
+        </div>
         </div>
       )}
     </div>

@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import {
   CheckSquare,
@@ -14,9 +14,11 @@ import {
   Lock,
 } from 'lucide-react';
 
+import api from '../../utils/api';
 import { cn } from '../../utils/cn';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { fetchTasks, updateTask } from '../../store/slices/taskSlice';
+import { refreshUser } from '../../store/slices/authSlice';
 import EmployeeWorkHistory from './EmployeeWorkHistory';
 import { fetchProjects } from '../../store/slices/projectSlice';
 import { fetchLeads } from '../../store/slices/leadSlice';
@@ -26,38 +28,120 @@ import { isDigitalMarketingEmployee } from '../../utils/employee';
 const EmployeeDashboard: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAppSelector((state) => state.auth);
   const { items: tasks, isLoading } = useAppSelector((state) => state.tasks);
   const { items: leads } = useAppSelector((state) => state.leads);
-  const sessionStartedAt = user?.lastLoginAt
-    ? new Date(user.lastLoginAt).toLocaleString('en-IN', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      })
-    : 'Not recorded yet';
   const { items: projects } = useAppSelector((state) => state.projects);
+  const [showProfileDetails, setShowProfileDetails] = useState(false);
 
   const isMarketing = isDigitalMarketingEmployee(user);
 
-  const normalizeAssignedTo = (assignedTo: string | string[]) => {
-    if (!assignedTo) return [];
-    if (Array.isArray(assignedTo)) return assignedTo.map(s => s.trim().toLowerCase()).filter(Boolean);
-    return assignedTo.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  type ProfileFormType = {
+    name: string;
+    email: string;
+    mobile: string;
+    address: string;
+    designation: string;
+    department: string;
+    joiningDate: string;
+    accountNumber: string;
+    ifsc: string;
+    accountType: string;
+    emergencyName: string;
+    emergencyRelation: string;
+    emergencyPhone: string;
+    pan: string;
+    aadhaar: string;
+    dob: string;
+    gender: string;
   };
 
-  const isAssignedToUser = (assignedTo: string | string[], u?: any) => {
-    if (!assignedTo || !u) return false;
-    const parts = normalizeAssignedTo(assignedTo);
-    return (u.name && parts.includes(u.name.toLowerCase())) || (u.email && parts.includes(u.email.toLowerCase()));
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileMessage, setProfileMessage] = useState<string | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileForm, setProfileForm] = useState<ProfileFormType>({
+    name: user?.name || '',
+    email: user?.email || '',
+    mobile: user?.profile?.mobile || '',
+    address: user?.profile?.address || '',
+    designation: user?.designation || '',
+    department: user?.department || '',
+    joiningDate: user?.joiningDate || '',
+    accountNumber: user?.profile?.bank?.accountNumber || '',
+    ifsc: user?.profile?.bank?.ifsc || '',
+    accountType: user?.profile?.bank?.accountType || '',
+    emergencyName: user?.profile?.emergencyContact?.name || '',
+    emergencyRelation: user?.profile?.emergencyContact?.relation || '',
+    emergencyPhone: user?.profile?.emergencyContact?.phone || '',
+    pan: user?.profile?.pan || '',
+    aadhaar: user?.profile?.aadhaar || '',
+    dob: user?.profile?.dob || '',
+    gender: user?.profile?.gender || '',
+  });
+
+  useEffect(() => {
+    if (showProfileDetails && user) {
+      setProfileForm({
+        name: user.name || '',
+        email: user.email || '',
+        mobile: user.profile?.mobile || '',
+        address: user.profile?.address || '',
+        designation: user.designation || '',
+        department: user.department || '',
+        joiningDate: user.joiningDate || '',
+        accountNumber: user.profile?.bank?.accountNumber || '',
+        ifsc: user.profile?.bank?.ifsc || '',
+        accountType: user.profile?.bank?.accountType || '',
+        emergencyName: user.profile?.emergencyContact?.name || '',
+        emergencyRelation: user.profile?.emergencyContact?.relation || '',
+        emergencyPhone: user.profile?.emergencyContact?.phone || '',
+        pan: user.profile?.pan || '',
+        aadhaar: user.profile?.aadhaar || '',
+        dob: user.profile?.dob || '',
+        gender: user.profile?.gender || '',
+      });
+    }
+  }, [showProfileDetails, user]);
+
+  const handleSaveProfile = async () => {
+    setProfileMessage(null);
+    if (!profileForm.mobile || !profileForm.address || !profileForm.designation || !profileForm.department || !profileForm.joiningDate) {
+      setProfileMessage('Please fill all required fields before saving.');
+      return;
+    }
+
+    setProfileLoading(true);
+    try {
+      const fd = new FormData();
+      fd.append('name', profileForm.name);
+      fd.append('mobile', profileForm.mobile);
+      fd.append('address', profileForm.address);
+      fd.append('pan', profileForm.pan);
+      fd.append('aadhaar', profileForm.aadhaar);
+      fd.append('dob', profileForm.dob);
+      fd.append('gender', profileForm.gender);
+      fd.append('accountNumber', profileForm.accountNumber);
+      fd.append('ifsc', profileForm.ifsc);
+      fd.append('accountType', profileForm.accountType);
+      fd.append('emergencyName', profileForm.emergencyName);
+      fd.append('emergencyRelation', profileForm.emergencyRelation);
+      fd.append('emergencyPhone', profileForm.emergencyPhone);
+      fd.append('designation', profileForm.designation);
+      fd.append('department', profileForm.department);
+      fd.append('joiningDate', profileForm.joiningDate);
+
+      await api.put('/users/profile', fd);
+      await dispatch(refreshUser());
+      localStorage.setItem('employeeProfileUpdated', Date.now().toString());
+      setProfileMessage('Profile updated successfully.');
+      setIsEditingProfile(false);
+    } catch (error: any) {
+      setProfileMessage(error?.response?.data?.message || 'Profile update failed.');
+    } finally {
+      setProfileLoading(false);
+    }
   };
-
-  // Only tasks NOT linked to a project (general tasks)
-  const myTasks = tasks.filter(task =>
-    isAssignedToUser(task.assignedTo, user) && !task.projectId
-  );
-
-  // Projects this employee is assigned to
-  const myProjects = projects;
 
   useEffect(() => {
     dispatch(fetchTasks());
@@ -67,26 +151,57 @@ const EmployeeDashboard: React.FC = () => {
     }
   }, [dispatch, isMarketing]);
 
-  const pendingCount = myTasks.filter(t => t.status === 'Pending').length;
-  const inProgressCount = myTasks.filter(t => t.status === 'In Progress').length;
-  const completedCount = myTasks.filter(t => t.status === 'Completed').length;
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('profile') === 'true') {
+      setShowProfileDetails(true);
+    }
+  }, [location.search]);
+
+  const normalizeAssignedTo = (assignedTo: string | string[]) => {
+    if (!assignedTo) return [];
+    if (Array.isArray(assignedTo)) return assignedTo.map((s) => s.trim().toLowerCase()).filter(Boolean);
+    return assignedTo.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+  };
+
+  const isAssignedToUser = (assignedTo: string | string[], u?: any) => {
+    if (!assignedTo || !u) return false;
+    const parts = normalizeAssignedTo(assignedTo);
+    return (u.name && parts.includes(u.name.toLowerCase())) || (u.email && parts.includes(u.email.toLowerCase()));
+  };
+
+  const myTasks = tasks.filter((task) => isAssignedToUser(task.assignedTo, user) && !task.projectId);
+  const myProjects = projects;
+
+  const pendingCount = myTasks.filter((t) => t.status === 'Pending').length;
+  const inProgressCount = myTasks.filter((t) => t.status === 'In Progress').length;
+  const completedCount = myTasks.filter((t) => t.status === 'Completed').length;
 
   const marketingLeadCount = leads.length;
   const marketingNewCount = leads.filter((lead) => lead.status === 'New').length;
   const marketingContactedCount = leads.filter((lead) => lead.status === 'Contacted').length;
   const marketingConvertedCount = leads.filter((lead) => lead.status === 'Converted').length;
 
+  const sessionStartedAt = user?.lastLoginAt
+    ? new Date(user.lastLoginAt).toLocaleString('en-IN', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      })
+    : 'Not recorded yet';
+
   const getPriorityStyle = (priority: string) => {
     switch (priority) {
-      case 'High': return 'text-rose-600 bg-rose-50 border-rose-100';
-      case 'Medium': return 'text-amber-600 bg-amber-50 border-amber-100';
-      default: return 'text-slate-500 bg-slate-50 border-slate-100';
+      case 'High':
+        return 'text-rose-600 bg-rose-50 border-rose-100';
+      case 'Medium':
+        return 'text-amber-600 bg-amber-50 border-amber-100';
+      default:
+        return 'text-slate-500 bg-slate-50 border-slate-100';
     }
   };
 
   return (
     <div className="space-y-8 animate-fade-in pb-12">
-      {/* Welcome Banner */}
       <div className="bg-hero-gradient p-8 rounded-3xl text-white shadow-xl flex flex-col md:flex-row md:items-center md:justify-between gap-6 relative overflow-hidden">
         <div className="absolute right-0 top-0 translate-x-[20%] -translate-y-[20%] w-64 h-64 bg-white/5 rounded-full pointer-events-none blur-2xl"></div>
         <div>
@@ -103,9 +218,283 @@ const EmployeeDashboard: React.FC = () => {
         </div>
       </div>
 
+      {showProfileDetails && user && (
+        <div className="glass rounded-3xl border border-slate-200 p-6 shadow-sm">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900">Your Profile Details</h2>
+              <p className="text-sm text-slate-500">These are your employee details. Close when finished viewing.</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => navigate('/leaves')}
+                className="px-4 py-2 rounded-2xl bg-slate-100 text-slate-800 hover:bg-slate-200 transition"
+              >
+                Leave
+              </button>
+              {isEditingProfile ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleSaveProfile}
+                    disabled={profileLoading}
+                    className="px-4 py-2 rounded-2xl bg-emerald-500 text-white hover:bg-emerald-600 transition disabled:opacity-60"
+                  >
+                    {profileLoading ? 'Saving...' : 'Save'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditingProfile(false);
+                      setProfileMessage(null);
+                      if (user) {
+                        setProfileForm({
+                          name: user.name || '',
+                          email: user.email || '',
+                          mobile: user.profile?.mobile || '',
+                          address: user.profile?.address || '',
+                          designation: user.designation || '',
+                          department: user.department || '',
+                          joiningDate: user.joiningDate || '',
+                          accountNumber: user.profile?.bank?.accountNumber || '',
+                          ifsc: user.profile?.bank?.ifsc || '',
+                          accountType: user.profile?.bank?.accountType || '',
+                          emergencyName: user.profile?.emergencyContact?.name || '',
+                          emergencyRelation: user.profile?.emergencyContact?.relation || '',
+                          emergencyPhone: user.profile?.emergencyContact?.phone || '',
+                          pan: user.profile?.pan || '',
+                          aadhaar: user.profile?.aadhaar || '',
+                          dob: user.profile?.dob || '',
+                          gender: user.profile?.gender || '',
+                        });
+                      }
+                    }}
+                    className="px-4 py-2 rounded-2xl bg-slate-100 text-slate-800 hover:bg-slate-200 transition"
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsEditingProfile(true)}
+                  className="px-4 py-2 rounded-2xl bg-slate-100 text-slate-800 hover:bg-slate-200 transition"
+                >
+                  Edit Details
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowProfileDetails(false);
+                  navigate(location.pathname, { replace: true });
+                }}
+                className="px-4 py-2 rounded-2xl bg-slate-100 text-slate-800 hover:bg-slate-200 transition"
+              >
+                Close Details
+              </button>
+            </div>
+          </div>
+          {profileMessage && <div className="mb-4 text-sm text-slate-700">{profileMessage}</div>}
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Personal Details</h3>
+              <div className="grid gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Full Name</label>
+                  {isEditingProfile ? (
+                    <input
+                      value={profileForm.name}
+                      onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                      className="mt-1 w-full px-4 py-2 rounded-xl border"
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm text-slate-900">{user.name}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Email</label>
+                  <p className="mt-1 text-sm text-slate-900">{user.email}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Phone</label>
+                  {isEditingProfile ? (
+                    <input
+                      value={profileForm.mobile}
+                      onChange={(e) => setProfileForm({ ...profileForm, mobile: e.target.value })}
+                      className="mt-1 w-full px-4 py-2 rounded-xl border"
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm text-slate-900">{user.profile?.mobile || 'N/A'}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Address</label>
+                  {isEditingProfile ? (
+                    <textarea
+                      value={profileForm.address}
+                      onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
+                      className="mt-1 w-full px-4 py-2 rounded-xl border"
+                      rows={3}
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm text-slate-900 whitespace-pre-line">{user.profile?.address || 'N/A'}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Employment Details</h3>
+              <div className="grid gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Designation</label>
+                  {isEditingProfile ? (
+                    <input
+                      value={profileForm.designation}
+                      onChange={(e) => setProfileForm({ ...profileForm, designation: e.target.value })}
+                      className="mt-1 w-full px-4 py-2 rounded-xl border"
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm text-slate-900">{user.designation || 'N/A'}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Department</label>
+                  {isEditingProfile ? (
+                    <select
+                      value={profileForm.department}
+                      onChange={(e) => setProfileForm({ ...profileForm, department: e.target.value })}
+                      className="mt-1 w-full px-4 py-2 rounded-xl border"
+                    >
+                      <option value="">Select Department</option>
+                      <option value="Digital Marketing">Digital Marketing</option>
+                      <option value="Web Development">Web Development</option>
+                      <option value="Sales">Sales</option>
+                      <option value="Support">Support</option>
+                    </select>
+                  ) : (
+                    <p className="mt-1 text-sm text-slate-900">{user.department || 'N/A'}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Joining Date</label>
+                  {isEditingProfile ? (
+                    <input
+                      type="date"
+                      value={profileForm.joiningDate}
+                      onChange={(e) => setProfileForm({ ...profileForm, joiningDate: e.target.value })}
+                      className="mt-1 w-full px-4 py-2 rounded-xl border"
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm text-slate-900">{user.joiningDate || 'N/A'}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Approval Status</label>
+                  <p className="mt-1 text-sm text-slate-900">{user.approvalStatus || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2 mt-4">
+            <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Bank Details</h3>
+              <div className="grid gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Account Number</label>
+                  {isEditingProfile ? (
+                    <input
+                      value={profileForm.accountNumber}
+                      onChange={(e) => setProfileForm({ ...profileForm, accountNumber: e.target.value })}
+                      className="mt-1 w-full px-4 py-2 rounded-xl border"
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm text-slate-900">{user.profile?.bank?.accountNumber || 'N/A'}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">IFSC Code</label>
+                  {isEditingProfile ? (
+                    <input
+                      value={profileForm.ifsc}
+                      onChange={(e) => setProfileForm({ ...profileForm, ifsc: e.target.value })}
+                      className="mt-1 w-full px-4 py-2 rounded-xl border"
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm text-slate-900">{user.profile?.bank?.ifsc || 'N/A'}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Account Type</label>
+                  {isEditingProfile ? (
+                    <select
+                      value={profileForm.accountType}
+                      onChange={(e) => setProfileForm({ ...profileForm, accountType: e.target.value })}
+                      className="mt-1 w-full px-4 py-2 rounded-xl border"
+                    >
+                      <option value="">Select</option>
+                      <option value="Savings">Savings</option>
+                      <option value="Current">Current</option>
+                      <option value="Salary">Salary</option>
+                    </select>
+                  ) : (
+                    <p className="mt-1 text-sm text-slate-900">{user.profile?.bank?.accountType || 'N/A'}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Emergency Contact</h3>
+              <div className="grid gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Name</label>
+                  {isEditingProfile ? (
+                    <input
+                      value={profileForm.emergencyName}
+                      onChange={(e) => setProfileForm({ ...profileForm, emergencyName: e.target.value })}
+                      className="mt-1 w-full px-4 py-2 rounded-xl border"
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm text-slate-900">{user.profile?.emergencyContact?.name || 'N/A'}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Relation</label>
+                  {isEditingProfile ? (
+                    <input
+                      value={profileForm.emergencyRelation}
+                      onChange={(e) => setProfileForm({ ...profileForm, emergencyRelation: e.target.value })}
+                      className="mt-1 w-full px-4 py-2 rounded-xl border"
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm text-slate-900">{user.profile?.emergencyContact?.relation || 'N/A'}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Phone</label>
+                  {isEditingProfile ? (
+                    <input
+                      value={profileForm.emergencyPhone}
+                      onChange={(e) => setProfileForm({ ...profileForm, emergencyPhone: e.target.value })}
+                      className="mt-1 w-full px-4 py-2 rounded-xl border"
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm text-slate-900">{user.profile?.emergencyContact?.phone || 'N/A'}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isMarketing ? (
         <>
-          {/* Marketing Lead Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
             <div className="glass p-6 rounded-2xl flex items-center gap-4 hover:shadow-lg transition-all border border-transparent hover:border-blue-200">
               <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
@@ -152,7 +541,6 @@ const EmployeeDashboard: React.FC = () => {
         </>
       ) : (
         <>
-          {/* Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
             <div className="glass p-6 rounded-2xl flex items-center gap-4 hover:shadow-lg transition-all border border-transparent hover:border-orange-200">
               <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
@@ -192,7 +580,6 @@ const EmployeeDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* My Projects Section */}
           <div>
             <h2 className="text-xl font-bold text-slate-900 mb-4">My Projects</h2>
             {myProjects.length === 0 ? (
@@ -204,9 +591,9 @@ const EmployeeDashboard: React.FC = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {myProjects.map(project => {
-                  const projectTaskCount = tasks.filter(t => t.projectId === project._id && isAssignedToUser(t.assignedTo, user)).length;
-                  const doneCount = tasks.filter(t => t.projectId === project._id && t.status === 'Completed' && isAssignedToUser(t.assignedTo, user)).length;
+                {myProjects.map((project) => {
+                  const projectTaskCount = tasks.filter((t) => t.projectId === project._id && isAssignedToUser(t.assignedTo, user)).length;
+                  const doneCount = tasks.filter((t) => t.projectId === project._id && t.status === 'Completed' && isAssignedToUser(t.assignedTo, user)).length;
                   return (
                     <div key={project._id} className="glass p-5 rounded-2xl border border-slate-100 hover:border-indigo-200 hover:shadow-lg transition-all flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
@@ -231,10 +618,9 @@ const EmployeeDashboard: React.FC = () => {
             )}
           </div>
 
-          {/* Task List - General tasks only */}
           <div>
             <h2 className="text-xl font-bold text-slate-900 mb-6">Your Assigned Tasks</h2>
-            
+
             {isLoading && myTasks.length === 0 ? (
               <div className="flex justify-center py-12">
                 <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
@@ -287,8 +673,7 @@ const EmployeeDashboard: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      
-                      {/* Status — no Completed option for employees */}
+
                       <div className="flex items-center self-start sm:self-center ml-10 sm:ml-0">
                         {task.status === 'Completed' ? (
                           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-xl">

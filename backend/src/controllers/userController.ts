@@ -138,14 +138,47 @@ export const submitEmployeeProfile = async (req: Request, res: Response) => {
     if (!user || user.role !== 'employee') return res.status(404).json({ message: 'Employee not found' });
 
     // Accept fields from body; photo can be base64 or URL
-    const { name, mobile, aadhaar, dob, gender, photo } = req.body;
+    const {
+      name,
+      mobile,
+      aadhaar,
+      dob,
+      gender,
+      photo,
+      address,
+      pan,
+      accountNumber,
+      ifsc,
+      accountType,
+      emergencyName,
+      emergencyRelation,
+      emergencyPhone,
+      designation,
+      department,
+      joiningDate,
+    } = req.body;
 
     user.name = name || user.name;
+    user.designation = designation || user.designation;
+    user.department = department || user.department;
+    user.joiningDate = joiningDate || user.joiningDate;
     user.profile = user.profile || {};
     user.profile.mobile = mobile || user.profile.mobile;
     user.profile.aadhaar = aadhaar || user.profile.aadhaar;
     user.profile.dob = dob || user.profile.dob;
     user.profile.gender = gender || user.profile.gender;
+    user.profile.address = address || user.profile.address;
+    user.profile.pan = pan || user.profile.pan;
+    user.profile.bank = {
+      accountNumber: accountNumber || user.profile.bank?.accountNumber,
+      ifsc: ifsc || user.profile.bank?.ifsc,
+      accountType: accountType || user.profile.bank?.accountType,
+    };
+    user.profile.emergencyContact = {
+      name: emergencyName || user.profile.emergencyContact?.name,
+      relation: emergencyRelation || user.profile.emergencyContact?.relation,
+      phone: emergencyPhone || user.profile.emergencyContact?.phone,
+    };
     if (photo) user.profile.photo = photo;
 
     // Accept multipart file upload (profilePhoto) as well
@@ -154,9 +187,14 @@ export const submitEmployeeProfile = async (req: Request, res: Response) => {
       user.profile.photo = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
     }
     user.profile.submittedAt = new Date();
+    user.employeeId ||= `EMP-${user._id.toString().slice(-6).toUpperCase()}`;
 
     user.profileCompleted = true;
-    user.approvalStatus = 'Pending';
+    if (user.approvalStatus === 'Approved') {
+      user.approvalStatus = 'Approved';
+    } else {
+      user.approvalStatus = 'Pending';
+    }
 
     await user.save();
 
@@ -171,7 +209,9 @@ export const submitEmployeeProfile = async (req: Request, res: Response) => {
 // @access Admin
 export const getEmployeeApprovals = async (req: Request, res: Response) => {
   try {
-    const approvals = await User.find({ role: 'employee', profileCompleted: true }).select('name email department profile approvalStatus createdAt');
+    const approvals = await User.find({ role: 'employee', profileCompleted: true, approvalStatus: 'Pending' })
+      .select('employeeId name email designation department joiningDate profile approvalStatus createdAt')
+      .sort({ 'profile.submittedAt': -1 });
     return res.status(200).json(approvals);
   } catch (error) {
     return res.status(500).json({ message: 'Server error', error });
