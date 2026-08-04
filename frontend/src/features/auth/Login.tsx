@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import logo from '../../assets/logo.jpg';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { login, clearError } from '../../store/slices/authSlice';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const dispatch = useAppDispatch();
   const { isAuthenticated, isLoading, error } = useAppSelector((state) => state.auth);
+
+  const isEmployeeLogin = searchParams.get('mode') === 'employee';
 
   const [formData, setFormData] = useState({
     email: '',
@@ -115,10 +118,13 @@ const Login: React.FC = () => {
               </div>
 
               <div className="text-sm">
-                <Link to="/forgot-password" className="font-bold text-indigo-600 hover:text-indigo-500">
-                  Forgot password?
-                </Link>
+                {!isEmployeeLogin && (
+                  <Link to="/forgot-password" className="font-bold text-indigo-600 hover:text-indigo-500">
+                    Forgot password?
+                  </Link>
+                )}
               </div>
+
             </div>
 
             <div>

@@ -5,13 +5,35 @@ interface User {
   _id: string;
   name: string;
   email: string;
-  role: 'admin' | 'sales' | 'customer' | 'employee';
+  role: 'superadmin' | 'admin' | 'sales' | 'customer' | 'employee';
   phone?: string;
   designation?: string;
   department?: string;
   joiningDate?: string;
+  employeeId?: string;
   lastLoginAt?: string | null;
   lastLogoutAt?: string | null;
+  profileCompleted?: boolean;
+  approvalStatus?: 'NotSubmitted' | 'Pending' | 'Approved' | 'Rejected';
+  profile?: {
+    mobile?: string;
+    aadhaar?: string;
+    dob?: string;
+    gender?: string;
+    photo?: string;
+    address?: string;
+    pan?: string;
+    bank?: {
+      accountNumber?: string;
+      ifsc?: string;
+      accountType?: 'Savings' | 'Current' | 'Salary';
+    };
+    emergencyContact?: {
+      name?: string;
+      relation?: string;
+      phone?: string;
+    };
+  };
 }
 
 interface EmployeeLogoutPayload {
@@ -63,6 +85,17 @@ export const register = createAsyncThunk('auth/register', async (userData: any, 
     return { user, token };
   } catch (error: any) {
     return rejectWithValue(error.response?.data?.message || 'Registration failed');
+  }
+});
+
+export const refreshUser = createAsyncThunk('auth/refreshUser', async (_, { rejectWithValue }) => {
+  try {
+    const res = await api.get('/auth/me');
+    const user = res.data;
+    localStorage.setItem('user', JSON.stringify(user));
+    return user;
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.message || 'Failed to refresh user');
   }
 });
 
@@ -148,6 +181,14 @@ const authSlice = createSlice({
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
+      })
+      // Refresh user
+      .addCase(refreshUser.fulfilled, (state, action: PayloadAction<User>) => {
+        state.user = action.payload;
+        state.isAuthenticated = true;
+      })
+      .addCase(refreshUser.rejected, (state) => {
+        // ignore
       })
       // Logout
       .addCase(logoutUser.fulfilled, (state) => {

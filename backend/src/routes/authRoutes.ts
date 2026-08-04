@@ -1,7 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { registerUser, loginUser, resetPassword, logoutUser } from '../controllers/authController';
-import { registerUser, loginUser, resetPassword, logoutUser } from '../controllers/authController';
+import { registerUser, loginUser, resetPassword, logoutUser, getCurrentUser } from '../controllers/authController';
 import { protect } from '../middleware/authMiddleware';
 
 const router = express.Router();
@@ -15,5 +14,6 @@ router.post('/login', loginUser);
 router.post('/reset-password', resetPassword);
 router.post('/logout', upload.single('screenshot'), logoutUser);
 router.post('/logout', protect, logoutUser);
+router.get('/me', protect, getCurrentUser);
 
 export default router;

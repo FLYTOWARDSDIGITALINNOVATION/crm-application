@@ -12,9 +12,15 @@ export const getTasks = async (req: Request, res: Response) => {
       filter.projectId = req.query.projectId;
     }
 
-    // Employees only see their own tasks
+    // Employees only see their own tasks — match against array membership
     if (req.user?.role === 'employee') {
-      filter.assignedTo = req.user.name;
+      const names: string[] = [];
+      if (req.user?.name) names.push(req.user.name);
+      const userEmail = req.user?.email;
+      if (userEmail) names.push(userEmail);
+      if (names.length > 0) {
+        filter.assignedTo = { $in: names };
+      }
     }
 
     const tasks = await Task.find(filter).sort({ createdAt: -1 });
@@ -29,7 +35,12 @@ export const getTasks = async (req: Request, res: Response) => {
 // @access  Admin only
 export const createTask = async (req: Request, res: Response) => {
   try {
-    const task = await Task.create(req.body);
+    // Normalize assignedTo to array of strings
+    const body = { ...req.body } as any;
+    if (body.assignedTo && !Array.isArray(body.assignedTo)) {
+      body.assignedTo = [body.assignedTo];
+    }
+    const task = await Task.create(body);
     res.status(201).json(task);
   } catch (error) {
     res.status(500).json({ message: 'Server Error creating task', error });
@@ -76,7 +87,7 @@ export const toggleTask = async (req: Request, res: Response) => {
 // @access  Protected
 export const updateTask = async (req: Request, res: Response) => {
   try {
-    const { status, assignedTo, dueDate, description } = req.body;
+    const { status, assignedTo, dueDate, description } = req.body as any;
     const task = await Task.findById(req.params.id);
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
@@ -100,6 +111,9 @@ export const updateTask = async (req: Request, res: Response) => {
     }
     if (description !== undefined) {
       task.description = description;
+    }
+    if (assignedTo !== undefined) {
+      task.assignedTo = Array.isArray(assignedTo) ? assignedTo : [assignedTo];
     }
     
     await task.save();

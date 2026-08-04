@@ -69,15 +69,15 @@ const EditNotificationModal: React.FC<EditNotificationModalProps> = ({
         onClick={onClose}
       ></div>
 
-      <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden animate-slide-up">
-        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+      <div className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden animate-slide-up">
+        <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50/50 dark:bg-slate-700/50">
           <div>
-            <h2 className="text-lg font-bold text-slate-900 font-inter">Edit Notification</h2>
-            <p className="text-slate-500 text-xs mt-0.5">{task.title}</p>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white font-inter">Edit Notification</h2>
+            <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">{task.title}</p>
           </div>
           <button 
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
+            className="p-2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 rounded-xl transition-all"
           >
             <X className="w-5 h-5" />
           </button>
@@ -86,40 +86,40 @@ const EditNotificationModal: React.FC<EditNotificationModalProps> = ({
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Date</label>
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Date</label>
               <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                 <input
                   type="date"
                   required
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm transition-all focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm text-slate-900 dark:text-white transition-all focus:ring-2 focus:ring-indigo-500 outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Time</label>
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Time</label>
               <div className="relative">
-                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                 <input
                   type="time"
                   required
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm transition-all focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm text-slate-900 dark:text-white transition-all focus:ring-2 focus:ring-indigo-500 outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Notes</label>
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Notes</label>
               <textarea
                 rows={2}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm transition-all focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm text-slate-900 dark:text-white transition-all focus:ring-2 focus:ring-indigo-500 outline-none"
                 placeholder="Any specific details for this follow up..."
               />
             </div>
@@ -129,13 +129,13 @@ const EditNotificationModal: React.FC<EditNotificationModalProps> = ({
             <button 
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:text-slate-800 transition-all"
+              className="px-5 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white transition-all"
             >
               Cancel
             </button>
             <button 
               type="submit"
-              className="px-6 py-2.5 bg-indigo-600 rounded-xl text-sm font-bold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all flex items-center gap-2"
+              className="px-6 py-2.5 bg-indigo-600 dark:bg-indigo-600 rounded-xl text-sm font-bold text-white hover:bg-indigo-700 dark:hover:bg-indigo-700 shadow-lg shadow-indigo-100 dark:shadow-indigo-900/30 transition-all flex items-center gap-2"
             >
               Save Changes
               <CheckCircle2 className="w-4 h-4" />

@@ -10,6 +10,7 @@ declare global {
         id: string;
         role: string;
         name: string;
+        email?: string;
       };
     }
   }
@@ -26,7 +27,7 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
       if (!user) {
         return res.status(401).json({ message: 'Not authorized, user not found' });
       }
-      req.user = { id: (user._id as any).toString(), role: user.role, name: user.name };
+      req.user = { id: (user._id as any).toString(), role: user.role, name: user.name, email: user.email };
       next();
     } catch (error) {
       return res.status(401).json({ message: 'Not authorized, token failed' });

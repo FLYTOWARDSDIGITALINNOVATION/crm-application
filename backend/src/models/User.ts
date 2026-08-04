@@ -10,9 +10,31 @@ export interface IUser extends Document {
   designation?: string;
   department?: string;
   joiningDate?: string;
+  employeeId?: string;
+  // Profile completion & approval workflow
+  profileCompleted?: boolean;
+  approvalStatus?: 'NotSubmitted' | 'Pending' | 'Approved' | 'Rejected';
+  profile?: {
+    mobile?: string;
+    aadhaar?: string;
+    dob?: string;
+    gender?: string;
+    photo?: string; // base64 or url
+    submittedAt?: Date;
+    address?: string;
+    pan?: string;
+    bank?: {
+      accountNumber?: string;
+      ifsc?: string;
+      accountType?: 'Savings' | 'Current' | 'Salary';
+    };
+    emergencyContact?: {
+      name?: string;
+      relation?: string;
+      phone?: string;
+    };
+  };
   currentSessionId?: mongoose.Types.ObjectId;
-  lastLoginAt?: Date;
-  lastLogoutAt?: Date;
   lastLoginAt?: Date;
   lastLogoutAt?: Date;
   isOnline?: boolean;
@@ -35,9 +57,30 @@ const UserSchema: Schema = new Schema(
     designation: { type: String },
     department: { type: String },
     joiningDate: { type: String },
+    employeeId: { type: String, unique: true, sparse: true },
+    profileCompleted: { type: Boolean, default: false },
+    approvalStatus: { type: String, enum: ['NotSubmitted', 'Pending', 'Approved', 'Rejected'], default: 'NotSubmitted' },
+    profile: {
+      mobile: { type: String },
+      aadhaar: { type: String },
+      dob: { type: String },
+      gender: { type: String },
+      photo: { type: String },
+      submittedAt: { type: Date },
+      address: { type: String },
+      pan: { type: String },
+      bank: {
+        accountNumber: { type: String },
+        ifsc: { type: String },
+        accountType: { type: String, enum: ['Savings', 'Current', 'Salary'] },
+      },
+      emergencyContact: {
+        name: { type: String },
+        relation: { type: String },
+        phone: { type: String },
+      },
+    },
     currentSessionId: { type: Schema.Types.ObjectId, ref: 'EmployeeSession' },
-    lastLoginAt: { type: Date },
-    lastLogoutAt: { type: Date },
     lastLoginAt: { type: Date },
     lastLogoutAt: { type: Date },
     isOnline: { type: Boolean, default: false },

@@ -9,6 +9,7 @@ export interface Task {
   status: 'Pending' | 'In Progress' | 'Completed' | string;
   assignedTo: string;
   relatedTo: string;
+  projectId?: string;
   description?: string;
 }
 
@@ -19,8 +20,9 @@ const mapTask = (doc: any): Task => ({
   dueDate: doc.dueDate,
   priority: doc.priority,
   status: doc.status,
-  assignedTo: doc.assignedTo,
+  assignedTo: Array.isArray(doc.assignedTo) ? doc.assignedTo.join(', ') : (doc.assignedTo || ''),
   relatedTo: doc.relatedTo,
+  projectId: doc.projectId,
   description: doc.description,
 });
 
@@ -77,16 +79,10 @@ export const toggleTaskStatus = createAsyncThunk(
 
 export const updateTask = createAsyncThunk(
   'tasks/update',
-  async ({ id, status, assignedTo, dueDate, description }: { id: string; status?: string; assignedTo?: string; dueDate?: string; description?: string }, { rejectWithValue }) => {
+  async ({ id, status, assignedTo, dueDate, description }: { id: string; status?: string; assignedTo?: any; dueDate?: string; description?: string }, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${API_URL}/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, assignedTo, dueDate, description }),
-      });
-      if (!res.ok) throw new Error('Failed to update task');
-      const data = await res.json();
-      return mapTask(data);
+      const res = await api.patch(`/tasks/${id}`, { status, assignedTo, dueDate, description });
+      return mapTask(res.data);
     } catch (err: any) {
       return rejectWithValue(err.response?.data?.message || err.message);
     }

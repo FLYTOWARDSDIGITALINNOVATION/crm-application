@@ -112,7 +112,19 @@ const WorkLogPanel: React.FC<{
     await dispatch(deleteWorkLog({ logId, taskId: task.id }));
   };
 
-  const isMyTask = task.assignedTo === currentUserName;
+  const normalizeAssignedTo = (assignedTo: string | string[]) => {
+    if (!assignedTo) return [];
+    if (Array.isArray(assignedTo)) return assignedTo.map(s => s.trim().toLowerCase()).filter(Boolean);
+    return assignedTo.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  };
+
+  const isAssignedToUser = (assignedTo: string | string[], name?: string, email?: string) => {
+    if (!assignedTo || (!name && !email)) return false;
+    const parts = normalizeAssignedTo(assignedTo);
+    return (name && parts.includes(name.toLowerCase())) || (email && parts.includes(email.toLowerCase()));
+  };
+
+  const isMyTask = isAssignedToUser(task.assignedTo, currentUserName);
 
   return (
     <div className="mt-3 border-t border-slate-100 pt-3">
@@ -355,9 +367,15 @@ const ProjectDetail: React.FC = () => {
   const project = projects.find(p => p._id === projectId);
 
   const projectTasks = tasks.filter(t => t.projectId === projectId);
+  const isAssignedToUserGlobal = (assignedTo: string | string[], u?: any) => {
+    if (!assignedTo || !u) return false;
+    const parts = normalizeAssignedTo(assignedTo);
+    return (u.name && parts.includes(u.name.toLowerCase())) || (u.email && parts.includes(u.email.toLowerCase()));
+  };
+
   const visibleTasks = isAdmin
     ? projectTasks
-    : projectTasks.filter(t => t.assignedTo === user?.name || t.assignedTo === user?.email);
+    : projectTasks.filter(t => isAssignedToUserGlobal(t.assignedTo, user));
 
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState(defaultForm);
