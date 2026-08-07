@@ -9,7 +9,18 @@ import User from '../models/User';
 // @access  Public
 export const convertLeadToCustomer = async (req: Request, res: Response) => {
   try {
-    const { dealValue, notes } = req.body;
+    const { dealValue, notes, phone, advanceAmount, sector } = req.body;
+    
+    // Parse numeric values since FormData sends them as strings
+    const parsedDealValue = parseFloat(dealValue) || 0;
+    const parsedAdvanceAmount = parseFloat(advanceAmount) || 0;
+    
+    // Handle PDF upload
+    let pdfUrl = '';
+    if (req.file) {
+      pdfUrl = `/uploads/${req.file.filename}`;
+    }
+
     const lead = await Lead.findById(req.params.id);
 
     if (!lead) {
@@ -25,9 +36,12 @@ export const convertLeadToCustomer = async (req: Request, res: Response) => {
       leadId: lead._id,
       name: lead.name,
       email: lead.email,
-      phone: lead.phone,
+      phone: phone || lead.phone,
       company: lead.company,
-      totalSpent: dealValue || 0,
+      sector: sector || '',
+      totalSpent: parsedDealValue,
+      advanceAmount: parsedAdvanceAmount,
+      pdfUrl: pdfUrl,
       notes: notes || '',
       status: 'Active',
       joinedAt: new Date(),

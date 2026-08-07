@@ -3,7 +3,7 @@ import {
   ArrowLeft, Mail, Phone, Building2,  
   Tag, MessageSquare, History,
   PhoneCall, MailPlus, AlertCircle,
-  Star, TrendingUp, DollarSign, Calendar, Lock, Trash2
+  Star, TrendingUp, DollarSign, Calendar, Lock, Trash2, FileText, Download
 } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store';
@@ -160,7 +160,7 @@ const CustomerDetail: React.FC = () => {
         {/* Left Column: Details & Timeline */}
         <div className="lg:col-span-2 space-y-6">
           {/* KPI Mini-Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div className="glass p-4 rounded-2xl flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
                 <TrendingUp className="w-5 h-5" />
@@ -168,6 +168,15 @@ const CustomerDetail: React.FC = () => {
               <div>
                 <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider block">Total Spent</span>
                 <span className="text-lg font-bold text-slate-900 dark:text-white">₹{customer.totalSpent?.toLocaleString()}</span>
+              </div>
+            </div>
+            <div className="glass p-4 rounded-2xl flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
+                <DollarSign className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider block">Advance Paid</span>
+                <span className="text-lg font-bold text-slate-900 dark:text-white">₹{customer.advanceAmount?.toLocaleString() || '0'}</span>
               </div>
             </div>
             <div className="glass p-4 rounded-2xl flex items-center gap-3">
@@ -385,6 +394,32 @@ const CustomerDetail: React.FC = () => {
               </>
             )}
           </div>
+
+          {customer.pdfUrl && (
+            <div className="glass p-6 rounded-2xl space-y-4">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest opacity-40">Contract Document</h3>
+              <div className="p-4 bg-indigo-50/50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-900/30 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center text-indigo-500 shadow-sm">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300 block">Signed Contract</span>
+                    <span className="text-xs text-slate-500">PDF Document</span>
+                  </div>
+                </div>
+                <a 
+                  href={`http://localhost:5000${customer.pdfUrl}`} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition-all flex items-center gap-2 shadow-sm"
+                >
+                  <Download className="w-4 h-4" />
+                  View
+                </a>
+              </div>
+            </div>
+          )}
 
           <div className="glass p-6 rounded-2xl space-y-4">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest opacity-40">System Record</h3>

@@ -8,6 +8,8 @@ export interface ICustomer extends Document {
   company?: string;
   sector?: string;
   totalSpent: number;
+  advanceAmount?: number;
+  pdfUrl?: string;
   status: 'Active' | 'VIP' | 'New' | 'Inactive';
   notes?: string;
   timeline?: Array<{
@@ -31,6 +33,8 @@ const CustomerSchema: Schema = new Schema(
     company: { type: String },
     sector: { type: String },
     totalSpent: { type: Number, default: 0 },
+    advanceAmount: { type: Number, default: 0 },
+    pdfUrl: { type: String },
     status: {
       type: String,
       enum: ['Active', 'VIP', 'New', 'Inactive'],

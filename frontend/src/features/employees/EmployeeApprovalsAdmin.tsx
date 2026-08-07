@@ -89,17 +89,13 @@ const EmployeeApprovalsAdmin: React.FC = () => {
   }, []);
 
   const filteredApprovals = approvals.filter((approval) => {
-    if (activeTab === 'All') return true;
-    if (activeTab === 'Requested') return approval.approvalStatus === 'Pending';
-    if (activeTab === 'Approved') return approval.approvalStatus === 'Approved';
-    if (activeTab === 'Rejected') return approval.approvalStatus === 'Rejected';
-    return true;
+    return !approval.approvalStatus || approval.approvalStatus === 'Pending';
   });
 
   const updateStatus = async (id: string, status: 'Approved' | 'Rejected') => {
     try {
       await api.patch(`/users/approvals/${id}`, { status });
-      fetchApprovals();
+      setApprovals(prev => prev.map(a => a._id === id ? { ...a, approvalStatus: status } : a));
       if (selectedEmployee?._id === id) {
         setSelectedEmployee({ ...selectedEmployee, approvalStatus: status });
       }
@@ -152,17 +148,6 @@ const EmployeeApprovalsAdmin: React.FC = () => {
 
       {approvals.length > 0 && (
         <div className="space-y-6">
-          <div className="flex flex-wrap items-center gap-2 rounded-3xl border border-slate-200 bg-slate-50 p-4">
-            {(['All', 'Requested', 'Approved', 'Rejected'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${activeTab === tab ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'}`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
 
           {filteredApprovals.length === 0 ? (
             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 text-slate-600">
@@ -198,8 +183,13 @@ const EmployeeApprovalsAdmin: React.FC = () => {
                           <Eye className="w-4 h-4" />
                           <span className="hidden sm:inline">View Details</span>
                         </button>
-                        <button onClick={() => updateStatus(approval._id, 'Approved')} className="rounded-2xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700">Approve</button>
-                        <button onClick={() => updateStatus(approval._id, 'Rejected')} className="rounded-2xl bg-rose-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-rose-700">Reject</button>
+                        {approval.approvalStatus === 'Approved' ? (
+                          <span className="rounded-2xl bg-emerald-100 text-emerald-700 px-3 py-2 text-sm font-semibold border border-emerald-200 flex items-center gap-1">
+                            <CheckCircle2 className="w-4 h-4" /> Approved
+                          </span>
+                        ) : (
+                          <button onClick={() => updateStatus(approval._id, 'Approved')} className="rounded-2xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700">Approve</button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -278,8 +268,13 @@ const EmployeeApprovalsAdmin: React.FC = () => {
                           <p className="mt-1 text-sm text-slate-500">Approve or reject from the profile view.</p>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          <button onClick={() => updateStatus(selectedEmployee._id, 'Approved')} className="rounded-2xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700">Approve</button>
-                          <button onClick={() => updateStatus(selectedEmployee._id, 'Rejected')} className="rounded-2xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700">Reject</button>
+                          {selectedEmployee.approvalStatus === 'Approved' ? (
+                            <span className="rounded-2xl bg-emerald-100 text-emerald-700 px-4 py-2 text-sm font-semibold border border-emerald-200 flex items-center gap-1">
+                              <CheckCircle2 className="w-4 h-4" /> Approved
+                            </span>
+                          ) : (
+                            <button onClick={() => updateStatus(selectedEmployee._id, 'Approved')} className="rounded-2xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700">Approve</button>
+                          )}
                         </div>
                       </div>
 

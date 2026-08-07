@@ -75,6 +75,7 @@ const EmployeeWorkHistory: React.FC<EmployeeWorkHistoryProps> = ({
   const [logs, setLogs] = useState<EmployeeWorkLog[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [expandedDates, setExpandedDates] = useState<string[]>([]);
 
   useEffect(() => {
     if (!employeeId) {
@@ -218,62 +219,75 @@ const EmployeeWorkHistory: React.FC<EmployeeWorkHistoryProps> = ({
                 </div>
 
                 {latestEntry ? (
-                  <div className="mt-4 space-y-4">
-                    <div className="flex flex-wrap gap-2 text-[11px] font-bold">
-                      <span className="rounded-full bg-white px-3 py-1 text-slate-600 ring-1 ring-slate-200">
-                        Login: {istTimeLabel(latestEntry.loginAt)}
-                      </span>
-                      <span className="rounded-full bg-white px-3 py-1 text-slate-600 ring-1 ring-slate-200">
-                        Logout: {istTimeLabel(latestEntry.logoutAt)}
-                      </span>
-                      <span className="rounded-full bg-white px-3 py-1 text-slate-600 ring-1 ring-slate-200">
-                        Proof: {latestEntry.proofType || 'text'}
-                      </span>
-                      {entries.length > 1 && (
-                        <span className="rounded-full bg-white px-3 py-1 text-slate-600 ring-1 ring-slate-200">
-                          +{entries.length - 1} more session{entries.length - 1 > 1 ? 's' : ''}
-                        </span>
-                      )}
-                    </div>
-
-                    {latestEntry.workSummary && (
-                      <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
-                        <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.25em] text-slate-400">
-                          <FileText className="w-3.5 h-3.5" />
-                          Summary
+                  <div className="mt-4 space-y-6">
+                    {(expandedDates.includes(dateKey) ? entries : [latestEntry]).map((entry, index) => (
+                      <div key={entry._id || index} className={index > 0 ? "pt-6 border-t border-slate-200/60" : ""}>
+                        <div className="flex flex-wrap gap-2 text-[11px] font-bold">
+                          <span className="rounded-full bg-white px-3 py-1 text-slate-600 ring-1 ring-slate-200">
+                            Login: {istTimeLabel(entry.loginAt)}
+                          </span>
+                          <span className="rounded-full bg-white px-3 py-1 text-slate-600 ring-1 ring-slate-200">
+                            Logout: {istTimeLabel(entry.logoutAt)}
+                          </span>
+                          <span className="rounded-full bg-white px-3 py-1 text-slate-600 ring-1 ring-slate-200">
+                            Proof: {entry.proofType || 'text'}
+                          </span>
+                          {index === 0 && entries.length > 1 && (
+                            <button
+                              onClick={() => {
+                                setExpandedDates(prev =>
+                                  prev.includes(dateKey)
+                                    ? prev.filter(d => d !== dateKey)
+                                    : [...prev, dateKey]
+                                );
+                              }}
+                              className="rounded-full bg-indigo-50 px-3 py-1 text-indigo-600 hover:bg-indigo-100 ring-1 ring-indigo-200 transition-colors cursor-pointer"
+                            >
+                              {expandedDates.includes(dateKey) ? 'Hide sessions' : `+${entries.length - 1} more session${entries.length - 1 > 1 ? 's' : ''}`}
+                            </button>
+                          )}
                         </div>
-                        <p className="text-sm leading-6 text-slate-700">{latestEntry.workSummary}</p>
-                      </div>
-                    )}
 
-                    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                      {latestEntry.gitLink && (
-                        <a
-                          href={latestEntry.gitLink}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-indigo-600 ring-1 ring-indigo-100 transition-all hover:bg-indigo-50"
-                        >
-                          <Link2 className="w-4 h-4" />
-                          Git link saved
-                        </a>
-                      )}
-
-                      {latestEntry.screenshot && (
-                        <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
-                          <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2 text-xs font-black uppercase tracking-[0.25em] text-slate-400">
-                            <ImageIcon className="w-3.5 h-3.5 text-indigo-500" />
-                            Screenshot
+                        {entry.workSummary && (
+                          <div className="mt-4 rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
+                            <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.25em] text-slate-400">
+                              <FileText className="w-3.5 h-3.5" />
+                              Summary
+                            </div>
+                            <p className="text-sm leading-6 text-slate-700">{entry.workSummary}</p>
                           </div>
-                          <img
-                            src={latestEntry.screenshot}
-                            alt="Saved work screenshot"
-                            className="h-28 w-44 object-cover"
-                            loading="lazy"
-                          />
+                        )}
+
+                        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                          {entry.gitLink && (
+                            <a
+                              href={entry.gitLink}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-indigo-600 ring-1 ring-indigo-100 transition-all hover:bg-indigo-50"
+                            >
+                              <Link2 className="w-4 h-4" />
+                              Git link saved
+                            </a>
+                          )}
+
+                          {entry.screenshot && (
+                            <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
+                              <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2 text-xs font-black uppercase tracking-[0.25em] text-slate-400">
+                                <ImageIcon className="w-3.5 h-3.5 text-indigo-500" />
+                                Screenshot
+                              </div>
+                              <img
+                                src={entry.screenshot}
+                                alt="Saved work screenshot"
+                                className="h-28 w-44 object-cover"
+                                loading="lazy"
+                              />
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    ))}
                   </div>
                 ) : isHoliday ? (
                   <div className="mt-4 rounded-2xl border border-amber-100 bg-white/80 px-4 py-3 text-sm text-amber-700">
