@@ -118,13 +118,12 @@ const Login: React.FC = () => {
               </div>
 
               <div className="text-sm">
-                {!isEmployeeLogin && (
-                  <Link to="/forgot-password" className="font-bold text-indigo-600 hover:text-indigo-500">
+                {formData.email.trim().toLowerCase() === 'admin@gmail.com' && (
+                  <Link to="/forgot-password" className="font-bold text-indigo-600 hover:text-indigo-500 transition-all">
                     Forgot password?
                   </Link>
                 )}
               </div>
-
             </div>
 
             <div>

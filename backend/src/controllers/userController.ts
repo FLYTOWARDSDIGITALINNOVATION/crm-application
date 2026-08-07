@@ -94,6 +94,32 @@ export const createEmployee = async (req: Request, res: Response) => {
   }
 };
 
+// @desc    Update employee payroll details (admin)
+// @route   PUT /api/users/employees/:id/payroll
+// @access  Private (Admin)
+export const updateEmployeePayroll = async (req: Request, res: Response) => {
+  try {
+    const { salary, pfContribution, uan, pensionStatus } = req.body;
+    const employee = await User.findById(req.params.id).select('-password');
+
+    if (!employee || employee.role !== 'employee') {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+
+    employee.profile = employee.profile || {};
+    employee.profile.salary = Number(salary) || 0;
+    employee.profile.pfContribution = Number(pfContribution) || 0;
+    employee.profile.uan = uan || '';
+    employee.profile.pensionStatus = pensionStatus || '';
+
+    await employee.save();
+
+    res.status(200).json(employee);
+  } catch (error) {
+    res.status(550).json({ message: 'Server Error updating employee payroll', error });
+  }
+};
+
 // @desc    Get work log history for a specific employee
 // @route   GET /api/users/employees/:id/work-logs
 // @access  Public
@@ -250,3 +276,19 @@ export const updateEmployeeApproval = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Server error', error });
   }
 };
+
+// @desc    Get all completed employee sessions with logout proofs (admin review)
+// @route   GET /api/users/work-sessions
+// @access  Private (Admin Only)
+export const getAllEmployeeSessions = async (req: Request, res: Response) => {
+  try {
+    const sessions = await EmployeeSession.find({ status: 'completed' })
+      .sort({ logoutAt: -1 })
+      .lean();
+      
+    return res.status(200).json(sessions);
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error fetching work sessions', error });
+  }
+};
+

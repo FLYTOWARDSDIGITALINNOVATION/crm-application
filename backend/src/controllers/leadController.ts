@@ -29,6 +29,7 @@ export const convertLeadToCustomer = async (req: Request, res: Response) => {
       company: lead.company,
       totalSpent: dealValue || 0,
       notes: notes || '',
+      requirements: lead.notes || notes || '',
       status: 'Active',
       joinedAt: new Date(),
     });
@@ -100,6 +101,53 @@ export const updateLead = async (req: Request, res: Response) => {
 
     if (!lead) {
       return res.status(404).json({ message: 'Lead not found' });
+    }
+
+    const previousStatus = lead.status;
+    const newStatus = req.body.status;
+
+    // Check if status is changed to Converted
+    if (newStatus === 'Converted' && previousStatus !== 'Converted') {
+      lead.status = 'Converted';
+      await lead.save();
+
+      // Check if Customer already exists
+      let customer = await Customer.findOne({ leadId: lead._id });
+      if (!customer) {
+        customer = await Customer.findOne({ email: lead.email });
+      }
+
+      if (!customer) {
+        // Create Customer
+        customer = await Customer.create({
+          leadId: lead._id,
+          name: lead.name,
+          email: lead.email,
+          phone: lead.phone,
+          company: lead.company,
+          totalSpent: req.body.value || lead.value || 0,
+          notes: lead.notes || '',
+          requirements: lead.notes || '',
+          status: 'Active',
+          joinedAt: new Date(),
+        });
+      }
+
+      // Create User account if not exists
+      const userExists = await User.findOne({ email: lead.email });
+      if (!userExists) {
+        const password = 'Cust@' + Math.floor(10000 + Math.random() * 90000);
+        await User.create({
+          name: lead.name,
+          email: lead.email,
+          password: password,
+          role: 'customer',
+        });
+        customer.portalPassword = password;
+        await customer.save();
+      }
+
+      return res.status(200).json(lead);
     }
 
     const updatedLead = await Lead.findByIdAndUpdate(
