@@ -8,6 +8,8 @@ import {
 	getEmployeeApprovals,
 	getEmployeeApprovalDetails,
 	updateEmployeeApproval,
+	getAllEmployeeSessions,
+	updateEmployeePayroll,
 } from '../controllers/userController';
 import { protect, adminOnly } from '../middleware/authMiddleware';
 
@@ -17,6 +19,8 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 *
 router.get('/employees', getEmployees);
 router.post('/employee', createEmployee);
 router.get('/employees/:id/work-logs', getEmployeeWorkLogs);
+router.put('/employees/:id/payroll', protect, adminOnly, updateEmployeePayroll);
+router.get('/work-sessions', protect, adminOnly, getAllEmployeeSessions);
 
 // Employee profile submission (first-time)
 // Support both PUT and POST for multipart compatibility

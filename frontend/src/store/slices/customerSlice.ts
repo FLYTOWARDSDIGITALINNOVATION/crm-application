@@ -24,6 +24,8 @@ export interface Customer {
   createdAt: string;
   updatedAt: string;
   portalPassword?: string;
+  requirements?: string;
+  files?: Array<{ name: string; url: string; uploadedAt: string }>;
 }
 
 interface CustomerState {
