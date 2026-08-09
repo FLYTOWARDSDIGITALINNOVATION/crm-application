@@ -3,9 +3,8 @@ import {
   ArrowLeft, Mail, Phone, Building2,  
   Tag, MessageSquare, History,
   PhoneCall, MailPlus, AlertCircle,
-  Star, TrendingUp, DollarSign, Calendar, Lock, Trash2, FileText, Download
-  Star, TrendingUp, DollarSign, Calendar, Lock, Trash2,
-  FileText, ImageIcon, Plus
+  Star, TrendingUp, DollarSign, Calendar, Lock, Trash2, FileText, Download,
+  ImageIcon, Plus
 } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store';
@@ -198,10 +197,7 @@ const CustomerDetail: React.FC = () => {
             <span className="hidden sm:inline">Edit Profile</span>
             <span className="sm:hidden">Edit</span>
           </button>
-          <button className="px-3 sm:px-4 py-2 bg-indigo-600 rounded-xl text-sm font-semibold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all flex items-center gap-2">
-            <DollarSign className="w-4 h-4" />
-            <span className="hidden sm:inline">Create Invoice</span>
-          </button>
+
         </div>
       </div>
 

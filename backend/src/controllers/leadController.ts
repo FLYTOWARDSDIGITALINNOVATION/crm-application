@@ -31,26 +31,40 @@ export const convertLeadToCustomer = async (req: Request, res: Response) => {
     lead.status = 'Converted';
     await lead.save();
 
-    // 2. Create customer
-    const customer = await Customer.create({
-      leadId: lead._id,
-      name: lead.name,
-      email: lead.email,
-      phone: phone || lead.phone,
-      company: lead.company,
-      sector: sector || '',
-      totalSpent: parsedDealValue,
-      advanceAmount: parsedAdvanceAmount,
-      pdfUrl: pdfUrl,
-      notes: notes || '',
-      requirements: lead.notes || notes || '',
-      status: 'Active',
-      joinedAt: new Date(),
-    });
+    console.log('convertLeadToCustomer called for email:', lead.email);
+
+    // 2. Check if customer exists, otherwise create
+    let customer = await Customer.findOne({ email: { $regex: new RegExp('^' + lead.email + '$', 'i') } });
+    console.log('Found existing customer?', !!customer);
+
+    if (customer) {
+      // Update existing customer with new deal details if needed
+      customer.totalSpent = (customer.totalSpent || 0) + parsedDealValue;
+      customer.advanceAmount = (customer.advanceAmount || 0) + parsedAdvanceAmount;
+      if (pdfUrl) customer.pdfUrl = pdfUrl;
+      if (notes) customer.notes = (customer.notes ? customer.notes + '\n' : '') + notes;
+      await customer.save();
+    } else {
+      customer = await Customer.create({
+        leadId: lead._id,
+        name: lead.name,
+        email: lead.email,
+        phone: phone || lead.phone,
+        company: lead.company,
+        sector: sector || '',
+        totalSpent: parsedDealValue,
+        advanceAmount: parsedAdvanceAmount,
+        pdfUrl: pdfUrl,
+        notes: notes || '',
+        requirements: lead.notes || notes || '',
+        status: 'Active',
+        joinedAt: new Date(),
+      });
+    }
 
     // 3. Create User account for the customer
     let credentials = null;
-    const userExists = await User.findOne({ email: lead.email });
+    const userExists = await User.findOne({ email: { $regex: new RegExp('^' + lead.email + '$', 'i') } });
     if (!userExists) {
       const password = 'Cust@' + Math.floor(10000 + Math.random() * 90000);
       await User.create({

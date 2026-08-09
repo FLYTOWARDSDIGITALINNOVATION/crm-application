@@ -79,6 +79,7 @@ const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({ isOpen, onClose, le
       }
     } catch (err) {
       console.error('Conversion failed:', err);
+      alert('Conversion failed: ' + (typeof err === 'string' ? err : JSON.stringify(err)));
     }
   };
 
@@ -186,7 +187,7 @@ const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({ isOpen, onClose, le
               <p className="text-indigo-100/80 text-sm mt-1">Finalizing the deal for <span className="font-bold text-white underline decoration-indigo-300/50 underline-offset-4">{leadName}</span>.</p>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="p-8 bg-white flex flex-col">
+            <form onSubmit={handleSubmit(onSubmit, (errors) => alert("Validation Errors: " + Object.keys(errors).join(', ')))} className="p-8 bg-white flex flex-col">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-8">
                 {/* Left Column */}
                 <div className="space-y-6">
@@ -368,7 +369,7 @@ const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({ isOpen, onClose, le
 
                   {/* PDF Upload */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Contract / Document (PDF)</label>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Contract / Document (PDF) <span className="text-slate-300 font-medium normal-case">(Optional)</span></label>
                     <div className="relative group">
                       <input
                         type="file"
