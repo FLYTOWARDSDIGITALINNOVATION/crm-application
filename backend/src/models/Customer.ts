@@ -22,6 +22,8 @@ export interface ICustomer extends Document {
   createdAt: Date;
   updatedAt: Date;
   portalPassword?: string;
+  requirements?: string;
+  files?: Array<{ name: string; url: string; uploadedAt: Date }>;
 }
 
 const CustomerSchema: Schema = new Schema(
@@ -51,6 +53,14 @@ const CustomerSchema: Schema = new Schema(
     ],
     joinedAt: { type: Date, default: Date.now },
     portalPassword: { type: String },
+    requirements: { type: String, default: '' },
+    files: [
+      {
+        name: { type: String },
+        url: { type: String },
+        uploadedAt: { type: Date, default: Date.now }
+      }
+    ]
   },
   { timestamps: true }
 );

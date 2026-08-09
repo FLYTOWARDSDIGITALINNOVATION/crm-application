@@ -4,12 +4,13 @@ import {
   ArrowLeft, Plus, Trash2, X, Calendar, User,
   CheckCircle2, Circle, AlertCircle, Loader2, Lock,
   FolderKanban, Users, ChevronDown, ChevronUp,
-  MessageSquare, ImagePlus, Upload, ZoomIn
+  MessageSquare, ImagePlus, Upload, ZoomIn, FileText
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { fetchTasks, createTask, updateTask, deleteTask, clearProjectTasks } from '../../store/slices/taskSlice';
 import { fetchProjects } from '../../store/slices/projectSlice';
+import { fetchEmployees } from '../../store/slices/userSlice';
 import {
   fetchWorkLogsForTask,
   createWorkLog,
@@ -44,6 +45,12 @@ const defaultForm = {
 };
 
 const API_BASE = 'http://localhost:5000';
+
+const normalizeAssignedTo = (assignedTo: string | string[]) => {
+  if (!assignedTo) return [];
+  if (Array.isArray(assignedTo)) return assignedTo.map(s => s.trim().toLowerCase()).filter(Boolean);
+  return assignedTo.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+};
 
 // ─── Work Log Panel per task ──────────────────────────────────────────────────
 const WorkLogPanel: React.FC<{
@@ -110,12 +117,6 @@ const WorkLogPanel: React.FC<{
 
   const handleDeleteLog = async (logId: string) => {
     await dispatch(deleteWorkLog({ logId, taskId: task.id }));
-  };
-
-  const normalizeAssignedTo = (assignedTo: string | string[]) => {
-    if (!assignedTo) return [];
-    if (Array.isArray(assignedTo)) return assignedTo.map(s => s.trim().toLowerCase()).filter(Boolean);
-    return assignedTo.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
   };
 
   const isAssignedToUser = (assignedTo: string | string[], name?: string, email?: string) => {
@@ -362,9 +363,12 @@ const ProjectDetail: React.FC = () => {
   const { user } = useAppSelector((s) => s.auth);
   const { items: tasks, isLoading } = useAppSelector((s) => s.tasks);
   const { items: projects } = useAppSelector((s) => s.projects);
+  const { employees } = useAppSelector((s) => s.users);
 
   const isAdmin = user?.role === 'admin';
   const project = projects.find(p => p._id === projectId);
+
+  const assigneesList = employees.length > 0 ? employees : (project?.assignedEmployees || []);
 
   const projectTasks = tasks.filter(t => t.projectId === projectId);
   const isAssignedToUserGlobal = (assignedTo: string | string[], u?: any) => {
@@ -385,8 +389,9 @@ const ProjectDetail: React.FC = () => {
   useEffect(() => {
     if (projects.length === 0) dispatch(fetchProjects());
     dispatch(fetchTasks(projectId));
+    if (isAdmin) dispatch(fetchEmployees());
     return () => { dispatch(clearProjectTasks()); };
-  }, [dispatch, projectId, projects.length]);
+  }, [dispatch, projectId, projects.length, isAdmin]);
 
   const validate = () => {
     const e: Partial<typeof defaultForm> = {};
@@ -428,6 +433,106 @@ const ProjectDetail: React.FC = () => {
   const completedCount = visibleTasks.filter(t => t.status === 'Completed').length;
   const pendingCount = visibleTasks.filter(t => t.status === 'Pending').length;
   const inProgressCount = visibleTasks.filter(t => t.status === 'In Progress').length;
+
+  if (showCreate) {
+    return (
+      <div className="space-y-6 animate-fade-in max-w-2xl mx-auto">
+        <button
+          type="button"
+          onClick={() => setShowCreate(false)}
+          className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 text-sm font-semibold transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Project Details
+        </button>
+
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Add Task</h1>
+          <p className="text-slate-500 text-sm">Add a new task to project: <span className="font-bold text-indigo-600">{project?.name}</span></p>
+        </div>
+
+        <div className="glass p-6 sm:p-8 rounded-3xl border border-slate-100 shadow-xl shadow-slate-100/50">
+          <form onSubmit={handleCreate} className="space-y-5">
+            <div>
+              <label className="block text-sm font-semibold text-slate-705 mb-1.5">Task Title <span className="text-rose-500">*</span></label>
+              <input
+                autoFocus
+                type="text"
+                placeholder="e.g. Design landing page"
+                value={form.title}
+                onChange={e => setForm({ ...form, title: e.target.value })}
+                className={cn('input-field', errors.title ? 'border-rose-400 bg-rose-50' : '')}
+              />
+              {errors.title && <p className="text-rose-500 text-xs mt-1">{errors.title}</p>}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-705 mb-1.5">Due Date <span className="text-rose-500">*</span></label>
+                <input
+                  type="date"
+                  value={form.dueDate}
+                  onChange={e => setForm({ ...form, dueDate: e.target.value })}
+                  className={cn('input-field', errors.dueDate ? 'border-rose-400 bg-rose-50' : '')}
+                />
+                {errors.dueDate && <p className="text-rose-500 text-xs mt-1">{errors.dueDate}</p>}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold text-slate-705 mb-1.5">Priority</label>
+                <select
+                  value={form.priority}
+                  onChange={e => setForm({ ...form, priority: e.target.value as typeof PRIORITIES[number] })}
+                  className="input-field"
+                >
+                  {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-705 mb-1.5">Assign To <span className="text-rose-500">*</span></label>
+              {assigneesList.length > 0 ? (
+                <select
+                  value={form.assignedTo}
+                  onChange={e => setForm({ ...form, assignedTo: e.target.value })}
+                  className={cn('input-field', errors.assignedTo ? 'border-rose-400 bg-rose-50' : '')}
+                >
+                  <option value="">Select a member...</option>
+                  {assigneesList.map(emp => (
+                    <option key={emp._id} value={emp.name}>{emp.name}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="input-field bg-amber-50 border-amber-200 text-amber-700 text-sm">
+                  ⚠ No employees found.
+                </div>
+              )}
+              {errors.assignedTo && <p className="text-rose-500 text-xs mt-1">{errors.assignedTo}</p>}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowCreate(false)}
+                className="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={assigneesList.length === 0}
+                className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all disabled:opacity-50"
+              >
+                <Plus className="w-4 h-4" />
+                Add Task
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -500,205 +605,178 @@ const ProjectDetail: React.FC = () => {
         ))}
       </div>
 
-      {/* Tasks */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-          <span className="ml-3 text-slate-500 font-medium">Loading tasks...</span>
-        </div>
-      ) : visibleTasks.length === 0 ? (
-        <div className="glass p-16 rounded-3xl text-center border border-slate-100">
-          <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
-            <CheckCircle2 className="w-8 h-8" />
-          </div>
-          <h3 className="text-lg font-bold text-slate-800">No tasks yet</h3>
-          <p className="text-slate-500 text-sm mt-1">
-            {isAdmin ? 'Add tasks to get this project going.' : 'No tasks assigned to you in this project.'}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {visibleTasks.map((task) => (
-            <div
-              key={task.id}
-              className={cn(
-                'glass p-4 sm:p-5 rounded-2xl transition-all border-l-4',
-                task.status === 'Completed' ? 'border-emerald-400 opacity-90' :
-                task.status === 'In Progress' ? 'border-blue-400' : 'border-transparent hover:border-indigo-400'
-              )}
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <div className="mt-0.5 shrink-0">
-                    {task.status === 'Completed' ? (
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                    ) : task.status === 'In Progress' ? (
-                      <AlertCircle className="w-5 h-5 text-blue-500" />
-                    ) : (
-                      <Circle className="w-5 h-5 text-slate-300" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className={cn(
-                      'text-sm font-bold transition-all truncate',
-                      task.status === 'Completed' ? 'text-slate-400 line-through' : 'text-slate-900'
-                    )}>
-                      {task.title}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-slate-400 font-medium">
-                      <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{task.dueDate}</span>
-                      <span className="flex items-center gap-1"><User className="w-3.5 h-3.5" />{task.assignedTo}</span>
-                      {task.status === 'Completed' && task.completedBy && (
-                        <span className="flex items-center gap-1 text-emerald-600">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          Completed by {task.completedBy}
-                        </span>
+      {/* Tasks Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column: Tasks */}
+        <div className="lg:col-span-2 space-y-4">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+              <span className="ml-3 text-slate-500 font-medium">Loading tasks...</span>
+            </div>
+          ) : visibleTasks.length === 0 ? (
+            <div className="glass p-16 rounded-3xl text-center border border-slate-100">
+              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                <CheckCircle2 className="w-8 h-8" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800">No tasks yet</h3>
+              <p className="text-slate-500 text-sm mt-1">
+                {isAdmin ? 'Add tasks to get this project going.' : 'No tasks assigned to you in this project.'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {visibleTasks.map((task) => (
+                <div
+                  key={task.id}
+                  className={cn(
+                    'glass p-4 sm:p-5 rounded-2xl transition-all border-l-4',
+                    task.status === 'Completed' ? 'border-emerald-400 opacity-90' :
+                    task.status === 'In Progress' ? 'border-blue-400' : 'border-transparent hover:border-indigo-400'
+                  )}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <div className="mt-0.5 shrink-0">
+                        {task.status === 'Completed' ? (
+                          <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                        ) : task.status === 'In Progress' ? (
+                          <AlertCircle className="w-5 h-5 text-blue-500" />
+                        ) : (
+                          <Circle className="w-5 h-5 text-slate-300" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className={cn(
+                          'text-sm font-bold transition-all truncate',
+                          task.status === 'Completed' ? 'text-slate-400 line-through' : 'text-slate-900'
+                        )}>
+                          {task.title}
+                        </h3>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-slate-400 font-medium">
+                          <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{task.dueDate}</span>
+                          <span className="flex items-center gap-1"><User className="w-3.5 h-3.5" />{task.assignedTo}</span>
+                          {task.status === 'Completed' && task.completedBy && (
+                            <span className="flex items-center gap-1 text-emerald-600">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              Completed by {task.completedBy}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 ml-8 sm:ml-0">
+                      <span className={cn(
+                        'px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border',
+                        priorityStyle(task.priority)
+                      )}>
+                        {task.priority}
+                      </span>
+
+                      {/* Status */}
+                      <div className="relative">
+                        {!isAdmin && task.status === 'Completed' ? (
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-xl">
+                            <Lock className="w-3 h-3 text-emerald-500" />
+                            <span className="text-xs font-bold text-emerald-600">Completed</span>
+                          </div>
+                        ) : (
+                          <select
+                            value={task.status}
+                            onChange={e => handleStatusChange(task, e.target.value)}
+                            className={cn(
+                              'text-xs font-bold bg-white border rounded-xl px-3 py-1.5 cursor-pointer focus:ring-2 focus:ring-indigo-500 outline-none transition-colors appearance-none pr-6',
+                              statusColor(task.status),
+                              task.status === 'Completed' ? 'border-emerald-200' :
+                              task.status === 'In Progress' ? 'border-blue-200' : 'border-slate-200'
+                            )}
+                          >
+                            <option value="Pending">Pending</option>
+                            <option value="In Progress">In Progress</option>
+                            {isAdmin && <option value="Completed">Completed</option>}
+                          </select>
+                        )}
+                      </div>
+
+                      {isAdmin && (
+                        <button
+                          onClick={() => setDeleteConfirm(task)}
+                          className="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       )}
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-2 ml-8 sm:ml-0">
-                  <span className={cn(
-                    'px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border',
-                    priorityStyle(task.priority)
-                  )}>
-                    {task.priority}
-                  </span>
-
-                  {/* Status */}
-                  <div className="relative">
-                    {!isAdmin && task.status === 'Completed' ? (
-                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-xl">
-                        <Lock className="w-3 h-3 text-emerald-500" />
-                        <span className="text-xs font-bold text-emerald-600">Completed</span>
-                      </div>
-                    ) : (
-                      <select
-                        value={task.status}
-                        onChange={e => handleStatusChange(task, e.target.value)}
-                        className={cn(
-                          'text-xs font-bold bg-white border rounded-xl px-3 py-1.5 cursor-pointer focus:ring-2 focus:ring-indigo-500 outline-none transition-colors appearance-none pr-6',
-                          statusColor(task.status),
-                          task.status === 'Completed' ? 'border-emerald-200' :
-                          task.status === 'In Progress' ? 'border-blue-200' : 'border-slate-200'
-                        )}
-                      >
-                        <option value="Pending">Pending</option>
-                        <option value="In Progress">In Progress</option>
-                        {isAdmin && <option value="Completed">Completed</option>}
-                      </select>
-                    )}
-                  </div>
-
-                  {isAdmin && (
-                    <button
-                      onClick={() => setDeleteConfirm(task)}
-                      className="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                  {/* Work Log Panel (expandable under each task) */}
+                  {projectId && (
+                    <WorkLogPanel
+                      task={task}
+                      projectId={projectId}
+                      isAdmin={isAdmin}
+                      currentUserName={user?.name || ''}
+                    />
                   )}
                 </div>
-              </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-              {/* Work Log Panel (expandable under each task) */}
-              {projectId && (
-                <WorkLogPanel
-                  task={task}
-                  projectId={projectId}
-                  isAdmin={isAdmin}
-                  currentUserName={user?.name || ''}
-                />
+        {/* Right Column: Project Sidebar */}
+        <div className="space-y-6">
+          {/* Project Requirements */}
+          <div className="glass p-6 rounded-3xl space-y-4">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest opacity-40">Project Requirements</h3>
+            <div className="p-4 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800">
+              {project?.requirements ? (
+                <p className="text-sm text-slate-700 dark:text-slate-350 leading-relaxed whitespace-pre-wrap">
+                  {project.requirements}
+                </p>
+              ) : (
+                <p className="text-sm text-slate-400 dark:text-slate-500 italic">
+                  No custom requirements defined for this project.
+                </p>
               )}
             </div>
-          ))}
-        </div>
-      )}
+          </div>
 
-      {/* ── Create Task Modal ── */}
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowCreate(false)} />
-          <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl p-8 animate-fade-in">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-bold text-slate-900">Add Task</h2>
-                <p className="text-slate-400 text-sm mt-0.5">{project?.name}</p>
-              </div>
-              <button onClick={() => setShowCreate(false)} className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleCreate} className="space-y-5">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Task Title <span className="text-rose-500">*</span></label>
-                <input
-                  autoFocus
-                  type="text"
-                  placeholder="e.g. Design landing page"
-                  value={form.title}
-                  onChange={e => setForm({ ...form, title: e.target.value })}
-                  className={cn('input-field', errors.title ? 'border-rose-400 bg-rose-50' : '')}
-                />
-                {errors.title && <p className="text-rose-500 text-xs mt-1">{errors.title}</p>}
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Due Date <span className="text-rose-500">*</span></label>
-                  <input
-                    type="date"
-                    value={form.dueDate}
-                    onChange={e => setForm({ ...form, dueDate: e.target.value })}
-                    className={cn('input-field', errors.dueDate ? 'border-rose-400 bg-rose-50' : '')}
-                  />
-                  {errors.dueDate && <p className="text-rose-500 text-xs mt-1">{errors.dueDate}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Priority</label>
-                  <select
-                    value={form.priority}
-                    onChange={e => setForm({ ...form, priority: e.target.value as typeof PRIORITIES[number] })}
-                    className="input-field"
-                  >
-                    {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Assign To <span className="text-rose-500">*</span></label>
-                {project && project.assignedEmployees.length > 0 ? (
-                  <select
-                    value={form.assignedTo}
-                    onChange={e => setForm({ ...form, assignedTo: e.target.value })}
-                    className={cn('input-field', errors.assignedTo ? 'border-rose-400 bg-rose-50' : '')}
-                  >
-                    <option value="">Select a member...</option>
-                    {project.assignedEmployees.map(emp => (
-                      <option key={emp._id} value={emp.name}>{emp.name}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <div className="input-field bg-amber-50 border-amber-200 text-amber-700 text-sm">
-                    ⚠ No members assigned to this project. Add members first.
+          {/* Project Files */}
+          <div className="glass p-6 rounded-3xl space-y-4">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest opacity-40">Project Files</h3>
+            <div className="space-y-2">
+              {project?.files && project.files.length > 0 ? (
+                project.files.map((file, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/30 rounded-xl border border-slate-100 dark:border-slate-800/50">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <FileText className="w-4 h-4 text-indigo-500 shrink-0" />
+                      <div className="min-w-0">
+                        <a 
+                          href={file.url}
+                          download={file.name}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-sm font-bold text-slate-850 dark:text-slate-200 hover:text-indigo-650 hover:underline truncate block"
+                        >
+                          {file.name}
+                        </a>
+                      </div>
+                    </div>
                   </div>
-                )}
-                {errors.assignedTo && <p className="text-rose-500 text-xs mt-1">{errors.assignedTo}</p>}
-              </div>
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowCreate(false)} className="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">Cancel</button>
-                <button
-                  type="submit"
-                  disabled={project?.assignedEmployees.length === 0}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all disabled:opacity-50"
-                >
-                  <Plus className="w-4 h-4" />Add Task
-                </button>
-              </div>
-            </form>
+                ))
+              ) : (
+                <div className="p-6 text-center text-slate-400 dark:text-slate-500 text-sm italic bg-slate-50/50 dark:bg-slate-900/20 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+                  No files uploaded yet.
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      )}
+      </div>
+
+
 
       {/* ── Delete Task Confirm ── */}
       {deleteConfirm && (

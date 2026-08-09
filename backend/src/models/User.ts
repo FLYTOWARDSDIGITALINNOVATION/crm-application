@@ -33,6 +33,10 @@ export interface IUser extends Document {
       relation?: string;
       phone?: string;
     };
+    salary?: number;
+    pfContribution?: number;
+    uan?: string;
+    pensionStatus?: string;
   };
   currentSessionId?: mongoose.Types.ObjectId;
   lastLoginAt?: Date;
@@ -79,6 +83,10 @@ const UserSchema: Schema = new Schema(
         relation: { type: String },
         phone: { type: String },
       },
+      salary: { type: Number },
+      pfContribution: { type: Number },
+      uan: { type: String },
+      pensionStatus: { type: String },
     },
     currentSessionId: { type: Schema.Types.ObjectId, ref: 'EmployeeSession' },
     lastLoginAt: { type: Date },

@@ -11,6 +11,7 @@ export interface Task {
   relatedTo: string;
   projectId?: string;
   description?: string;
+  completedBy?: string;
 }
 
 // Helper to map MongoDB _id -> id
@@ -24,6 +25,7 @@ const mapTask = (doc: any): Task => ({
   relatedTo: doc.relatedTo,
   projectId: doc.projectId,
   description: doc.description,
+  completedBy: doc.completedBy,
 });
 
 interface TaskState {

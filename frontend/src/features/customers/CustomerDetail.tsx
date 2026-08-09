@@ -4,6 +4,8 @@ import {
   Tag, MessageSquare, History,
   PhoneCall, MailPlus, AlertCircle,
   Star, TrendingUp, DollarSign, Calendar, Lock, Trash2, FileText, Download
+  Star, TrendingUp, DollarSign, Calendar, Lock, Trash2,
+  FileText, ImageIcon, Plus
 } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store';
@@ -26,11 +28,64 @@ const CustomerDetail: React.FC = () => {
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [editableNotes, setEditableNotes] = useState('');
 
+  const [isEditingRequirements, setIsEditingRequirements] = useState(false);
+  const [editableRequirements, setEditableRequirements] = useState('');
+
   useEffect(() => {
     if (customer) {
       setEditableNotes(customer.notes || '');
+      setEditableRequirements(customer.requirements || '');
     }
   }, [customer]);
+
+  const handleUpdateRequirements = async () => {
+    try {
+      await dispatch(updateCustomer({ id: customer._id, data: { requirements: editableRequirements } })).unwrap();
+      setIsEditingRequirements(false);
+    } catch (err) {
+      console.error('Failed to update requirements:', err);
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64String = reader.result as string;
+      const newFile = {
+        name: file.name,
+        url: base64String,
+        uploadedAt: new Date().toISOString()
+      };
+      
+      const currentFiles = customer.files || [];
+      try {
+        await dispatch(updateCustomer({
+          id: customer._id,
+          data: { files: [...currentFiles, newFile] }
+        })).unwrap();
+      } catch (err) {
+        console.error('File upload failed:', err);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileDelete = async (indexToDelete: number) => {
+    if (!window.confirm('Are you sure you want to delete this file?')) return;
+    const currentFiles = customer.files || [];
+    const updatedFiles = currentFiles.filter((_, idx) => idx !== indexToDelete);
+    try {
+      await dispatch(updateCustomer({
+        id: customer._id,
+        data: { files: updatedFiles }
+      })).unwrap();
+    } catch (err) {
+      console.error('File deletion failed:', err);
+    }
+  };
 
   useEffect(() => {
     if (id) {
@@ -271,6 +326,102 @@ const CustomerDetail: React.FC = () => {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Customer Requirements Card */}
+          <div className="glass p-6 rounded-3xl space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest opacity-40">Customer Requirements</h3>
+              <button
+                onClick={() => {
+                  setIsEditingRequirements(!isEditingRequirements);
+                  setEditableRequirements(customer.requirements || '');
+                }}
+                className="text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:underline"
+              >
+                {isEditingRequirements ? 'Cancel' : 'Edit'}
+              </button>
+            </div>
+            {isEditingRequirements ? (
+              <div className="space-y-3">
+                <textarea
+                  value={editableRequirements}
+                  onChange={(e) => setEditableRequirements(e.target.value)}
+                  className="w-full p-4 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                  rows={4}
+                  placeholder="Enter customer specific requirements..."
+                />
+                <button
+                  onClick={handleUpdateRequirements}
+                  className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition-all"
+                >
+                  Save Requirements
+                </button>
+              </div>
+            ) : (
+              <div className="p-4 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800">
+                {customer.requirements ? (
+                  <p className="text-sm text-slate-700 dark:text-slate-350 leading-relaxed whitespace-pre-wrap">
+                    {customer.requirements}
+                  </p>
+                ) : (
+                  <p className="text-sm text-slate-400 dark:text-slate-500 italic">
+                    No custom requirements specified for this customer.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Customer Attachments Card */}
+          <div className="glass p-6 rounded-3xl space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest opacity-40">Customer Files</h3>
+              <label className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-bold border border-indigo-100 dark:border-indigo-800/50 cursor-pointer transition-all">
+                <Plus className="w-3.5 h-3.5" />
+                Upload File
+                <input
+                  type="file"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            <div className="space-y-2">
+              {customer.files && customer.files.length > 0 ? (
+                customer.files.map((file, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/30 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <FileText className="w-4 h-4 text-indigo-500 shrink-0" />
+                      <div className="min-w-0">
+                        <a 
+                          href={file.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-sm font-bold text-slate-850 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline truncate block"
+                        >
+                          {file.name}
+                        </a>
+                        <span className="text-[10px] text-slate-450 dark:text-slate-500 block">
+                          Uploaded {new Date(file.uploadedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleFileDelete(idx)}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-455 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-sm italic bg-slate-50/50 dark:bg-slate-900/20 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+                  No files uploaded yet.
+                </div>
+              )}
             </div>
           </div>
 

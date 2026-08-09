@@ -29,7 +29,7 @@ export const getProjects = async (req: Request, res: Response) => {
 // @access  Admin only
 export const createProject = async (req: Request, res: Response) => {
   try {
-    const { name, description, status } = req.body;
+    const { name, description, status, requirements, files, assignedEmployees } = req.body;
     if (!name) {
       return res.status(400).json({ message: 'Project name is required' });
     }
@@ -37,8 +37,10 @@ export const createProject = async (req: Request, res: Response) => {
       name,
       description: description || '',
       status: status || 'Active',
+      requirements: requirements || '',
+      files: files || [],
       createdBy: req.user?.id,
-      assignedEmployees: [],
+      assignedEmployees: assignedEmployees || [],
     });
     const populated = await project.populate('assignedEmployees', 'name email role designation');
     res.status(201).json(populated);
@@ -56,10 +58,13 @@ export const updateProject = async (req: Request, res: Response) => {
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
-    const { name, description, status } = req.body;
+    const { name, description, status, requirements, files, assignedEmployees } = req.body;
     if (name !== undefined) project.name = name;
     if (description !== undefined) project.description = description;
     if (status !== undefined) project.status = status;
+    if (requirements !== undefined) project.requirements = requirements;
+    if (files !== undefined) project.files = files;
+    if (assignedEmployees !== undefined) project.assignedEmployees = assignedEmployees;
     await project.save();
     const populated = await project.populate('assignedEmployees', 'name email role designation');
     res.status(200).json(populated);

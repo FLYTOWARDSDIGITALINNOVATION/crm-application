@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { fetchEmployees, createEmployee } from '../../store/slices/userSlice';
+import { fetchLeaves } from '../../store/slices/leaveSlice';
 import api from '../../utils/api';
-import { UserPlus, Mail, Shield, Loader2, X, Phone, Building2, Calendar, Briefcase, ChevronRight } from 'lucide-react';
+import { cn } from '../../utils/cn';
+import { UserPlus, Mail, Shield, Loader2, X, Phone, Building2, Calendar, Briefcase, ChevronRight, FileText, Link2, ImageIcon, ChevronLeft, ArrowLeft, MapPin, CreditCard, User, Users } from 'lucide-react';
 
 const formatDateTime = (value?: string | null) => {
   if (!value) return 'Not recorded';
@@ -13,9 +15,161 @@ const formatDateTime = (value?: string | null) => {
   });
 };
 
+const getDaysInMonth = (date: Date) => {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  
+  const firstDayIndex = new Date(year, month, 1).getDay();
+  const totalDays = new Date(year, month + 1, 0).getDate();
+  const prevMonthTotalDays = new Date(year, month, 0).getDate();
+  
+  const days: { date: Date; isCurrentMonth: boolean }[] = [];
+  
+  for (let i = firstDayIndex - 1; i >= 0; i--) {
+    days.push({
+      date: new Date(year, month - 1, prevMonthTotalDays - i),
+      isCurrentMonth: false
+    });
+  }
+  
+  for (let i = 1; i <= totalDays; i++) {
+    days.push({
+      date: new Date(year, month, i),
+      isCurrentMonth: true
+    });
+  }
+  
+  const remaining = 42 - days.length;
+  for (let i = 1; i <= remaining; i++) {
+    days.push({
+      date: new Date(year, month + 1, i),
+      isCurrentMonth: false
+    });
+  }
+  
+  return days;
+};
+
+const hasSessionOnDate = (date: Date, sessions: any[]) => {
+  const dString = date.toDateString();
+  return sessions.some(s => s.logoutAt && new Date(s.logoutAt).toDateString() === dString);
+};
+
+const ProfileFormField = ({ label, value, icon: Icon }: { label: string; value: string; icon?: any }) => {
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{label}</label>
+      <div className="relative flex items-center">
+        {Icon && (
+          <div className="absolute left-4 text-slate-400">
+            <Icon className="w-4 h-4" />
+          </div>
+        )}
+        <div className={cn(
+          "w-full px-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-200 transition-all",
+          Icon ? "pl-11" : ""
+        )}>
+          {value || '—'}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const downloadPayslip = (month: string, employee: any) => {
+  const basic = employee.designation?.toLowerCase().includes('marketing') ? 35000 : 45000;
+  const hra = basic * 0.4;
+  const allowance = basic * 0.15;
+  const pf = 1800;
+  const tax = basic * 0.05;
+  const net = basic + hra + allowance - pf - tax;
+
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) return;
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Payslip - \${employee.name} - \${month}</title>
+        <style>
+          body { font-family: 'Inter', sans-serif; color: #1e293b; padding: 40px; line-height: 1.5; }
+          .header { border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
+          .logo { font-size: 24px; font-weight: bold; color: #4f46e5; }
+          .title { font-size: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+          .section-title { font-size: 14px; font-weight: bold; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px; }
+          .row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
+          .row.total { font-weight: bold; border-top: 1px solid #e2e8f0; padding-top: 8px; margin-top: 15px; font-size: 14px; }
+          .footer { border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 60px; text-align: center; font-size: 11px; color: #94a3b8; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="logo">FlyTowards Digital Innovation</div>
+          <div class="title">Payslip - \${month}</div>
+        </div>
+        
+        <div class="grid">
+          <div>
+            <div class="section-title">Employee Details</div>
+            <div class="row"><span>Name:</span><strong>\${employee.name}</strong></div>
+            <div class="row"><span>Employee ID:</span><strong>\${employee.employeeId || 'EMP-EE7C4F'}</strong></div>
+            <div class="row"><span>Designation:</span><strong>\${employee.designation || 'Staff Member'}</strong></div>
+            <div class="row"><span>Department:</span><strong>\${employee.department || 'Not assigned'}</strong></div>
+          </div>
+          <div>
+            <div class="section-title">Payment Overview</div>
+            <div class="row"><span>Payment Method:</span><strong>Bank Transfer</strong></div>
+            <div class="row"><span>UAN Number:</span><strong>100988776655</strong></div>
+            <div class="row"><span>Date:</span><strong>Last Day of \${month}</strong></div>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div>
+            <div class="section-title">Earnings</div>
+            <div class="row"><span>Basic Salary:</span><span>₹\${basic.toLocaleString('en-IN')}</span></div>
+            <div class="row"><span>House Rent Allowance (HRA):</span><span>₹\${hra.toLocaleString('en-IN')}</span></div>
+            <div class="row"><span>Special Allowance:</span><span>₹\${allowance.toLocaleString('en-IN')}</span></div>
+            <div class="row total"><span>Gross Earnings:</span><span>₹\${(basic + hra + allowance).toLocaleString('en-IN')}</span></div>
+          </div>
+          <div>
+            <div class="section-title">Deductions</div>
+            <div class="row"><span>Provident Fund (PF):</span><span>₹\${pf.toLocaleString('en-IN')}</span></div>
+            <div class="row"><span>Income Tax (TDS):</span><span>₹\${tax.toLocaleString('en-IN')}</span></div>
+            <div class="row total"><span>Total Deductions:</span><span>₹\${(pf + tax).toLocaleString('en-IN')}</span></div>
+          </div>
+        </div>
+
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+          <div>
+            <div style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #64748b; margin-bottom: 4px;">Net Pay (Take-home)</div>
+            <div style="font-size: 24px; font-weight: bold; color: #4f46e5;">₹\${net.toLocaleString('en-IN')}</div>
+          </div>
+          <div style="text-align: right; font-size: 12px; color: #64748b;">
+            Rupees \${net === 63700 ? 'Sixty-Three Thousand Seven Hundred Only' : 'Forty-Nine Thousand Four Hundred Fifty Only'}
+          </div>
+        </div>
+
+        <div class="footer">
+          <p>This is a system-generated payslip downloaded by the Administrator of FlyTowards CRM.</p>
+          <p>© 2026 FlyTowards CRM. All rights reserved.</p>
+        </div>
+
+        <script>
+          window.onload = function() {
+            window.print();
+          };
+        </script>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+};
+
 const EmployeeManagement = () => {
   const dispatch = useAppDispatch();
   const { employees, isLoading, error } = useAppSelector((state) => state.users);
+  const { items: leaves } = useAppSelector((state) => state.leaves);
   
   const [showModal, setShowModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
@@ -27,9 +181,72 @@ const EmployeeManagement = () => {
     phone: '', designation: '', department: '', joiningDate: '' 
   });
   const [formError, setFormError] = useState('');
+  const [profileTab, setProfileTab] = useState<'details' | 'attendance' | 'leaves' | 'payroll'>('details');
+
+  // New States for Logout Reports Tab
+  const [activeTab, setActiveTab] = useState<'directory' | 'logouts'>('directory');
+  const [allSessions, setAllSessions] = useState<any[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [sessionsError, setSessionsError] = useState('');
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+  const [calendarViewDate, setCalendarViewDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [profileCalendarViewDate, setProfileCalendarViewDate] = useState<Date>(new Date());
+  const [profileSelectedDate, setProfileSelectedDate] = useState<Date>(new Date());
+
+  // Payroll Edit States
+  const [isEditingPayroll, setIsEditingPayroll] = useState(false);
+  const [payrollSalary, setPayrollSalary] = useState('');
+  const [payrollPfContribution, setPayrollPfContribution] = useState('');
+  const [payrollUan, setPayrollUan] = useState('');
+  const [payrollPensionStatus, setPayrollPensionStatus] = useState('');
+  const [payrollSaving, setPayrollSaving] = useState(false);
+  const [payrollError, setPayrollError] = useState('');
+
+  useEffect(() => {
+    if (selectedEmployee) {
+      setPayrollSalary(selectedEmployee.profile?.salary?.toString() || (selectedEmployee.designation?.toLowerCase().includes('marketing') ? '35000' : '45000'));
+      setPayrollPfContribution(selectedEmployee.profile?.pfContribution?.toString() || '1800');
+      setPayrollUan(selectedEmployee.profile?.uan || '100988776655');
+      setPayrollPensionStatus(selectedEmployee.profile?.pensionStatus || 'Active / Contributing');
+      setIsEditingPayroll(false);
+      setPayrollError('');
+    }
+  }, [selectedEmployee]);
+
+  const handleSavePayroll = async () => {
+    if (!selectedEmployee) return;
+    setPayrollSaving(true);
+    setPayrollError('');
+    try {
+      await api.put(`/users/employees/${selectedEmployee._id}/payroll`, {
+        salary: Number(payrollSalary) || 0,
+        pfContribution: Number(payrollPfContribution) || 0,
+        uan: payrollUan,
+        pensionStatus: payrollPensionStatus,
+      });
+      setSelectedEmployee({
+        ...selectedEmployee,
+        profile: {
+          ...selectedEmployee.profile,
+          salary: Number(payrollSalary) || 0,
+          pfContribution: Number(payrollPfContribution) || 0,
+          uan: payrollUan,
+          pensionStatus: payrollPensionStatus,
+        }
+      });
+      setIsEditingPayroll(false);
+      dispatch(fetchEmployees());
+    } catch (err: any) {
+      setPayrollError(err?.response?.data?.message || 'Failed to update employee payroll details');
+    } finally {
+      setPayrollSaving(false);
+    }
+  };
 
   useEffect(() => {
     dispatch(fetchEmployees());
+    dispatch(fetchLeaves());
   }, [dispatch]);
 
   useEffect(() => {
@@ -43,6 +260,26 @@ const EmployeeManagement = () => {
     return () => window.removeEventListener('storage', onStorage);
   }, [dispatch]);
 
+  // Fetch all completed sessions for admin view
+  useEffect(() => {
+    const fetchAllSessions = async () => {
+      if (activeTab !== 'logouts') return;
+
+      setSessionsLoading(true);
+      setSessionsError('');
+      try {
+        const response = await api.get('/users/work-sessions');
+        setAllSessions(response.data || []);
+      } catch (err: any) {
+        setSessionsError(err?.response?.data?.message || 'Failed to load logout reports');
+      } finally {
+        setSessionsLoading(false);
+      }
+    };
+
+    fetchAllSessions();
+  }, [activeTab]);
+
   useEffect(() => {
     const fetchLogs = async () => {
       if (!selectedEmployee) {
@@ -53,6 +290,7 @@ const EmployeeManagement = () => {
 
       setLogsLoading(true);
       setLogsError('');
+      setExpandedLogId(null); // Reset expanded row when employee changes
 
       try {
         const response = await api.get(`/users/employees/${selectedEmployee._id}/work-logs`);
@@ -86,6 +324,822 @@ const EmployeeManagement = () => {
     }
   };
 
+  if (selectedEmployee) {
+    return (
+      <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
+        {/* Back button */}
+        <button
+          type="button"
+          onClick={() => setSelectedEmployee(null)}
+          className="flex items-center gap-2 text-slate-500 hover:text-indigo-650 text-sm font-semibold transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Staff Directory
+        </button>
+
+        {/* Profile Card Container - Full Page Style */}
+        <div className="glass overflow-hidden rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-xl shadow-slate-100/50 dark:shadow-none">
+          {/* Header Banner */}
+          <div className="bg-gradient-to-r from-indigo-500 to-purple-600 h-32 relative flex items-end px-8 pb-4">
+            {/* Profile Avatar */}
+            <div className="w-24 h-24 rounded-2xl bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-800 shadow-lg flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-4xl font-bold translate-y-12 overflow-hidden">
+              {selectedEmployee.name.charAt(0).toUpperCase()}
+            </div>
+
+            {/* Profile Photo (Right side of banner) */}
+            <div className="absolute right-8 bottom-0 translate-y-12 w-24 h-24 rounded-2xl bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-800 shadow-lg overflow-hidden flex items-center justify-center">
+              {selectedEmployee.profile?.photo ? (
+                <img 
+                  src={selectedEmployee.profile.photo} 
+                  alt="Employee profile" 
+                  className="w-full h-full object-cover animate-fade-in"
+                />
+              ) : (
+                <div className="w-full h-full bg-slate-100 dark:bg-slate-700 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 text-[10px] font-bold text-center p-2">
+                  <User className="w-8 h-8 mb-1 opacity-60 animate-pulse" />
+                  No Photo
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Name & Title Header */}
+          <div className="pt-16 px-8 pb-6 border-b border-slate-100 dark:border-slate-700/50">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{selectedEmployee.name}</h2>
+                <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">{selectedEmployee.designation || 'Staff Member'}</p>
+              </div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full text-xs font-bold border border-indigo-100 dark:border-indigo-800/50 w-fit h-fit">
+                <Shield className="w-3.5 h-3.5" />
+                Employee Account
+              </div>
+            </div>
+          </div>
+
+          <div className="p-8">
+            {/* Toggle Sub-tabs for Details vs Attendance vs Leaves vs Payroll */}
+            <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl border border-slate-200 dark:border-slate-800 mb-8 max-w-2xl overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setProfileTab('details')}
+                className={cn(
+                  "flex-1 min-w-[90px] flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all",
+                  profileTab === 'details'
+                    ? "bg-white dark:bg-slate-800 text-indigo-650 dark:text-indigo-400 shadow-sm"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+                )}
+              >
+                Details
+              </button>
+              <button
+                type="button"
+                onClick={() => setProfileTab('attendance')}
+                className={cn(
+                  "flex-1 min-w-[100px] flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all",
+                  profileTab === 'attendance'
+                    ? "bg-white dark:bg-slate-800 text-indigo-650 dark:text-indigo-400 shadow-sm"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+                )}
+              >
+                Attendance
+              </button>
+              <button
+                type="button"
+                onClick={() => setProfileTab('leaves')}
+                className={cn(
+                  "flex-1 min-w-[90px] flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all",
+                  profileTab === 'leaves'
+                    ? "bg-white dark:bg-slate-800 text-indigo-650 dark:text-indigo-400 shadow-sm"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+                )}
+              >
+                Leaves
+              </button>
+              <button
+                type="button"
+                onClick={() => setProfileTab('payroll')}
+                className={cn(
+                  "flex-1 min-w-[95px] flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all",
+                  profileTab === 'payroll'
+                    ? "bg-white dark:bg-slate-800 text-indigo-650 dark:text-indigo-400 shadow-sm"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+                )}
+              >
+                Payroll
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            {profileTab === 'details' && (
+              <div className="space-y-8 animate-fade-in">
+                {/* Profile Status Banner */}
+                {!selectedEmployee.profileCompleted && (
+                  <div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-250 dark:border-amber-900 text-amber-800 dark:text-amber-400 rounded-2xl text-xs flex items-center gap-2 font-semibold">
+                    <span>⚠</span>
+                    <span>Employee has not completed their profile setup yet. Some personal details might be unavailable.</span>
+                  </div>
+                )}
+
+                {/* Section 1: Work & Account Info */}
+                <div className="bg-slate-50/50 dark:bg-slate-900/30 rounded-3xl p-6 border border-slate-100 dark:border-slate-800">
+                  <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">Work & Account Info</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <ProfileFormField label="Employee ID" value={selectedEmployee.employeeId} icon={Shield} />
+                    <ProfileFormField label="Email Address" value={selectedEmployee.email} icon={Mail} />
+                    <ProfileFormField label="Phone Number" value={selectedEmployee.phone} icon={Phone} />
+                    <ProfileFormField label="Department" value={selectedEmployee.department} icon={Building2} />
+                    <ProfileFormField label="Designation" value={selectedEmployee.designation} icon={Briefcase} />
+                    <ProfileFormField 
+                      label="Date of Joining" 
+                      value={selectedEmployee.joiningDate ? new Date(selectedEmployee.joiningDate).toLocaleDateString('en-IN', { dateStyle: 'medium' }) : ''} 
+                      icon={Calendar} 
+                    />
+                  </div>
+                </div>
+
+                {/* Section 2: Personal Details */}
+                <div className="bg-slate-50/50 dark:bg-slate-900/30 rounded-3xl p-6 border border-slate-100 dark:border-slate-800">
+                  <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">Personal Details</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <ProfileFormField label="Date of Birth" value={selectedEmployee.profile?.dob} icon={Calendar} />
+                    <ProfileFormField label="Gender" value={selectedEmployee.profile?.gender} icon={User} />
+                    <div className="sm:col-span-2 lg:col-span-3">
+                      <ProfileFormField label="Permanent Address" value={selectedEmployee.profile?.address} icon={MapPin} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 3: Identification Documents */}
+                <div className="bg-slate-50/50 dark:bg-slate-900/30 rounded-3xl p-6 border border-slate-100 dark:border-slate-800">
+                  <h3 className="text-sm font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest mb-4">Identification Documents</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <ProfileFormField 
+                      label="Aadhaar Card Number" 
+                      value={selectedEmployee.profile?.aadhaar ? `XXXX-XXXX-${selectedEmployee.profile.aadhaar.slice(-4)}` : ''} 
+                      icon={FileText} 
+                    />
+                    <ProfileFormField 
+                      label="PAN Card Number" 
+                      value={selectedEmployee.profile?.pan ? `XXXXX${selectedEmployee.profile.pan.slice(-4)}` : ''} 
+                      icon={FileText} 
+                    />
+                  </div>
+                </div>
+
+                {/* Section 4: Bank Account Details */}
+                <div className="bg-slate-50/50 dark:bg-slate-900/30 rounded-3xl p-6 border border-slate-100 dark:border-slate-800">
+                  <h3 className="text-sm font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest mb-4">Bank Account Details</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <ProfileFormField label="Account Type" value={selectedEmployee.profile?.bank?.accountType} icon={Briefcase} />
+                    <ProfileFormField 
+                      label="Account Number" 
+                      value={selectedEmployee.profile?.bank?.accountNumber ? `XXXXXX${selectedEmployee.profile.bank.accountNumber.slice(-4)}` : ''} 
+                      icon={CreditCard} 
+                    />
+                    <ProfileFormField label="IFSC Code" value={selectedEmployee.profile?.bank?.ifsc} icon={Building2} />
+                  </div>
+                </div>
+
+                {/* Section 5: Emergency Contact */}
+                <div className="bg-slate-50/50 dark:bg-slate-900/30 rounded-3xl p-6 border border-slate-100 dark:border-slate-800">
+                  <h3 className="text-sm font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest mb-4">Emergency Contact</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <ProfileFormField label="Contact Name" value={selectedEmployee.profile?.emergencyContact?.name} icon={User} />
+                    <ProfileFormField label="Relationship" value={selectedEmployee.profile?.emergencyContact?.relation} icon={Users} />
+                    <ProfileFormField label="Phone Number" value={selectedEmployee.profile?.emergencyContact?.phone} icon={Phone} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {profileTab === 'attendance' && (
+              <div className="space-y-6 animate-fade-in">
+                {/* Attendance Summary Banner */}
+                <div className="rounded-3xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/30 p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Attendance Log</h3>
+                    <p className="mt-1 text-sm text-slate-550 dark:text-slate-400">Recorded sessions containing work logins, logouts, work summaries and duration summary.</p>
+                  </div>
+                  <div className="flex gap-2.5 items-center">
+                    <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Active Workdays</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                  {/* Attendance Calendar Sidebar */}
+                  <div className="lg:col-span-5 space-y-4">
+                    <div className="glass p-6 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm">
+                      {/* Calendar Header */}
+                      <div className="flex items-center justify-between mb-6">
+                        <button
+                          type="button"
+                          onClick={() => setProfileCalendarViewDate(new Date(profileCalendarViewDate.getFullYear(), profileCalendarViewDate.getMonth() - 1, 1))}
+                          className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-all"
+                        >
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <h3 className="font-bold text-slate-850 dark:text-white text-sm">
+                          {profileCalendarViewDate.toLocaleString('en-IN', { month: 'long', year: 'numeric' })}
+                        </h3>
+                        <button
+                          type="button"
+                          onClick={() => setProfileCalendarViewDate(new Date(profileCalendarViewDate.getFullYear(), profileCalendarViewDate.getMonth() + 1, 1))}
+                          className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-all"
+                        >
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      {/* Weekdays Grid */}
+                      <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 uppercase mb-2">
+                        <div>Su</div>
+                        <div>Mo</div>
+                        <div>Tu</div>
+                        <div>We</div>
+                        <div>Th</div>
+                        <div>Fr</div>
+                        <div>Sa</div>
+                      </div>
+
+                      {/* Month Days Grid */}
+                      <div className="grid grid-cols-7 gap-1.5">
+                        {getDaysInMonth(profileCalendarViewDate).map((dayObj, idx) => {
+                          const isSelected = dayObj.date.toDateString() === profileSelectedDate.toDateString();
+                          const isToday = dayObj.date.toDateString() === new Date().toDateString();
+                          const hasSession = hasSessionOnDate(dayObj.date, selectedEmployeeLogs);
+                          
+                          return (
+                            <button
+                              type="button"
+                              key={idx}
+                              onClick={() => {
+                                setProfileSelectedDate(dayObj.date);
+                                setExpandedLogId(null);
+                              }}
+                              className={cn(
+                                "h-10 relative flex flex-col items-center justify-center rounded-xl text-xs font-semibold transition-all hover:scale-105",
+                                !dayObj.isCurrentMonth && "text-slate-300 dark:text-slate-600 opacity-60",
+                                dayObj.isCurrentMonth && !isSelected && "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700",
+                                isSelected && "bg-indigo-600 text-white shadow-md shadow-indigo-200/50 dark:shadow-none hover:bg-indigo-700",
+                                isToday && !isSelected && "border border-indigo-200 text-indigo-600 dark:text-indigo-400 dark:border-indigo-800"
+                              )}
+                            >
+                              <span>{dayObj.date.getDate()}</span>
+                              {hasSession && (
+                                <span className={cn(
+                                  "w-1.5 h-1.5 rounded-full absolute bottom-1.5",
+                                  isSelected ? "bg-white" : "bg-indigo-500"
+                                )} />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100/50 dark:border-indigo-850 rounded-2xl">
+                      <div className="flex gap-2.5 items-start text-xs text-indigo-700 dark:text-indigo-400">
+                        <span className="mt-0.5">ℹ</span>
+                        <p>Click any date with a dot to view login, logout, and submitted work logs for that day.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Attendance logs for Selected Date */}
+                  <div className="lg:col-span-7 space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/50 pb-3">
+                      <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">
+                        Logs for {profileSelectedDate.toLocaleDateString('en-IN', { dateStyle: 'long' })}
+                      </h4>
+                      <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
+                        {
+                          selectedEmployeeLogs.filter(log => log.loginAt && new Date(log.loginAt).toDateString() === profileSelectedDate.toDateString()).length
+                        } session(s)
+                      </span>
+                    </div>
+
+                    {logsLoading ? (
+                      <div className="p-12 text-center text-slate-500 dark:text-slate-400">
+                        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mx-auto mb-2" />
+                        Loading attendance history...
+                      </div>
+                    ) : logsError ? (
+                      <div className="p-12 text-center text-rose-600 dark:text-rose-400">
+                        {logsError}
+                      </div>
+                    ) : (() => {
+                      const dayLogs = selectedEmployeeLogs.filter(
+                        log => log.loginAt && new Date(log.loginAt).toDateString() === profileSelectedDate.toDateString()
+                      );
+
+                      if (dayLogs.length === 0) {
+                        return (
+                          <div className="p-12 bg-slate-50 dark:bg-slate-900/10 border border-slate-100 dark:border-slate-800 rounded-3xl text-center text-slate-500 dark:text-slate-400">
+                            No login/logout history recorded for this date.
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="space-y-4">
+                          {dayLogs.map((log) => {
+                            const login = log.loginAt ? formatDateTime(log.loginAt) : 'Unknown';
+                            const logout = log.logoutAt ? formatDateTime(log.logoutAt) : 'Still active';
+                            const duration = log.loginAt && log.logoutAt
+                              ? (() => {
+                                  const start = new Date(log.loginAt).getTime();
+                                  const end = new Date(log.logoutAt).getTime();
+                                  const diff = Math.max(0, end - start);
+                                  const minutes = Math.floor(diff / 60000);
+                                  const hours = Math.floor(minutes / 60);
+                                  const remaining = minutes % 60;
+                                  return `${hours}h ${remaining}m`;
+                                })()
+                              : '—';
+
+                            const isExpanded = expandedLogId === log._id;
+                            const hasDetails = log.workSummary || log.gitLink || log.screenshot;
+
+                            return (
+                              <div 
+                                key={log._id} 
+                                className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden"
+                              >
+                                <div className="p-5 space-y-4">
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
+                                    <div>
+                                      <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Login Time</span>
+                                      <span className="font-bold text-slate-800 dark:text-slate-200">{login.split(', ')[1]}</span>
+                                    </div>
+                                    <div>
+                                      <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Logout Time</span>
+                                      <span className="font-bold text-slate-800 dark:text-slate-200">{logout.split(', ')[1] || 'Still active'}</span>
+                                    </div>
+                                    <div className="col-span-2 sm:col-span-1">
+                                      <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Duration</span>
+                                      <span className="font-bold text-slate-800 dark:text-slate-200 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-650 dark:text-indigo-400 px-2 py-0.5 rounded text-[11px] w-fit inline-block">
+                                        {duration}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {hasDetails && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setExpandedLogId(isExpanded ? null : log._id)}
+                                      className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+                                    >
+                                      <span>{isExpanded ? 'Hide Work Details' : 'View Submitted Work Details'}</span>
+                                      <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", isExpanded && "rotate-90")} />
+                                    </button>
+                                  )}
+                                </div>
+
+                                {isExpanded && hasDetails && (
+                                  <div className="bg-slate-50/50 dark:bg-slate-900/10 border-t border-slate-100 dark:border-slate-700 p-5 space-y-4">
+                                    {log.workSummary && (
+                                      <div className="rounded-xl bg-white dark:bg-slate-855 p-4 border border-slate-150 dark:border-slate-750 shadow-sm">
+                                        <span className="block text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Work Summary</span>
+                                        <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{log.workSummary}</p>
+                                      </div>
+                                    )}
+
+                                    <div className="flex flex-col gap-3">
+                                      {log.gitLink && (
+                                        <a
+                                          href={log.gitLink}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="inline-flex items-center gap-1.5 rounded-xl bg-white dark:bg-slate-855 px-4 py-2.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 border border-slate-205 dark:border-slate-750 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors w-fit"
+                                        >
+                                          <Link2 className="w-3.5 h-3.5" />
+                                          Git Commit Link
+                                        </a>
+                                      )}
+                                      
+                                      {log.screenshot && (
+                                        <div className="rounded-xl bg-white dark:bg-slate-855 border border-slate-205 dark:border-slate-755 shadow-sm overflow-hidden w-fit">
+                                          <div className="px-4 py-1.5 bg-slate-50 dark:bg-slate-800 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-200 dark:border-slate-755">
+                                            Screenshot Proof
+                                          </div>
+                                          <div className="p-3">
+                                            <img
+                                              src={log.screenshot}
+                                              alt="Proof screenshot"
+                                              className="h-28 w-40 object-cover rounded border border-slate-100 dark:border-slate-700 cursor-pointer hover:opacity-90 transition-opacity"
+                                              onClick={() => window.open(log.screenshot, '_blank')}
+                                            />
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {profileTab === 'leaves' && (
+              <div className="space-y-6 animate-fade-in">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-slate-50 dark:bg-slate-900/30 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm">
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 block mb-1">Approved Leaves</span>
+                    <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                      {leaves.filter(l => l.employeeId === selectedEmployee._id && l.status === 'Approved').length}
+                    </span>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-900/30 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm">
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 block mb-1">Pending Requests</span>
+                    <span className="text-2xl font-black text-amber-500">
+                      {leaves.filter(l => l.employeeId === selectedEmployee._id && l.status === 'Pending').length}
+                    </span>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-900/30 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm">
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 block mb-1">Sick Leaves</span>
+                    <span className="text-2xl font-black text-indigo-500">
+                      {leaves.filter(l => l.employeeId === selectedEmployee._id && l.status === 'Approved' && l.type === 'Sick').length}
+                    </span>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-900/30 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm">
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 block mb-1">Casual Leaves</span>
+                    <span className="text-2xl font-black text-indigo-500">
+                      {leaves.filter(l => l.employeeId === selectedEmployee._id && l.status === 'Approved' && l.type === 'Casual').length}
+                    </span>
+                  </div>
+                </div>
+
+                {/* History List */}
+                <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                  <div className="px-6 py-4 bg-slate-50 dark:bg-slate-700 text-slate-650 dark:text-slate-300 uppercase text-xs tracking-wider font-bold border-b border-slate-200 dark:border-slate-700">
+                    Leave Request History
+                  </div>
+
+                  {(() => {
+                    const empLeaves = leaves.filter(l => l.employeeId === selectedEmployee._id);
+                    if (empLeaves.length === 0) {
+                      return (
+                        <div className="p-12 text-center text-slate-500 dark:text-slate-400">
+                          No leave applications submitted by this employee.
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="divide-y divide-slate-100 dark:divide-slate-700">
+                        {empLeaves.map((leave) => {
+                          const statusColor = leave.status === 'Approved' 
+                            ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border-emerald-100'
+                            : leave.status === 'Rejected'
+                            ? 'bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border-rose-100'
+                            : 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border-amber-100';
+
+                          return (
+                            <div key={leave._id} className="p-6 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-bold text-slate-900 dark:text-white">
+                                  {leave.type} Leave Request
+                                </span>
+                                <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border", statusColor)}>
+                                  {leave.status}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4 text-xs">
+                                <div>
+                                  <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Start Date</span>
+                                  <span className="font-bold text-slate-700 dark:text-slate-300">{leave.startDate}</span>
+                                </div>
+                                <div>
+                                  <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">End Date</span>
+                                  <span className="font-bold text-slate-700 dark:text-slate-300">{leave.endDate}</span>
+                                </div>
+                              </div>
+                              {leave.reason && (
+                                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl text-xs text-slate-600 dark:text-slate-400 italic">
+                                  "{leave.reason}"
+                                </div>
+                              )}
+                              {leave.approvedOrRejectedBy && (
+                                <div className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">
+                                  Reviewed by: {leave.approvedOrRejectedBy}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {profileTab === 'payroll' && (
+              <div className="space-y-8 animate-fade-in">
+                {/* Header Action Bar */}
+                <div className="flex justify-between items-center gap-4 bg-slate-50 dark:bg-slate-900/30 p-6 rounded-3xl border border-slate-100 dark:border-slate-800">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                      {isEditingPayroll ? 'Edit Payroll Settings' : 'Payroll Information'}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      {isEditingPayroll 
+                        ? 'Modify the salary structure, UAN, and EPF contribution profile.' 
+                        : 'Review salary structure, Provident Fund profiles, and payslips.'}
+                    </p>
+                  </div>
+
+                  {!isEditingPayroll ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPayrollSalary(selectedEmployee.profile?.salary?.toString() || (selectedEmployee.designation?.toLowerCase().includes('marketing') ? '35000' : '45000'));
+                        setPayrollPfContribution(selectedEmployee.profile?.pfContribution?.toString() || '1800');
+                        setPayrollUan(selectedEmployee.profile?.uan || '100988776655');
+                        setPayrollPensionStatus(selectedEmployee.profile?.pensionStatus || 'Active / Contributing');
+                        setIsEditingPayroll(true);
+                      }}
+                      className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-1.5"
+                    >
+                      <Briefcase className="w-3.5 h-3.5" />
+                      Edit Payroll
+                    </button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={payrollSaving}
+                        onClick={handleSavePayroll}
+                        className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-1.5 disabled:opacity-50"
+                      >
+                        {payrollSaving && <Loader2 className="w-3 h-3 animate-spin" />}
+                        Save Changes
+                      </button>
+                      <button
+                        type="button"
+                        disabled={payrollSaving}
+                        onClick={() => setIsEditingPayroll(false)}
+                        className="px-4 py-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition-all"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {payrollError && (
+                  <div className="p-4 bg-rose-50 border border-rose-100 text-rose-600 rounded-2xl text-xs font-semibold">
+                    {payrollError}
+                  </div>
+                )}
+
+                {/* Salary Info Grid */}
+                <div className="bg-slate-50/50 dark:bg-slate-900/30 rounded-3xl p-6 border border-slate-100 dark:border-slate-800">
+                  <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">Salary Structure</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {isEditingPayroll ? (
+                      <>
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Basic Salary (₹)</label>
+                          <div className="relative flex items-center">
+                            <div className="absolute left-4 text-slate-400">
+                              <CreditCard className="w-4 h-4" />
+                            </div>
+                            <input
+                              type="number"
+                              value={payrollSalary}
+                              onChange={(e) => setPayrollSalary(e.target.value)}
+                              className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-850 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              placeholder="45000"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5 opacity-60">
+                          <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">HRA Allowance (40% - Auto)</label>
+                          <div className="relative flex items-center">
+                            <div className="absolute left-4 text-slate-400">
+                              <Building2 className="w-4 h-4" />
+                            </div>
+                            <input
+                              type="text"
+                              disabled
+                              value={`₹${(Math.round((Number(payrollSalary) || 0) * 0.4)).toLocaleString('en-IN')}`}
+                              className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-500 cursor-not-allowed"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5 opacity-60">
+                          <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Special Allowance (15% - Auto)</label>
+                          <div className="relative flex items-center">
+                            <div className="absolute left-4 text-slate-400">
+                              <Briefcase className="w-4 h-4" />
+                            </div>
+                            <input
+                              type="text"
+                              disabled
+                              value={`₹${(Math.round((Number(payrollSalary) || 0) * 0.15)).toLocaleString('en-IN')}`}
+                              className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-500 cursor-not-allowed"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Provident Fund (PF) (₹)</label>
+                          <div className="relative flex items-center">
+                            <div className="absolute left-4 text-slate-400">
+                              <Shield className="w-4 h-4" />
+                            </div>
+                            <input
+                              type="number"
+                              value={payrollPfContribution}
+                              onChange={(e) => setPayrollPfContribution(e.target.value)}
+                              className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-850 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              placeholder="1800"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5 opacity-60">
+                          <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Income Tax (TDS) (5% - Auto)</label>
+                          <div className="relative flex items-center">
+                            <div className="absolute left-4 text-slate-400">
+                              <FileText className="w-4 h-4" />
+                            </div>
+                            <input
+                              type="text"
+                              disabled
+                              value={`₹${(Math.round((Number(payrollSalary) || 0) * 0.05)).toLocaleString('en-IN')}`}
+                              className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-500 cursor-not-allowed"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5 opacity-70">
+                          <label className="block text-xs font-bold text-indigo-400 uppercase tracking-wider">Estimated Net Pay (Live Preview)</label>
+                          <div className="relative flex items-center">
+                            <div className="absolute left-4 text-indigo-500">
+                              <CreditCard className="w-4 h-4" />
+                            </div>
+                            <input
+                              type="text"
+                              disabled
+                              value={`₹${(Math.round((Number(payrollSalary) || 0) * 1.5 - (Number(payrollPfContribution) || 0))).toLocaleString('en-IN')}`}
+                              className="w-full pl-11 pr-4 py-3 bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800 rounded-xl text-sm font-bold text-indigo-600 dark:text-indigo-400 cursor-not-allowed"
+                            />
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <ProfileFormField 
+                          label="Basic Salary" 
+                          value={`₹${(selectedEmployee.profile?.salary || (selectedEmployee.designation?.toLowerCase().includes('marketing') ? 35000 : 45000)).toLocaleString('en-IN')} / month`} 
+                          icon={CreditCard} 
+                        />
+                        <ProfileFormField 
+                          label="House Rent Allowance (HRA)" 
+                          value={`₹${((selectedEmployee.profile?.salary || (selectedEmployee.designation?.toLowerCase().includes('marketing') ? 35000 : 45000)) * 0.4).toLocaleString('en-IN')} / month`} 
+                          icon={Building2} 
+                        />
+                        <ProfileFormField 
+                          label="Special Allowance" 
+                          value={`₹${((selectedEmployee.profile?.salary || (selectedEmployee.designation?.toLowerCase().includes('marketing') ? 35000 : 45000)) * 0.15).toLocaleString('en-IN')} / month`} 
+                          icon={Briefcase} 
+                        />
+                        <ProfileFormField 
+                          label="Provident Fund Deduction (PF)" 
+                          value={`₹${(selectedEmployee.profile?.pfContribution || 1800).toLocaleString('en-IN')} / month`} 
+                          icon={Shield} 
+                        />
+                        <ProfileFormField 
+                          label="Income Tax Deduction (TDS)" 
+                          value={`₹${((selectedEmployee.profile?.salary || (selectedEmployee.designation?.toLowerCase().includes('marketing') ? 35000 : 45000)) * 0.05).toLocaleString('en-IN')} / month`} 
+                          icon={FileText} 
+                        />
+                        <ProfileFormField 
+                          label="Net Take-Home Pay" 
+                          value={`₹${((selectedEmployee.profile?.salary || (selectedEmployee.designation?.toLowerCase().includes('marketing') ? 35000 : 45000)) * 1.5 - (selectedEmployee.profile?.pfContribution || 1800)).toLocaleString('en-IN')} / month`} 
+                          icon={CreditCard} 
+                        />
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Pension & PF Profile */}
+                <div className="bg-slate-50/50 dark:bg-slate-900/30 rounded-3xl p-6 border border-slate-100 dark:border-slate-800">
+                  <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">Pension & Provident Fund Profile</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {isEditingPayroll ? (
+                      <>
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">EPF Account Status</label>
+                          <div className="relative flex items-center">
+                            <div className="absolute left-4 text-slate-400">
+                              <Shield className="w-4 h-4" />
+                            </div>
+                            <select
+                              value={payrollPensionStatus}
+                              onChange={(e) => setPayrollPensionStatus(e.target.value)}
+                              className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none"
+                            >
+                              <option value="Active / Contributing">Active / Contributing</option>
+                              <option value="Inactive">Inactive</option>
+                              <option value="Suspended">Suspended</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">PF UAN Number</label>
+                          <div className="relative flex items-center">
+                            <div className="absolute left-4 text-slate-400">
+                              <FileText className="w-4 h-4" />
+                            </div>
+                            <input
+                              type="text"
+                              value={payrollUan}
+                              onChange={(e) => setPayrollUan(e.target.value)}
+                              className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-805 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              placeholder="100988776655"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5 opacity-60">
+                          <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Employer Contribution</label>
+                          <div className="relative flex items-center">
+                            <div className="absolute left-4 text-slate-400">
+                              <CreditCard className="w-4 h-4" />
+                            </div>
+                            <input
+                              type="text"
+                              disabled
+                              value={`₹${(Number(payrollPfContribution) || 1800).toLocaleString('en-IN')} / month`}
+                              className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-500 cursor-not-allowed"
+                            />
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <ProfileFormField label="EPF Account Status" value={selectedEmployee.profile?.pensionStatus || "Active / Contributing"} icon={Shield} />
+                        <ProfileFormField label="PF UAN Number" value={selectedEmployee.profile?.uan || "100988776655"} icon={FileText} />
+                        <ProfileFormField label="Employer Contribution" value={`₹${(selectedEmployee.profile?.pfContribution || 1800).toLocaleString('en-IN')} / month`} icon={CreditCard} />
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Payslips Download Section */}
+                <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                  <div className="px-6 py-4 bg-slate-50 dark:bg-slate-700 flex justify-between items-center border-b border-slate-200 dark:border-slate-700">
+                    <span className="text-slate-655 dark:text-slate-300 uppercase text-xs tracking-wider font-bold">
+                      Payslips History
+                    </span>
+                    <span className="text-[10px] font-black uppercase bg-indigo-50 dark:bg-indigo-900/30 text-indigo-650 dark:text-indigo-400 px-2 py-0.5 rounded border border-indigo-100 dark:border-indigo-900/50">
+                      Admin Download Only
+                    </span>
+                  </div>
+
+                  <div className="divide-y divide-slate-100 dark:divide-slate-700">
+                    {['July 2026', 'June 2026', 'May 2026'].map((month, idx) => (
+                      <div key={idx} className="p-6 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-900/10 transition-colors">
+                        <div className="space-y-1">
+                          <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">{month} Payslip</h4>
+                          <p className="text-xs text-slate-400">Regular Salary Cycle - Bank Transfer</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => downloadPayslip(month, selectedEmployee)}
+                          className="flex items-center gap-1.5 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-xl border border-indigo-100 dark:border-indigo-800/50 shadow-sm hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all hover:scale-105"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          Download Payslip
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -102,49 +1156,269 @@ const EmployeeManagement = () => {
         </button>
       </div>
 
+      {/* Tabs */}
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-px">
+        <button
+          onClick={() => setActiveTab('directory')}
+          className={cn(
+            "px-4 py-2.5 text-sm font-bold border-b-2 transition-all",
+            activeTab === 'directory'
+              ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+              : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+          )}
+        >
+          Staff Directory
+        </button>
+        <button
+          onClick={() => setActiveTab('logouts')}
+          className={cn(
+            "px-4 py-2.5 text-sm font-bold border-b-2 transition-all",
+            activeTab === 'logouts'
+              ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+              : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+          )}
+        >
+          Logout Reports
+        </button>
+      </div>
+
       {error && (
         <div className="p-4 bg-rose-50 text-rose-600 rounded-2xl text-sm font-medium">
           {error}
         </div>
       )}
 
-      {isLoading && employees.length === 0 ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {employees.map((emp) => (
-            <div 
-              key={emp._id} 
-              onClick={() => setSelectedEmployee(emp)}
-              className="glass p-6 rounded-3xl flex flex-col items-center text-center gap-4 hover:shadow-lg dark:hover:shadow-indigo-900/20 transition-all border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 cursor-pointer group"
-            >
-              <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-xl font-bold group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/80 transition-colors">
-                {emp.name.charAt(0).toUpperCase()}
-              </div>
-              <div className="w-full">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">{emp.name}</h3>
-                <div className="flex flex-col items-center gap-1.5 mt-2">
-                  <div className="flex items-center justify-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                    <Briefcase className="w-3.5 h-3.5" />
-                    {emp.designation || 'Staff'}
+      {activeTab === 'directory' ? (
+        isLoading && employees.length === 0 ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {employees.map((emp) => (
+              <div 
+                key={emp._id} 
+                onClick={() => { setSelectedEmployee(emp); setProfileTab('details'); }}
+                className="glass p-6 rounded-3xl flex flex-col items-center text-center gap-4 hover:shadow-lg dark:hover:shadow-indigo-900/20 transition-all border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 cursor-pointer group"
+              >
+                <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-xl font-bold group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/80 transition-colors">
+                  {emp.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="w-full">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">{emp.name}</h3>
+                  <div className="flex flex-col items-center gap-1.5 mt-2">
+                    <div className="flex items-center justify-center gap-1.5 text-xs text-slate-505 dark:text-slate-400">
+                      <Briefcase className="w-3.5 h-3.5" />
+                      {emp.designation || 'Staff'}
+                    </div>
+                    <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/30 px-2.5 py-1 rounded-full border border-indigo-100/50 dark:border-indigo-800/50">
+                      <Shield className="w-3 h-3" />
+                      Employee
+                    </div>
                   </div>
-                  <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/30 px-2.5 py-1 rounded-full border border-indigo-100/50 dark:border-indigo-800/50">
-                    <Shield className="w-3 h-3" />
-                    Employee
+                </div>
+                <div className="w-full pt-4 mt-auto border-t border-slate-100 dark:border-slate-700/50 flex items-center justify-between text-indigo-600 dark:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-xs font-bold">View Profile</span>
+                  <ChevronRight className="w-4 h-4" />
+                </div>
+              </div>
+            ))}
+            {employees.length === 0 && !isLoading && (
+              <div className="col-span-full py-12 text-center text-slate-505 dark:text-slate-400">
+                No employees found. Add one to get started.
+              </div>
+            )}
+          </div>
+        )
+      ) : (
+        <div className="space-y-6">
+          {sessionsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+            </div>
+          ) : sessionsError ? (
+            <div className="p-4 bg-rose-50 text-rose-600 rounded-2xl text-sm font-medium">
+              {sessionsError}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-fade-in items-start">
+              {/* Calendar Sidebar */}
+              <div className="lg:col-span-5 space-y-4">
+                <div className="glass p-6 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm">
+                  {/* Calendar Header */}
+                  <div className="flex items-center justify-between mb-6">
+                    <button
+                      type="button"
+                      onClick={() => setCalendarViewDate(new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() - 1, 1))}
+                      className="p-2 text-slate-405 hover:text-slate-700 dark:hover:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-all"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <h3 className="font-bold text-slate-850 dark:text-white text-sm">
+                      {calendarViewDate.toLocaleString('en-IN', { month: 'long', year: 'numeric' })}
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setCalendarViewDate(new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + 1, 1))}
+                      className="p-2 text-slate-450 hover:text-slate-700 dark:hover:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-all"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Weekdays Grid */}
+                  <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 uppercase mb-2">
+                    <div>Su</div>
+                    <div>Mo</div>
+                    <div>Tu</div>
+                    <div>We</div>
+                    <div>Th</div>
+                    <div>Fr</div>
+                    <div>Sa</div>
+                  </div>
+
+                  {/* Month Days Grid */}
+                  <div className="grid grid-cols-7 gap-1.5">
+                    {getDaysInMonth(calendarViewDate).map((dayObj, idx) => {
+                      const isSelected = dayObj.date.toDateString() === selectedDate.toDateString();
+                      const isToday = dayObj.date.toDateString() === new Date().toDateString();
+                      const hasSession = hasSessionOnDate(dayObj.date, allSessions);
+                      
+                      return (
+                        <button
+                          type="button"
+                          key={idx}
+                          onClick={() => setSelectedDate(dayObj.date)}
+                          className={cn(
+                            "h-10 relative flex flex-col items-center justify-center rounded-xl text-xs font-semibold transition-all hover:scale-105",
+                            !dayObj.isCurrentMonth && "text-slate-300 dark:text-slate-600 opacity-60",
+                            dayObj.isCurrentMonth && !isSelected && "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700",
+                            isSelected && "bg-indigo-600 text-white shadow-md shadow-indigo-200/50 dark:shadow-none hover:bg-indigo-700",
+                            isToday && !isSelected && "border border-indigo-200 text-indigo-600 dark:text-indigo-400 dark:border-indigo-800"
+                          )}
+                        >
+                          <span>{dayObj.date.getDate()}</span>
+                          {hasSession && (
+                            <span className={cn(
+                              "w-1.5 h-1.5 rounded-full absolute bottom-1.5",
+                              isSelected ? "bg-white" : "bg-indigo-500"
+                            )} />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="p-4 bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100/50 dark:border-indigo-850 rounded-2xl">
+                  <div className="flex gap-2.5 items-start text-xs text-indigo-700 dark:text-indigo-400">
+                    <span className="mt-0.5">ℹ</span>
+                    <p>Select a date to view logout session reports submitted for that day.</p>
                   </div>
                 </div>
               </div>
-              <div className="w-full pt-4 mt-auto border-t border-slate-100 dark:border-slate-700/50 flex items-center justify-between text-indigo-600 dark:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                <span className="text-xs font-bold">View Profile</span>
-                <ChevronRight className="w-4 h-4" />
+
+              {/* Reports List for Selected Date */}
+              <div className="lg:col-span-7 space-y-6">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                      Reports for {selectedDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
+                      {allSessions.filter(s => s.logoutAt && new Date(s.logoutAt).toDateString() === selectedDate.toDateString()).length} session(s) recorded
+                    </p>
+                  </div>
+                </div>
+
+                {allSessions.filter(s => s.logoutAt && new Date(s.logoutAt).toDateString() === selectedDate.toDateString()).length === 0 ? (
+                  <div className="py-12 text-center text-slate-500 dark:text-slate-455 bg-slate-50/30 dark:bg-slate-900/20 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800">
+                    No logout reports submitted on this date.
+                  </div>
+                ) : (
+                  <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+                    {allSessions
+                      .filter(s => s.logoutAt && new Date(s.logoutAt).toDateString() === selectedDate.toDateString())
+                      .map((session) => {
+                        const duration = session.loginAt && session.logoutAt
+                          ? (() => {
+                              const start = new Date(session.loginAt).getTime();
+                              const end = new Date(session.logoutAt).getTime();
+                              const diff = Math.max(0, end - start);
+                              const minutes = Math.floor(diff / 60000);
+                              const hours = Math.floor(minutes / 60);
+                              const remaining = minutes % 60;
+                              return `${hours}h ${remaining}m`;
+                            })()
+                          : '—';
+
+                        return (
+                          <article key={session._id} className="glass p-5 rounded-3xl border border-slate-100 dark:border-slate-700/60 bg-white dark:bg-slate-800 shadow-sm flex flex-col gap-4 transition-all hover:shadow-md">
+                            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-55 dark:border-slate-700 pb-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold shrink-0">
+                                  {session.userName.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                  <h4 className="font-bold text-slate-900 dark:text-white leading-tight text-sm">{session.userName}</h4>
+                                  <span className="text-[10px] text-slate-400 dark:text-slate-500">{session.userEmail}</span>
+                                </div>
+                              </div>
+                              
+                              <div className="flex flex-wrap gap-2">
+                                <span className="text-[9px] font-black uppercase tracking-[0.1em] bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded">
+                                  Session: {duration}
+                                </span>
+                                <span className="text-[9px] font-black uppercase tracking-[0.1em] bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded">
+                                  Logout: {formatDateTime(session.logoutAt)}
+                                </span>
+                              </div>
+                            </div>
+
+                            {session.workSummary && (
+                              <div className="rounded-2xl bg-slate-50/50 dark:bg-slate-900/40 p-4 border border-slate-100 dark:border-slate-750">
+                                <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">
+                                  <FileText className="w-3.5 h-3.5" />
+                                  Work Summary
+                                </div>
+                                <p className="text-xs text-slate-700 dark:text-slate-350 leading-relaxed whitespace-pre-wrap">{session.workSummary}</p>
+                              </div>
+                            )}
+
+                            <div className="flex flex-wrap gap-3 items-end justify-between pt-1">
+                              {session.gitLink ? (
+                                <a
+                                  href={session.gitLink}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="flex items-center gap-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 px-3.5 py-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50 transition-all"
+                                >
+                                  <Link2 className="w-3.5 h-3.5" />
+                                  Git Link
+                                </a>
+                              ) : <div />}
+
+                              {session.screenshot && (
+                                <div className="overflow-hidden rounded-xl border border-slate-100 dark:border-slate-700/80 bg-white dark:bg-slate-900 shadow-sm flex flex-col w-40 shrink-0">
+                                  <div className="flex items-center gap-1 border-b border-slate-100 dark:border-slate-800 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.25em] text-slate-400">
+                                    <ImageIcon className="w-3 h-3 text-indigo-500" />
+                                    Screenshot Proof
+                                  </div>
+                                  <img
+                                    src={session.screenshot}
+                                    alt="Screenshot proof"
+                                    className="h-16 w-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                    onClick={() => window.open(session.screenshot, '_blank')}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </article>
+                        );
+                      })}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
-          {employees.length === 0 && !isLoading && (
-            <div className="col-span-full py-12 text-center text-slate-500 dark:text-slate-400">
-              No employees found. Add one to get started.
             </div>
           )}
         </div>
@@ -160,7 +1434,7 @@ const EmployeeManagement = () => {
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">Add New Employee</h2>
                 <p className="text-slate-400 dark:text-slate-500 text-sm mt-0.5">Create a new account for your staff.</p>
               </div>
-              <button onClick={() => setShowModal(false)} className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-all">
+              <button onClick={() => setShowModal(false)} className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-all">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -204,7 +1478,7 @@ const EmployeeManagement = () => {
                       type="password"
                       value={form.password}
                       onChange={(e) => setForm({ ...form, password: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                      className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-550 outline-none transition-all"
                       placeholder="Min. 6 characters"
                       required
                     />
@@ -265,7 +1539,7 @@ const EmployeeManagement = () => {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
+                  className="px-5 py-2.5 text-sm font-semibold text-slate-655 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
                 >
                   Cancel
                 </button>
@@ -281,140 +1555,7 @@ const EmployeeManagement = () => {
             </form>
           </div>
         </div>
-      )}
-
-      {/* View Employee Profile Modal */}
-      {selectedEmployee && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setSelectedEmployee(null)} />
-          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-800 rounded-3xl shadow-2xl animate-fade-in">
-            {/* Header Banner */}
-            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 h-24 relative">
-              <button 
-                onClick={() => setSelectedEmployee(null)} 
-                className="absolute top-4 right-4 p-2 text-white/80 hover:text-white bg-black/10 hover:bg-black/20 rounded-xl backdrop-blur-sm transition-all"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="px-8 pb-8">
-              {/* Profile Avatar */}
-              <div className="w-20 h-20 rounded-2xl bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-800 shadow-lg flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-3xl font-bold -mt-10 mx-auto relative z-10 mb-4">
-                {selectedEmployee.name.charAt(0).toUpperCase()}
-              </div>
-
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{selectedEmployee.name}</h2>
-                <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">{selectedEmployee.designation || 'Staff Member'}</p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700">
-                  <Mail className="w-5 h-5 text-indigo-500 mt-0.5" />
-                  <div>
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 dark:text-slate-500 block mb-0.5">User ID / Email</span>
-                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200 break-all">{selectedEmployee.email}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700">
-                  <Phone className="w-5 h-5 text-indigo-500 mt-0.5" />
-                  <div>
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 dark:text-slate-500 block mb-0.5">Phone Number</span>
-                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{selectedEmployee.phone || 'Not provided'}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700">
-                  <Building2 className="w-5 h-5 text-indigo-500 mt-0.5" />
-                  <div>
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 dark:text-slate-500 block mb-0.5">Department</span>
-                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{selectedEmployee.department || 'Not assigned'}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700">
-                  <Calendar className="w-5 h-5 text-indigo-500 mt-0.5" />
-                  <div>
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 dark:text-slate-500 block mb-0.5">Date of Joining</span>
-                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{selectedEmployee.joiningDate ? new Date(selectedEmployee.joiningDate).toLocaleDateString() : 'Unknown'}</span>
-                  </div>
-                </div>
-
-                <div className="rounded-3xl border border-slate-100 bg-slate-50 p-4">
-                  <h3 className="text-sm font-bold text-slate-900">Session History</h3>
-                  <p className="mt-1 text-sm text-slate-500">All recorded login and logout entries for this employee, ordered from first to last.</p>
-                </div>
-
-                <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-                  <div className="px-4 py-4 bg-slate-100 text-slate-600 uppercase text-[10px] tracking-[0.25em] font-bold border-b border-slate-200">
-                    Login / Logout History
-                  </div>
-
-                  {logsLoading ? (
-                    <div className="p-8 text-center text-slate-500">
-                      Loading session records...
-                    </div>
-                  ) : logsError ? (
-                    <div className="p-8 text-center text-rose-600">
-                      {logsError}
-                    </div>
-                  ) : selectedEmployeeLogs.length === 0 ? (
-                    <div className="p-8 text-center text-slate-500">
-                      No session history available for this employee.
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full text-left text-sm">
-                        <thead>
-                          <tr className="bg-slate-50 text-slate-500 uppercase text-xs tracking-wider">
-                            <th className="px-4 py-3">Login Time</th>
-                            <th className="px-4 py-3">Logout Time</th>
-                            <th className="px-4 py-3">Duration</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {selectedEmployeeLogs.map((log) => {
-                            const login = log.loginAt ? formatDateTime(log.loginAt) : 'Unknown';
-                            const logout = log.logoutAt ? formatDateTime(log.logoutAt) : 'Still active';
-                            const duration = log.loginAt && log.logoutAt
-                              ? (() => {
-                                  const start = new Date(log.loginAt).getTime();
-                                  const end = new Date(log.logoutAt).getTime();
-                                  const diff = Math.max(0, end - start);
-                                  const minutes = Math.floor(diff / 60000);
-                                  const hours = Math.floor(minutes / 60);
-                                  const remaining = minutes % 60;
-                                  return `${hours}h ${remaining}m`;
-                                })()
-                              : '—';
-
-                            return (
-                              <tr key={log._id} className="border-b border-slate-100 hover:bg-slate-50">
-                                <td className="px-4 py-3 text-slate-700">{login}</td>
-                                <td className="px-4 py-3 text-slate-700">{logout}</td>
-                                <td className="px-4 py-3 text-slate-700">{duration}</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-700 text-center">
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full text-xs font-bold border border-indigo-100 dark:border-indigo-800/50">
-                  <Shield className="w-3.5 h-3.5" />
-                  Verified Employee Account
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+          )}
     </div>
   );
 };

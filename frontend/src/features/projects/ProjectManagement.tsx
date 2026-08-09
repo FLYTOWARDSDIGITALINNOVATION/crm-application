@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FolderKanban, Plus, Users, Trash2, X, ChevronRight,
-  Loader2, CheckCircle2, Clock, PauseCircle, Edit2, UserPlus
+  Loader2, CheckCircle2, Clock, PauseCircle, Edit2, UserPlus,
+  ArrowLeft
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAppDispatch, useAppSelector } from '../../store';
@@ -52,7 +53,14 @@ const ProjectManagement: React.FC = () => {
   const [deleteConfirm, setDeleteConfirm] = useState<Project | null>(null);
 
   // ── Form state ────────────────────────────────────────────
-  const [form, setForm] = useState({ name: '', description: '', status: 'Active' as typeof STATUS_OPTIONS[number] });
+  const [form, setForm] = useState({
+    name: '',
+    description: '',
+    status: 'Active' as typeof STATUS_OPTIONS[number],
+    requirements: '',
+    files: [] as Array<{ name: string; url: string }>,
+    assignedEmployees: [] as string[]
+  });
   const [formError, setFormError] = useState('');
 
   // ── Employee assignment state ─────────────────────────────
@@ -67,7 +75,14 @@ const ProjectManagement: React.FC = () => {
   // Open edit modal with prefilled data
   const openEdit = (p: Project) => {
     setEditProject(p);
-    setForm({ name: p.name, description: p.description, status: p.status });
+    setForm({
+      name: p.name,
+      description: p.description || '',
+      status: p.status,
+      requirements: p.requirements || '',
+      files: p.files ? p.files.map(f => ({ name: f.name, url: f.url })) : [],
+      assignedEmployees: p.assignedEmployees ? p.assignedEmployees.map(e => e._id) : []
+    });
     setFormError('');
   };
 
@@ -80,16 +95,38 @@ const ProjectManagement: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) { setFormError('Project name is required'); return; }
-    await dispatch(createProject({ name: form.name.trim(), description: form.description, status: form.status }));
+    await dispatch(createProject({
+      name: form.name.trim(),
+      description: form.description,
+      status: form.status,
+      requirements: form.requirements,
+      files: form.files,
+      assignedEmployees: form.assignedEmployees
+    }));
     setShowCreate(false);
-    setForm({ name: '', description: '', status: 'Active' });
+    setForm({
+      name: '',
+      description: '',
+      status: 'Active',
+      requirements: '',
+      files: [],
+      assignedEmployees: []
+    });
     setFormError('');
   };
 
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !editProject) { setFormError('Project name is required'); return; }
-    await dispatch(updateProject({ id: editProject._id, name: form.name.trim(), description: form.description, status: form.status }));
+    await dispatch(updateProject({
+      id: editProject._id,
+      name: form.name.trim(),
+      description: form.description,
+      status: form.status,
+      requirements: form.requirements,
+      files: form.files,
+      assignedEmployees: form.assignedEmployees
+    }));
     setEditProject(null);
     setFormError('');
   };
@@ -112,6 +149,435 @@ const ProjectManagement: React.FC = () => {
     setSelectedEmpIds(prev => prev.includes(id) ? prev.filter(e => e !== id) : [...prev, id]);
   };
 
+  if (showCreate) {
+    return (
+      <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
+        <button
+          type="button"
+          onClick={() => setShowCreate(false)}
+          className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 text-sm font-semibold transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Projects
+        </button>
+
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Create New Project</h1>
+          <p className="text-slate-500 text-sm">Define project details, add files and assign team members.</p>
+        </div>
+
+        <div className="glass p-6 sm:p-8 rounded-3xl border border-slate-100 shadow-xl shadow-slate-100/50">
+          <form onSubmit={handleCreate} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Left Column: General Info */}
+              <div className="space-y-4">
+                <FormField label="Project Name" required error={formError}>
+                  <input
+                    autoFocus
+                    type="text"
+                    placeholder="e.g. Q3 Marketing Campaign"
+                    value={form.name}
+                    onChange={e => { setForm({ ...form, name: e.target.value }); setFormError(''); }}
+                    className={cn('input-field', formError ? 'border-rose-400 bg-rose-50' : '')}
+                  />
+                </FormField>
+                
+                <FormField label="Status">
+                  <select
+                    value={form.status}
+                    onChange={e => setForm({ ...form, status: e.target.value as typeof STATUS_OPTIONS[number] })}
+                    className="input-field"
+                  >
+                    {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </FormField>
+
+                <FormField label="Description">
+                  <textarea
+                    rows={4}
+                    placeholder="Brief description of the project..."
+                    value={form.description}
+                    onChange={e => setForm({ ...form, description: e.target.value })}
+                    className="input-field resize-none"
+                  />
+                </FormField>
+
+                <FormField label="Requirements">
+                  <textarea
+                    rows={4}
+                    placeholder="Project specific requirements..."
+                    value={form.requirements}
+                    onChange={e => setForm({ ...form, requirements: e.target.value })}
+                    className="input-field resize-none"
+                  />
+                </FormField>
+              </div>
+
+              {/* Right Column: Files & Members */}
+              <div className="space-y-4 flex flex-col h-full">
+                <FormField label="Project Files">
+                  <div className="space-y-2">
+                    <input
+                      type="file"
+                      multiple
+                      onChange={e => {
+                        const selectedFiles = Array.from(e.target.files || []);
+                        selectedFiles.forEach(file => {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setForm(prev => ({
+                              ...prev,
+                              files: [
+                                ...prev.files,
+                                { name: file.name, url: reader.result as string }
+                              ]
+                            }));
+                          };
+                          reader.readAsDataURL(file);
+                        });
+                      }}
+                      className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
+                    />
+                    <div className="grid grid-cols-1 gap-1.5 mt-2 max-h-36 overflow-y-auto custom-scrollbar">
+                      {form.files.map((file, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs">
+                          <span className="font-bold text-slate-700 truncate max-w-[200px]">{file.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => setForm(prev => ({ ...prev, files: prev.files.filter((_, i) => i !== idx) }))}
+                            className="text-rose-500 font-bold hover:underline"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </FormField>
+
+                <FormField label="Assign Employees">
+                  <div className="max-h-72 overflow-y-auto space-y-1.5 p-3 border border-slate-100 bg-slate-50/50 rounded-2xl custom-scrollbar flex-1 min-h-[220px]">
+                    {employees.length === 0 ? (
+                      <p className="text-slate-400 text-xs text-center py-4">No employees found.</p>
+                    ) : (
+                      employees.map(emp => {
+                        const checked = form.assignedEmployees.includes(emp._id);
+                        return (
+                          <button
+                            key={emp._id}
+                            type="button"
+                            onClick={() => {
+                              setForm(prev => {
+                                const isAssigned = prev.assignedEmployees.includes(emp._id);
+                                return {
+                                  ...prev,
+                                  assignedEmployees: isAssigned
+                                    ? prev.assignedEmployees.filter(id => id !== emp._id)
+                                    : [...prev.assignedEmployees, emp._id]
+                                };
+                              });
+                            }}
+                            className={cn(
+                              'w-full flex items-center justify-between p-2.5 rounded-xl transition-all text-left text-xs',
+                              checked ? 'bg-indigo-50/70 text-indigo-900 font-semibold' : 'hover:bg-slate-100 text-slate-700'
+                            )}
+                          >
+                            <span className="truncate">{emp.name} ({emp.designation || emp.role})</span>
+                            <div className={cn(
+                              'w-4 h-4 rounded border flex items-center justify-center transition-all shrink-0',
+                              checked ? 'bg-indigo-600 border-indigo-600' : 'border-slate-350'
+                            )}>
+                              {checked && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                            </div>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </FormField>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowCreate(false)}
+                className="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                Create Project
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  if (editProject) {
+    return (
+      <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
+        <button
+          type="button"
+          onClick={() => setEditProject(null)}
+          className="flex items-center gap-2 text-slate-500 hover:text-indigo-605 text-sm font-semibold transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Projects
+        </button>
+
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Edit Project</h1>
+          <p className="text-slate-500 text-sm">Update project details, files and assigned team members.</p>
+        </div>
+
+        <div className="glass p-6 sm:p-8 rounded-3xl border border-slate-100 shadow-xl shadow-slate-100/50">
+          <form onSubmit={handleEdit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Left Column: General Info */}
+              <div className="space-y-4">
+                <FormField label="Project Name" required error={formError}>
+                  <input
+                    autoFocus
+                    type="text"
+                    placeholder="e.g. Q3 Marketing Campaign"
+                    value={form.name}
+                    onChange={e => { setForm({ ...form, name: e.target.value }); setFormError(''); }}
+                    className={cn('input-field', formError ? 'border-rose-400 bg-rose-50' : '')}
+                  />
+                </FormField>
+                
+                <FormField label="Status">
+                  <select
+                    value={form.status}
+                    onChange={e => setForm({ ...form, status: e.target.value as typeof STATUS_OPTIONS[number] })}
+                    className="input-field"
+                  >
+                    {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </FormField>
+
+                <FormField label="Description">
+                  <textarea
+                    rows={4}
+                    placeholder="Brief description of the project..."
+                    value={form.description}
+                    onChange={e => setForm({ ...form, description: e.target.value })}
+                    className="input-field resize-none"
+                  />
+                </FormField>
+
+                <FormField label="Requirements">
+                  <textarea
+                    rows={4}
+                    placeholder="Project specific requirements..."
+                    value={form.requirements}
+                    onChange={e => setForm({ ...form, requirements: e.target.value })}
+                    className="input-field resize-none"
+                  />
+                </FormField>
+              </div>
+
+              {/* Right Column: Files & Members */}
+              <div className="space-y-4 flex flex-col h-full">
+                <FormField label="Project Files">
+                  <div className="space-y-2">
+                    <input
+                      type="file"
+                      multiple
+                      onChange={e => {
+                        const selectedFiles = Array.from(e.target.files || []);
+                        selectedFiles.forEach(file => {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setForm(prev => ({
+                              ...prev,
+                              files: [
+                                ...prev.files,
+                                { name: file.name, url: reader.result as string }
+                              ]
+                            }));
+                          };
+                          reader.readAsDataURL(file);
+                        });
+                      }}
+                      className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-650 hover:file:bg-indigo-100"
+                    />
+                    <div className="grid grid-cols-1 gap-1.5 mt-2 max-h-36 overflow-y-auto custom-scrollbar">
+                      {form.files.map((file, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs">
+                          <span className="font-bold text-slate-700 truncate max-w-[200px]">{file.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => setForm(prev => ({ ...prev, files: prev.files.filter((_, i) => i !== idx) }))}
+                            className="text-rose-500 font-bold hover:underline"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </FormField>
+
+                <FormField label="Assign Employees">
+                  <div className="max-h-72 overflow-y-auto space-y-1.5 p-3 border border-slate-100 bg-slate-50/50 rounded-2xl custom-scrollbar flex-1 min-h-[220px]">
+                    {employees.length === 0 ? (
+                      <p className="text-slate-400 text-xs text-center py-4">No employees found.</p>
+                    ) : (
+                      employees.map(emp => {
+                        const checked = form.assignedEmployees.includes(emp._id);
+                        return (
+                          <button
+                            key={emp._id}
+                            type="button"
+                            onClick={() => {
+                              setForm(prev => {
+                                const isAssigned = prev.assignedEmployees.includes(emp._id);
+                                return {
+                                  ...prev,
+                                  assignedEmployees: isAssigned
+                                    ? prev.assignedEmployees.filter(id => id !== emp._id)
+                                    : [...prev.assignedEmployees, emp._id]
+                                };
+                              });
+                            }}
+                            className={cn(
+                              'w-full flex items-center justify-between p-2.5 rounded-xl transition-all text-left text-xs',
+                              checked ? 'bg-indigo-50/70 text-indigo-900 font-semibold' : 'hover:bg-slate-100 text-slate-700'
+                            )}
+                          >
+                            <span className="truncate">{emp.name} ({emp.designation || emp.role})</span>
+                            <div className={cn(
+                              'w-4 h-4 rounded border flex items-center justify-center transition-all shrink-0',
+                              checked ? 'bg-indigo-650 border-indigo-600' : 'border-slate-350'
+                            )}>
+                              {checked && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                            </div>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </FormField>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setEditProject(null)}
+                className="px-5 py-2.5 text-sm font-semibold text-slate-655 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all"
+              >
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  if (assignProject) {
+    return (
+      <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
+        <button
+          type="button"
+          onClick={() => setAssignProject(null)}
+          className="flex items-center gap-2 text-slate-500 hover:text-indigo-605 text-sm font-semibold transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Projects
+        </button>
+
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Assign Employees</h1>
+          <p className="text-slate-500 text-sm">Assign team members to project: <span className="font-bold text-indigo-650">{assignProject.name}</span></p>
+        </div>
+
+        <div className="glass p-6 sm:p-8 rounded-3xl border border-slate-100 shadow-xl shadow-slate-100/50">
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto p-1 custom-scrollbar">
+              {employees.length === 0 ? (
+                <p className="text-slate-500 text-sm text-center py-8 col-span-2">No employees found.</p>
+              ) : (
+                employees.map(emp => {
+                  const checked = selectedEmpIds.includes(emp._id);
+                  return (
+                    <button
+                      key={emp._id}
+                      type="button"
+                      onClick={() => toggleEmp(emp._id)}
+                      className={cn(
+                        'flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left',
+                        checked
+                          ? 'border-indigo-300 bg-indigo-50/70 shadow-sm shadow-indigo-50'
+                          : 'border-slate-100 hover:border-indigo-200 hover:bg-slate-50'
+                      )}
+                    >
+                      <div className={cn(
+                        'w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-colors',
+                        checked ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-650'
+                      )}>
+                        {emp.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold text-slate-800 truncate">{emp.name}</div>
+                        <div className="text-xs text-slate-500 truncate">{emp.designation || emp.role}</div>
+                      </div>
+                      <div className={cn(
+                        'w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0',
+                        checked ? 'bg-indigo-600 border-indigo-600' : 'border-slate-350'
+                      )}>
+                        {checked && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+            
+            <div className="flex items-center justify-between pt-6 border-t border-slate-100">
+              <span className="text-xs text-slate-500 font-semibold">{selectedEmpIds.length} selected</span>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setAssignProject(null)}
+                  className="px-5 py-2.5 text-sm font-semibold text-slate-650 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAssign}
+                  disabled={assigning}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all"
+                >
+                  <Users className="w-4 h-4" />
+                  Save Members
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
@@ -124,7 +590,18 @@ const ProjectManagement: React.FC = () => {
         </div>
         {isAdmin && (
           <button
-            onClick={() => { setShowCreate(true); setForm({ name: '', description: '', status: 'Active' }); setFormError(''); }}
+            onClick={() => {
+              setShowCreate(true);
+              setForm({
+                name: '',
+                description: '',
+                status: 'Active',
+                requirements: '',
+                files: [],
+                assignedEmployees: []
+              });
+              setFormError('');
+            }}
             className="flex items-center gap-2 px-5 py-3 bg-indigo-600 rounded-2xl text-sm font-bold text-white hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all self-start sm:self-auto"
           >
             <Plus className="w-5 h-5" />
@@ -247,143 +724,7 @@ const ProjectManagement: React.FC = () => {
         </div>
       )}
 
-      {/* ── Create Project Modal ── */}
-      {showCreate && (
-        <Modal title="Create New Project" onClose={() => setShowCreate(false)}>
-          <form onSubmit={handleCreate} className="space-y-4">
-            <FormField label="Project Name" required error={formError}>
-              <input
-                autoFocus
-                type="text"
-                placeholder="e.g. Q3 Marketing Campaign"
-                value={form.name}
-                onChange={e => { setForm({ ...form, name: e.target.value }); setFormError(''); }}
-                className={cn('input-field', formError ? 'border-rose-400 bg-rose-50' : '')}
-              />
-            </FormField>
-            <FormField label="Description">
-              <textarea
-                rows={3}
-                placeholder="Brief description of the project..."
-                value={form.description}
-                onChange={e => setForm({ ...form, description: e.target.value })}
-                className="input-field resize-none"
-              />
-            </FormField>
-            <FormField label="Status">
-              <select
-                value={form.status}
-                onChange={e => setForm({ ...form, status: e.target.value as typeof STATUS_OPTIONS[number] })}
-                className="input-field"
-              >
-                {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </FormField>
-            <ModalActions onCancel={() => setShowCreate(false)} submitLabel="Create Project" />
-          </form>
-        </Modal>
-      )}
 
-      {/* ── Edit Project Modal ── */}
-      {editProject && (
-        <Modal title="Edit Project" onClose={() => setEditProject(null)}>
-          <form onSubmit={handleEdit} className="space-y-4">
-            <FormField label="Project Name" required error={formError}>
-              <input
-                autoFocus
-                type="text"
-                value={form.name}
-                onChange={e => { setForm({ ...form, name: e.target.value }); setFormError(''); }}
-                className={cn('input-field', formError ? 'border-rose-400 bg-rose-50' : '')}
-              />
-            </FormField>
-            <FormField label="Description">
-              <textarea
-                rows={3}
-                value={form.description}
-                onChange={e => setForm({ ...form, description: e.target.value })}
-                className="input-field resize-none"
-              />
-            </FormField>
-            <FormField label="Status">
-              <select
-                value={form.status}
-                onChange={e => setForm({ ...form, status: e.target.value as typeof STATUS_OPTIONS[number] })}
-                className="input-field"
-              >
-                {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </FormField>
-            <ModalActions onCancel={() => setEditProject(null)} submitLabel="Save Changes" />
-          </form>
-        </Modal>
-      )}
-
-      {/* ── Assign Employees Modal ── */}
-      {assignProject && (
-        <Modal title="Assign Employees" subtitle={assignProject.name} onClose={() => setAssignProject(null)}>
-          <div className="max-h-72 overflow-y-auto space-y-2 pr-1 mb-4 custom-scrollbar">
-            {employees.length === 0 ? (
-              <p className="text-slate-500 text-sm text-center py-8">No employees found.</p>
-            ) : (
-              employees.map(emp => {
-                const checked = selectedEmpIds.includes(emp._id);
-                return (
-                  <button
-                    key={emp._id}
-                    type="button"
-                    onClick={() => toggleEmp(emp._id)}
-                    className={cn(
-                      'w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left',
-                      checked
-                        ? 'border-indigo-300 bg-indigo-50'
-                        : 'border-slate-100 hover:border-indigo-200 hover:bg-slate-50'
-                    )}
-                  >
-                    <div className={cn(
-                      'w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-colors',
-                      checked ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
-                    )}>
-                      {emp.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-bold text-slate-800 truncate">{emp.name}</div>
-                      <div className="text-xs text-slate-500 truncate">{emp.designation || emp.role}</div>
-                    </div>
-                    <div className={cn(
-                      'w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0',
-                      checked ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300'
-                    )}>
-                      {checked && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
-                    </div>
-                  </button>
-                );
-              })
-            )}
-          </div>
-          <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-            <span className="text-xs text-slate-500 font-medium">{selectedEmpIds.length} selected</span>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setAssignProject(null)}
-                className="px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleAssign}
-                disabled={assigning}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all disabled:opacity-60"
-              >
-                {assigning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Users className="w-4 h-4" />}
-                Save Members
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
 
       {/* ── Delete Confirm Modal ── */}
       {deleteConfirm && (
@@ -449,23 +790,5 @@ const FormField: React.FC<{ label: string; required?: boolean; error?: string; c
   </div>
 );
 
-const ModalActions: React.FC<{ onCancel: () => void; submitLabel: string }> = ({ onCancel, submitLabel }) => (
-  <div className="flex items-center justify-end gap-3 pt-2">
-    <button
-      type="button"
-      onClick={onCancel}
-      className="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
-    >
-      Cancel
-    </button>
-    <button
-      type="submit"
-      className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all"
-    >
-      <Plus className="w-4 h-4" />
-      {submitLabel}
-    </button>
-  </div>
-);
 
 export default ProjectManagement;
