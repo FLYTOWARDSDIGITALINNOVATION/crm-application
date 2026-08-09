@@ -86,6 +86,44 @@ const Dashboard: React.FC = () => {
 
   const COLORS = ['#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
 
+  const exportToCSV = () => {
+    let csvContent = "Dashboard Overview Report\n\n";
+
+    // 1. Overview Stats
+    csvContent += "Metric,Value\n";
+    stats.forEach(stat => {
+      csvContent += `"${stat.title}","${stat.value}"\n`;
+    });
+    
+    csvContent += "\n";
+
+    // 2. Leads by Source
+    csvContent += "Leads by Source\n";
+    csvContent += "Source,Leads Count,Percentage\n";
+    sourceData.forEach(source => {
+      const percentage = totalSourceValue > 0 ? ((source.value / totalSourceValue) * 100).toFixed(0) : '0';
+      csvContent += `"${source.name}","${source.value}","${percentage}%"\n`;
+    });
+
+    csvContent += "\n";
+
+    // 3. Monthly Growth
+    csvContent += "Monthly Growth (Last 6 Months)\n";
+    csvContent += "Month,New Leads,New Customers\n";
+    monthlyData.forEach(data => {
+      csvContent += `"${data.name} ${data.year}","${data.leads}","${data.customers}"\n`;
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `dashboard_report_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
@@ -95,7 +133,10 @@ const Dashboard: React.FC = () => {
           <p className="text-slate-500 dark:text-slate-400">Welcome back, John! Here's what's happening today.</p>
         </div>
         <div className="flex gap-3">
-          <button className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">
+          <button 
+            onClick={exportToCSV}
+            className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+          >
             Export CSV
           </button>
           <Link to="/leads/create" className="px-4 py-2 bg-indigo-600 rounded-xl text-sm font-semibold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/50 transition-all flex items-center justify-center">
