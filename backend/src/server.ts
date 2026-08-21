@@ -15,7 +15,8 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // Simple request logger for debugging
 app.use((req, _res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
@@ -34,9 +35,14 @@ import projectRoutes from './routes/projectRoutes';
 import workLogRoutes from './routes/workLogRoutes';
 import leaveRoutes from './routes/leaveRoutes';
 import superAdminRoutes from './routes/superAdminRoutes';
+import notificationRoutes from './routes/notificationRoutes';
+import { startCronJobs } from './utils/cronJobs';
 
 // Database Connection
 connectDB();
+
+// Start Background Cron Jobs
+startCronJobs();
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -49,6 +55,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/work-logs', workLogRoutes);
 app.use('/api/leaves', leaveRoutes);
 app.use('/api/super-admin', superAdminRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Basic Route for testing
 app.get('/api/health', (req, res) => {

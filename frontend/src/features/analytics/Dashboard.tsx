@@ -4,7 +4,7 @@ import {
   AreaChart, Area, PieChart, Pie, Cell 
 } from 'recharts';
 import { 
-  Users, UserPlus, TrendingUp, DollarSign, 
+  Users, UserPlus, TrendingUp, IndianRupee, 
   ArrowUpRight, ArrowDownRight, MoreVertical 
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
@@ -30,16 +30,10 @@ const Dashboard: React.FC = () => {
   const totalLeads = leads.length;
   const convertedLeads = leads.filter((l) => l.status === 'Converted').length;
   const conversionRate = totalLeads > 0 ? ((convertedLeads / totalLeads) * 100).toFixed(1) : '0.0';
-  const leadsWithValue = leads.filter((l) => l.value && l.value > 0);
-  const avgDealSize = leadsWithValue.length > 0
-    ? Math.round(leadsWithValue.reduce((sum, l) => sum + (l.value || 0), 0) / leadsWithValue.length)
-    : 0;
-
   const stats = [
     { title: 'Total Leads', value: totalLeads.toLocaleString(), change: '', isPositive: true, icon: UserPlus, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-900/30' },
     { title: 'Converted', value: convertedLeads.toLocaleString(), change: '', isPositive: true, icon: Users, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/30' },
     { title: 'Conversion Rate', value: `${conversionRate}%`, change: '', isPositive: true, icon: TrendingUp, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/30' },
-    { title: 'Avg Deal Size', value: avgDealSize > 0 ? `₹${avgDealSize.toLocaleString()}` : 'N/A', change: '', isPositive: true, icon: DollarSign, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30' },
   ];
 
   // Build monthly chart data from real lead creation dates (last 6 months)
@@ -146,7 +140,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6">
         {stats.map((stat, idx) => (
           <div key={idx} className="glass p-6 rounded-2xl hover:translate-y-[-4px] transition-all duration-300">
             <div className="flex items-start justify-between">

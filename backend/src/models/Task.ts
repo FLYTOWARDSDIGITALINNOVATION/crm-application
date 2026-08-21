@@ -10,6 +10,7 @@ export interface ITask extends Document {
   relatedTo: string;
   projectId?: mongoose.Types.ObjectId;
   completedBy?: string;
+  notified?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,6 +35,7 @@ const TaskSchema: Schema = new Schema(
     relatedTo: { type: String, default: '' },
     projectId: { type: Schema.Types.ObjectId, ref: 'Project', required: false },
     completedBy: { type: String, default: '' },
+    notified: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

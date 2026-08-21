@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { fetchTasks } from '../../store/slices/taskSlice';
+import { fetchEmployees } from '../../store/slices/userSlice';
 import { Bell, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
@@ -16,14 +17,59 @@ const NotificationManager: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { items: tasks } = useAppSelector((state) => state.tasks);
+  const { employees } = useAppSelector((state) => state.users);
+  const { user } = useAppSelector((state) => state.auth);
   const notifiedTasks = useRef(new Set<string>(JSON.parse(localStorage.getItem('notifiedTasks') || '[]')));
   
   const [toasts, setToasts] = useState<ToastData[]>([]);
 
   useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
+    const setupWebPush = async () => {
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        try {
+          const permission = await Notification.requestPermission();
+          if (permission === 'granted') {
+            const registration = await navigator.serviceWorker.register('/sw.js');
+            let subscription = await registration.pushManager.getSubscription();
+            if (subscription) {
+              await subscription.unsubscribe();
+            }
+            const publicVapidKey = 'BIsvvBOzmdrCGYiYpw8bdZlrib4rUaFyFl4YMx5uK8rbaBAbtDTaUqEGT0Pf7LqS0FaeDyeOUtIZ51tF12F7MO8';
+            const urlBase64ToUint8Array = (base64String: string) => {
+                const padding = '='.repeat((4 - base64String.length % 4) % 4);
+                const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+                const rawData = window.atob(base64);
+                const outputArray = new Uint8Array(rawData.length);
+                for (let i = 0; i < rawData.length; ++i) {
+                  outputArray[i] = rawData.charCodeAt(i);
+                }
+                return outputArray;
+              };
+              subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
+              });
+
+            
+            // Send to backend
+            const token = localStorage.getItem('token');
+            if (token) {
+              fetch('http://localhost:5000/api/notifications/subscribe', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ subscription })
+              }).catch(console.error);
+            }
+          }
+        } catch (error) {
+          console.error('Service Worker Error', error);
+        }
+      }
+    };
+    setupWebPush();
     
     // Fetch initial tasks
     dispatch(fetchTasks());
@@ -31,6 +77,9 @@ const NotificationManager: React.FC = () => {
     // Fetch tasks every minute to stay synced
     const fetchInterval = setInterval(() => {
       dispatch(fetchTasks());
+      if (user?.role === 'superadmin') {
+        dispatch(fetchEmployees());
+      }
     }, 60000);
 
     return () => clearInterval(fetchInterval);
@@ -51,13 +100,7 @@ const NotificationManager: React.FC = () => {
             notifiedTasks.current.add(notifyKey);
             localStorage.setItem('notifiedTasks', JSON.stringify(Array.from(notifiedTasks.current)));
 
-            // 1. OS Notification
-            if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification('Action Required', {
-                body: task.description ? `${task.title}\n${task.description}` : task.title,
-                icon: '/vite.svg'
-              });
-            }
+            // OS Notification is now handled by the backend Push API + Service Worker
 
             // 2. In-App Toast Notification (Stays until manually dismissed)
             const newToast = { 
@@ -74,6 +117,35 @@ const NotificationManager: React.FC = () => {
           }
         }
       });
+
+      // Employee Approvals for Super Admin
+      if (user?.role === 'superadmin') {
+        employees.forEach(emp => {
+          // Accessing the approvalStatus which might be on the profile or user object itself
+          // The backend returns it as approvalStatus on the employee object.
+          const anyEmp = emp as any;
+          if (anyEmp.approvalStatus === 'Pending') {
+            const notifyKey = `approval_${emp._id}`;
+            if (!notifiedTasks.current.has(notifyKey)) {
+              notifiedTasks.current.add(notifyKey);
+              localStorage.setItem('notifiedTasks', JSON.stringify(Array.from(notifiedTasks.current)));
+
+              // OS Notification is handled by the backend Push API + Service Worker
+
+              const newToast = {
+                id: notifyKey,
+                title: 'Pending Employee Approval',
+                message: `${emp.name} is waiting for approval.`,
+                relatedTo: 'employee-approvals'
+              };
+              setToasts(prev => {
+                if (prev.some(t => t.id === notifyKey)) return prev;
+                return [...prev, newToast];
+              });
+            }
+          }
+        });
+      }
     }, 1000);
 
     return () => clearInterval(checkInterval);
@@ -89,7 +161,8 @@ const NotificationManager: React.FC = () => {
         <div 
           key={toast.id}
           onClick={() => {
-            if (toast.relatedTo) navigate(`/leads/${toast.relatedTo}`);
+            if (toast.relatedTo === 'employee-approvals') navigate('/employee-approvals');
+            else if (toast.relatedTo) navigate(`/leads/${toast.relatedTo}`);
             else navigate('/tasks');
             removeToast(toast.id);
           }}

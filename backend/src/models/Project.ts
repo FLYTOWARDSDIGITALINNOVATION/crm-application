@@ -7,6 +7,7 @@ export interface IProject extends Document {
   assignedEmployees: mongoose.Types.ObjectId[];
   createdBy: mongoose.Types.ObjectId;
   requirements?: string;
+  projectUrl?: string;
   files?: Array<{ name: string; url: string; uploadedAt: Date }>;
   createdAt: Date;
   updatedAt: Date;
@@ -26,6 +27,7 @@ const ProjectSchema: Schema = new Schema(
     ],
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     requirements: { type: String, default: '' },
+    projectUrl: { type: String, default: '' },
     files: [
       {
         name: { type: String },

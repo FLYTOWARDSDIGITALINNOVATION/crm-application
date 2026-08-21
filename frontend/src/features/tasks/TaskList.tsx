@@ -43,7 +43,7 @@ const TaskList: React.FC = () => {
   const { items: tasks, isLoading } = useAppSelector((state) => state.tasks);
   const { employees } = useAppSelector((state) => state.users);
   const { user } = useAppSelector((state) => state.auth);
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const [allocationTask, setAllocationTask] = useState<Task | null>(null);
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
 

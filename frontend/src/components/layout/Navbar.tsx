@@ -4,7 +4,8 @@ import { cn } from '../../utils/cn';
 import { useAppDispatch, useAppSelector } from '../../store';
 import GlobalSearch from './GlobalSearch';
 import { useTheme } from '../ThemeProvider';
-import { fetchTasks } from '../../store/slices/taskSlice';
+import { fetchTasks, updateTask } from '../../store/slices/taskSlice';
+import { fetchEmployees } from '../../store/slices/userSlice';
 import { logout, logoutUser } from '../../store/slices/authSlice';
 import type { Task } from '../../store/slices/taskSlice';
 import { format, isPast, isToday } from 'date-fns';
@@ -22,6 +23,7 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ isSidebarCollapsed, onMenuToggle }) => {
   const { user } = useAppSelector((state) => state.auth);
   const { items: tasks } = useAppSelector((state) => state.tasks);
+  const { employees } = useAppSelector((state) => state.users);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const location = useLocation();
@@ -38,17 +40,41 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarCollapsed, onMenuToggle }) => 
   
   const initials = user?.name ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'U';
 
-  // Filter pending tasks to show as notifications
+  // Filter pending tasks and approvals to show as notifications
   const notifications = React.useMemo(() => {
-    return tasks
+    const taskNotifs = tasks
       .filter(t => t.status === 'Pending' && t.dueDate)
+      .map(t => ({
+        id: t.id,
+        title: t.title,
+        description: t.description || 'Task is pending',
+        dueDate: t.dueDate,
+        relatedTo: t.relatedTo,
+        type: 'task'
+      }));
+
+    const approvalNotifs = user?.role === 'superadmin' ? employees
+      .filter((emp: any) => emp.approvalStatus === 'Pending')
+      .map((emp: any) => ({
+        id: `approval_${emp._id}`,
+        title: 'Pending Employee Approval',
+        description: `${emp.name} is waiting for approval.`,
+        dueDate: new Date().toISOString(), // Treat as now
+        relatedTo: 'employee-approvals',
+        type: 'approval'
+      })) : [];
+
+    return [...taskNotifs, ...approvalNotifs]
       .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
       .slice(0, 5);
-  }, [tasks]);
+  }, [tasks, employees, user?.role]);
 
   React.useEffect(() => {
     dispatch(fetchTasks());
-  }, [dispatch]);
+    if (user?.role === 'superadmin') {
+      dispatch(fetchEmployees());
+    }
+  }, [dispatch, user?.role]);
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -151,7 +177,8 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarCollapsed, onMenuToggle }) => 
                         key={notif.id} 
                         onClick={() => {
                           setIsNotifMenuOpen(false);
-                          if (notif.relatedTo) navigate(`/leads/${notif.relatedTo}`);
+                          if (notif.relatedTo === 'employee-approvals') navigate('/employee-approvals');
+                          else if (notif.relatedTo) navigate(`/leads/${notif.relatedTo}`);
                           else navigate('/tasks');
                         }}
                         className="p-4 border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer group flex flex-col"
@@ -180,8 +207,11 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarCollapsed, onMenuToggle }) => 
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setIsNotifMenuOpen(false);
-                                setEditingTask(notif);
+                                if (notif.type === 'task') {
+                                  setEditingTask(tasks.find(t => t.id === notif.id) || null);
+                                } else {
+                                  navigate('/employee-approvals');
+                                }
                               }}
                               className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 bg-white dark:bg-slate-800 shadow-sm rounded-md transition-colors border border-slate-200 dark:border-slate-700"
                               title="Edit notification"

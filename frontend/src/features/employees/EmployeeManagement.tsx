@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../store';
-import { fetchEmployees, createEmployee } from '../../store/slices/userSlice';
+import { fetchEmployees, createEmployee, updateEmployeeDetails } from '../../store/slices/userSlice';
 import { fetchLeaves } from '../../store/slices/leaveSlice';
 import api from '../../utils/api';
 import { cn } from '../../utils/cn';
-import { UserPlus, Mail, Shield, Loader2, X, Phone, Building2, Calendar, Briefcase, ChevronRight, FileText, Link2, ImageIcon, ChevronLeft, ArrowLeft, MapPin, CreditCard, User, Users } from 'lucide-react';
+import { UserPlus, Mail, Shield, Loader2, X, Phone, Building2, Calendar, Briefcase, ChevronRight, FileText, Link2, ImageIcon, ChevronLeft, ArrowLeft, MapPin, CreditCard, User, Users, Eye, EyeOff, Camera, Key } from 'lucide-react';
 
 const formatDateTime = (value?: string | null) => {
   if (!value) return 'Not recorded';
@@ -112,7 +112,7 @@ const downloadPayslip = (month: string, employee: any) => {
           <div>
             <div class="section-title">Employee Details</div>
             <div class="row"><span>Name:</span><strong>\${employee.name}</strong></div>
-            <div class="row"><span>Employee ID:</span><strong>\${employee.employeeId || 'EMP-EE7C4F'}</strong></div>
+            <div class="row"><span>Employee ID:</span><strong>\${employee.employeeId || 'FTDI001'}</strong></div>
             <div class="row"><span>Designation:</span><strong>\${employee.designation || 'Staff Member'}</strong></div>
             <div class="row"><span>Department:</span><strong>\${employee.department || 'Not assigned'}</strong></div>
           </div>
@@ -178,8 +178,10 @@ const EmployeeManagement = () => {
   const [logsError, setLogsError] = useState('');
   const [form, setForm] = useState({ 
     name: '', email: '', password: '', 
-    phone: '', designation: '', department: '', joiningDate: '' 
+    phone: '', designation: '', department: '', joiningDate: '', photo: '' 
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [isCustomDepartment, setIsCustomDepartment] = useState(false);
   const [formError, setFormError] = useState('');
   const [profileTab, setProfileTab] = useState<'details' | 'attendance' | 'leaves' | 'payroll'>('details');
 
@@ -194,6 +196,19 @@ const EmployeeManagement = () => {
   const [profileCalendarViewDate, setProfileCalendarViewDate] = useState<Date>(new Date());
   const [profileSelectedDate, setProfileSelectedDate] = useState<Date>(new Date());
 
+  // Details Edit States
+  const [isEditingDetails, setIsEditingDetails] = useState(false);
+  const [editDetailsForm, setEditDetailsForm] = useState({
+    name: '', email: '', password: '', phone: '', designation: '', department: '', joiningDate: '', employeeId: '',
+    profile: {
+      dob: '', gender: '', address: '', aadhaar: '', pan: '',
+      bank: { accountType: '', accountNumber: '', ifsc: '' },
+      emergencyContact: { name: '', relation: '', phone: '' }
+    }
+  });
+  const [detailsSaving, setDetailsSaving] = useState(false);
+  const [detailsError, setDetailsError] = useState('');
+
   // Payroll Edit States
   const [isEditingPayroll, setIsEditingPayroll] = useState(false);
   const [payrollSalary, setPayrollSalary] = useState('');
@@ -205,6 +220,36 @@ const EmployeeManagement = () => {
 
   useEffect(() => {
     if (selectedEmployee) {
+      setEditDetailsForm({
+        name: selectedEmployee.name || '',
+        email: selectedEmployee.email || '',
+        phone: selectedEmployee.phone || '',
+        designation: selectedEmployee.designation || '',
+        department: selectedEmployee.department || '',
+        joiningDate: selectedEmployee.joiningDate ? new Date(selectedEmployee.joiningDate).toISOString().split('T')[0] : '',
+        employeeId: selectedEmployee.employeeId || '',
+        password: selectedEmployee.profile?.generatedPassword || '',
+        profile: {
+          dob: selectedEmployee.profile?.dob || '',
+          gender: selectedEmployee.profile?.gender || '',
+          address: selectedEmployee.profile?.address || '',
+          aadhaar: selectedEmployee.profile?.aadhaar || '',
+          pan: selectedEmployee.profile?.pan || '',
+          bank: {
+            accountType: selectedEmployee.profile?.bank?.accountType || '',
+            accountNumber: selectedEmployee.profile?.bank?.accountNumber || '',
+            ifsc: selectedEmployee.profile?.bank?.ifsc || ''
+          },
+          emergencyContact: {
+            name: selectedEmployee.profile?.emergencyContact?.name || '',
+            relation: selectedEmployee.profile?.emergencyContact?.relation || '',
+            phone: selectedEmployee.profile?.emergencyContact?.phone || ''
+          }
+        }
+      });
+      setIsEditingDetails(false);
+      setDetailsError('');
+
       setPayrollSalary(selectedEmployee.profile?.salary?.toString() || (selectedEmployee.designation?.toLowerCase().includes('marketing') ? '35000' : '45000'));
       setPayrollPfContribution(selectedEmployee.profile?.pfContribution?.toString() || '1800');
       setPayrollUan(selectedEmployee.profile?.uan || '100988776655');
@@ -213,6 +258,21 @@ const EmployeeManagement = () => {
       setPayrollError('');
     }
   }, [selectedEmployee]);
+
+  const handleSaveDetails = async () => {
+    if (!selectedEmployee) return;
+    setDetailsSaving(true);
+    setDetailsError('');
+    try {
+      const updatedEmployee = await dispatch(updateEmployeeDetails({ id: selectedEmployee._id, data: editDetailsForm })).unwrap();
+      setSelectedEmployee({ ...selectedEmployee, ...updatedEmployee });
+      setIsEditingDetails(false);
+    } catch (err: any) {
+      setDetailsError(err || 'Failed to update employee details');
+    } finally {
+      setDetailsSaving(false);
+    }
+  };
 
   const handleSavePayroll = async () => {
     if (!selectedEmployee) return;
@@ -317,10 +377,43 @@ const EmployeeManagement = () => {
 
     try {
       await dispatch(createEmployee(form)).unwrap();
-      setShowModal(false);
-      setForm({ name: '', email: '', password: '', phone: '', designation: '', department: '', joiningDate: '' });
+      handleCloseModal();
     } catch (err: any) {
       setFormError(err || 'Failed to create employee');
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setForm({ name: '', email: '', password: '', phone: '', designation: '', department: '', joiningDate: '', photo: '' });
+    setShowPassword(false);
+    setIsCustomDepartment(false);
+    setFormError('');
+  };
+
+  const handleGeneratePassword = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$';
+    let newPassword = '';
+    for (let i = 0; i < 10; i++) {
+      newPassword += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setForm({ ...form, password: newPassword });
+    setShowPassword(true); // Automatically show the generated password
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        setFormError('Image size must be less than 5MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setForm({ ...form, photo: reader.result as string });
+        setFormError('');
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -347,7 +440,9 @@ const EmployeeManagement = () => {
             </div>
 
             {/* Profile Photo (Right side of banner) */}
-            <div className="absolute right-8 bottom-0 translate-y-12 w-24 h-24 rounded-2xl bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-800 shadow-lg overflow-hidden flex items-center justify-center">
+            <div 
+              className="absolute right-8 bottom-0 translate-y-12 w-24 h-24 rounded-2xl bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-800 shadow-lg overflow-hidden flex items-center justify-center"
+            >
               {selectedEmployee.profile?.photo ? (
                 <img 
                   src={selectedEmployee.profile.photo} 
@@ -443,8 +538,118 @@ const EmployeeManagement = () => {
 
                 {/* Section 1: Work & Account Info */}
                 <div className="bg-slate-50/50 dark:bg-slate-900/30 rounded-3xl p-6 border border-slate-100 dark:border-slate-800">
-                  <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">Work & Account Info</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Work & Account Info</h3>
+                    {!isEditingDetails ? (
+                      <button
+                        onClick={() => setIsEditingDetails(true)}
+                        className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        Edit Details
+                      </button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setIsEditingDetails(false)}
+                          disabled={detailsSaving}
+                          className="text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-700 bg-slate-200 dark:bg-slate-800 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleSaveDetails}
+                          disabled={detailsSaving}
+                          className="text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                        >
+                          {detailsSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                          Save Changes
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  {detailsError && (
+                    <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-sm font-medium">
+                      {detailsError}
+                    </div>
+                  )}
+                  {isEditingDetails ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase">Employee ID</label>
+                        <input
+                          type="text"
+                          value={editDetailsForm.employeeId}
+                          onChange={(e) => setEditDetailsForm(prev => ({ ...prev, employeeId: e.target.value }))}
+                          className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase">Name</label>
+                        <input
+                          type="text"
+                          value={editDetailsForm.name}
+                          onChange={(e) => setEditDetailsForm(prev => ({ ...prev, name: e.target.value }))}
+                          className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase">Email Address</label>
+                        <input
+                          type="email"
+                          value={editDetailsForm.email}
+                          onChange={(e) => setEditDetailsForm(prev => ({ ...prev, email: e.target.value }))}
+                          className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase">Phone Number</label>
+                        <input
+                          type="text"
+                          value={editDetailsForm.phone}
+                          onChange={(e) => setEditDetailsForm(prev => ({ ...prev, phone: e.target.value }))}
+                          className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase">Department</label>
+                        <input
+                          type="text"
+                          value={editDetailsForm.department}
+                          onChange={(e) => setEditDetailsForm(prev => ({ ...prev, department: e.target.value }))}
+                          className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase">Designation</label>
+                        <input
+                          type="text"
+                          value={editDetailsForm.designation}
+                          onChange={(e) => setEditDetailsForm(prev => ({ ...prev, designation: e.target.value }))}
+                          className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase">Date of Joining</label>
+                        <input
+                          type="date"
+                          value={editDetailsForm.joiningDate}
+                          onChange={(e) => setEditDetailsForm(prev => ({ ...prev, joiningDate: e.target.value }))}
+                          className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase">Initial Password</label>
+                        <input
+                          type="text"
+                          value={editDetailsForm.password}
+                          onChange={(e) => setEditDetailsForm(prev => ({ ...prev, password: e.target.value }))}
+                          placeholder="Leave blank to keep unchanged"
+                          className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none placeholder:text-slate-300 dark:placeholder:text-slate-600"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     <ProfileFormField label="Employee ID" value={selectedEmployee.employeeId} icon={Shield} />
                     <ProfileFormField label="Email Address" value={selectedEmployee.email} icon={Mail} />
                     <ProfileFormField label="Phone Number" value={selectedEmployee.phone} icon={Phone} />
@@ -455,60 +660,193 @@ const EmployeeManagement = () => {
                       value={selectedEmployee.joiningDate ? new Date(selectedEmployee.joiningDate).toLocaleDateString('en-IN', { dateStyle: 'medium' }) : ''} 
                       icon={Calendar} 
                     />
-                  </div>
+                    {selectedEmployee.profile?.generatedPassword && (
+                      <ProfileFormField label="Initial Password" value={selectedEmployee.profile.generatedPassword} icon={Key} />
+                    )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Section 2: Personal Details */}
                 <div className="bg-slate-50/50 dark:bg-slate-900/30 rounded-3xl p-6 border border-slate-100 dark:border-slate-800">
                   <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">Personal Details</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <ProfileFormField label="Date of Birth" value={selectedEmployee.profile?.dob} icon={Calendar} />
-                    <ProfileFormField label="Gender" value={selectedEmployee.profile?.gender} icon={User} />
-                    <div className="sm:col-span-2 lg:col-span-3">
-                      <ProfileFormField label="Permanent Address" value={selectedEmployee.profile?.address} icon={MapPin} />
+                  {isEditingDetails ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase">Date of Birth</label>
+                        <input
+                          type="date"
+                          value={editDetailsForm.profile.dob}
+                          onChange={(e) => setEditDetailsForm(prev => ({ ...prev, profile: { ...prev.profile, dob: e.target.value } }))}
+                          className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase">Gender</label>
+                        <select
+                          value={editDetailsForm.profile.gender}
+                          onChange={(e) => setEditDetailsForm(prev => ({ ...prev, profile: { ...prev.profile, gender: e.target.value } }))}
+                          className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                        >
+                          <option value="">Select Gender</option>
+                          <option value="male">Male</option>
+                          <option value="female">Female</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                      <div className="sm:col-span-2 lg:col-span-3 space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase">Permanent Address</label>
+                        <textarea
+                          value={editDetailsForm.profile.address}
+                          onChange={(e) => setEditDetailsForm(prev => ({ ...prev, profile: { ...prev.profile, address: e.target.value } }))}
+                          className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none min-h-[80px]"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <ProfileFormField label="Date of Birth" value={selectedEmployee.profile?.dob} icon={Calendar} />
+                      <ProfileFormField label="Gender" value={selectedEmployee.profile?.gender} icon={User} />
+                      <div className="sm:col-span-2 lg:col-span-3">
+                        <ProfileFormField label="Permanent Address" value={selectedEmployee.profile?.address} icon={MapPin} />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Section 3: Identification Documents */}
                 <div className="bg-slate-50/50 dark:bg-slate-900/30 rounded-3xl p-6 border border-slate-100 dark:border-slate-800">
                   <h3 className="text-sm font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest mb-4">Identification Documents</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <ProfileFormField 
-                      label="Aadhaar Card Number" 
-                      value={selectedEmployee.profile?.aadhaar ? `XXXX-XXXX-${selectedEmployee.profile.aadhaar.slice(-4)}` : ''} 
-                      icon={FileText} 
-                    />
-                    <ProfileFormField 
-                      label="PAN Card Number" 
-                      value={selectedEmployee.profile?.pan ? `XXXXX${selectedEmployee.profile.pan.slice(-4)}` : ''} 
-                      icon={FileText} 
-                    />
-                  </div>
+                  {isEditingDetails ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase">Aadhaar Card Number</label>
+                        <input
+                          type="text"
+                          value={editDetailsForm.profile.aadhaar}
+                          onChange={(e) => setEditDetailsForm(prev => ({ ...prev, profile: { ...prev.profile, aadhaar: e.target.value } }))}
+                          className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase">PAN Card Number</label>
+                        <input
+                          type="text"
+                          value={editDetailsForm.profile.pan}
+                          onChange={(e) => setEditDetailsForm(prev => ({ ...prev, profile: { ...prev.profile, pan: e.target.value.toUpperCase() } }))}
+                          className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none uppercase"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <ProfileFormField 
+                        label="Aadhaar Card Number" 
+                        value={selectedEmployee.profile?.aadhaar || ''} 
+                        icon={FileText} 
+                      />
+                      <ProfileFormField 
+                        label="PAN Card Number" 
+                        value={selectedEmployee.profile?.pan || ''} 
+                        icon={FileText} 
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Section 4: Bank Account Details */}
                 <div className="bg-slate-50/50 dark:bg-slate-900/30 rounded-3xl p-6 border border-slate-100 dark:border-slate-800">
                   <h3 className="text-sm font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest mb-4">Bank Account Details</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <ProfileFormField label="Account Type" value={selectedEmployee.profile?.bank?.accountType} icon={Briefcase} />
-                    <ProfileFormField 
-                      label="Account Number" 
-                      value={selectedEmployee.profile?.bank?.accountNumber ? `XXXXXX${selectedEmployee.profile.bank.accountNumber.slice(-4)}` : ''} 
-                      icon={CreditCard} 
-                    />
-                    <ProfileFormField label="IFSC Code" value={selectedEmployee.profile?.bank?.ifsc} icon={Building2} />
-                  </div>
+                  {isEditingDetails ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase">Account Type</label>
+                        <select
+                          value={editDetailsForm.profile.bank.accountType}
+                          onChange={(e) => setEditDetailsForm(prev => ({ ...prev, profile: { ...prev.profile, bank: { ...prev.profile.bank, accountType: e.target.value } } }))}
+                          className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                        >
+                          <option value="">Select Type</option>
+                          <option value="Savings">Savings</option>
+                          <option value="Current">Current</option>
+                          <option value="Salary">Salary</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase">Account Number</label>
+                        <input
+                          type="text"
+                          value={editDetailsForm.profile.bank.accountNumber}
+                          onChange={(e) => setEditDetailsForm(prev => ({ ...prev, profile: { ...prev.profile, bank: { ...prev.profile.bank, accountNumber: e.target.value } } }))}
+                          className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase">IFSC Code</label>
+                        <input
+                          type="text"
+                          value={editDetailsForm.profile.bank.ifsc}
+                          onChange={(e) => setEditDetailsForm(prev => ({ ...prev, profile: { ...prev.profile, bank: { ...prev.profile.bank, ifsc: e.target.value.toUpperCase() } } }))}
+                          className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none uppercase"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <ProfileFormField label="Account Type" value={selectedEmployee.profile?.bank?.accountType} icon={Briefcase} />
+                      <ProfileFormField 
+                        label="Account Number" 
+                        value={selectedEmployee.profile?.bank?.accountNumber || ''} 
+                        icon={CreditCard} 
+                      />
+                      <ProfileFormField label="IFSC Code" value={selectedEmployee.profile?.bank?.ifsc} icon={Building2} />
+                    </div>
+                  )}
                 </div>
 
                 {/* Section 5: Emergency Contact */}
                 <div className="bg-slate-50/50 dark:bg-slate-900/30 rounded-3xl p-6 border border-slate-100 dark:border-slate-800">
                   <h3 className="text-sm font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest mb-4">Emergency Contact</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <ProfileFormField label="Contact Name" value={selectedEmployee.profile?.emergencyContact?.name} icon={User} />
-                    <ProfileFormField label="Relationship" value={selectedEmployee.profile?.emergencyContact?.relation} icon={Users} />
-                    <ProfileFormField label="Phone Number" value={selectedEmployee.profile?.emergencyContact?.phone} icon={Phone} />
-                  </div>
+                  {isEditingDetails ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Contact Name</label>
+                        <input
+                          type="text"
+                          className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                          value={editDetailsForm.profile.emergencyContact.name}
+                          onChange={(e) => setEditDetailsForm({ ...editDetailsForm, profile: { ...editDetailsForm.profile, emergencyContact: { ...editDetailsForm.profile.emergencyContact, name: e.target.value } } })}
+                          placeholder="Contact name"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Relationship</label>
+                        <input
+                          type="text"
+                          className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                          value={editDetailsForm.profile.emergencyContact.relation}
+                          onChange={(e) => setEditDetailsForm({ ...editDetailsForm, profile: { ...editDetailsForm.profile, emergencyContact: { ...editDetailsForm.profile.emergencyContact, relation: e.target.value } } })}
+                          placeholder="Relationship"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Phone Number</label>
+                        <input
+                          type="text"
+                          className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                          value={editDetailsForm.profile.emergencyContact.phone}
+                          onChange={(e) => setEditDetailsForm({ ...editDetailsForm, profile: { ...editDetailsForm.profile, emergencyContact: { ...editDetailsForm.profile.emergencyContact, phone: e.target.value } } })}
+                          placeholder="Phone number"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <ProfileFormField label="Contact Name" value={selectedEmployee.profile?.emergencyContact?.name} icon={User} />
+                      <ProfileFormField label="Relationship" value={selectedEmployee.profile?.emergencyContact?.relation} icon={Users} />
+                      <ProfileFormField label="Phone Number" value={selectedEmployee.profile?.emergencyContact?.phone} icon={Phone} />
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1427,14 +1765,14 @@ const EmployeeManagement = () => {
       {/* Add Employee Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowModal(false)} />
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={handleCloseModal} />
           <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-8 animate-fade-in custom-scrollbar">
             <div className="flex items-center justify-between mb-6 sticky top-0 bg-white dark:bg-slate-800 z-10 pb-2">
               <div>
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">Add New Employee</h2>
                 <p className="text-slate-400 dark:text-slate-500 text-sm mt-0.5">Create a new account for your staff.</p>
               </div>
-              <button onClick={() => setShowModal(false)} className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-all">
+              <button onClick={handleCloseModal} className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-all">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1445,7 +1783,31 @@ const EmployeeManagement = () => {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
+              {/* Profile Photo Upload */}
+              <div className="flex flex-col items-center justify-center pt-2 pb-4">
+                <div className="relative group cursor-pointer" onClick={() => document.getElementById('photo-upload')?.click()}>
+                  <div className={`w-24 h-24 rounded-full border-2 border-dashed ${form.photo ? 'border-indigo-500' : 'border-slate-300 dark:border-slate-600'} flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-900/50 transition-all group-hover:border-indigo-400 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/30`}>
+                    {form.photo ? (
+                      <img src={form.photo} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <Camera className="w-8 h-8 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                    )}
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Camera className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                  <input
+                    id="photo-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                  />
+                </div>
+                <p className="text-xs text-slate-500 mt-3 font-medium">Click to upload photo</p>
+              </div>
+
               {/* Account Credentials */}
               <div className="space-y-4">
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest opacity-50 border-b border-slate-100 dark:border-slate-700 pb-2">Account Details</h3>
@@ -1457,7 +1819,7 @@ const EmployeeManagement = () => {
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
                       className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                      placeholder="e.g. Jane Doe"
+                      autoComplete="off"
                       required
                     />
                   </div>
@@ -1468,20 +1830,38 @@ const EmployeeManagement = () => {
                       value={form.email}
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
                       className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                      placeholder="e.g. jane@company.com"
+                      autoComplete="new-password"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Password *</label>
-                    <input
-                      type="password"
-                      value={form.password}
-                      onChange={(e) => setForm({ ...form, password: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-550 outline-none transition-all"
-                      placeholder="Min. 6 characters"
-                      required
-                    />
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Password *</label>
+                      <button 
+                        type="button" 
+                        onClick={handleGeneratePassword}
+                        className="text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-md transition-colors"
+                      >
+                        Generate
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={form.password}
+                        onChange={(e) => setForm({ ...form, password: e.target.value })}
+                        className="w-full px-4 py-2.5 pr-10 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-550 outline-none transition-all"
+                        autoComplete="new-password"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1497,7 +1877,6 @@ const EmployeeManagement = () => {
                       value={form.phone}
                       onChange={(e) => setForm({ ...form, phone: e.target.value })}
                       className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                      placeholder="e.g. +91 9876543210"
                     />
                   </div>
                   <div>
@@ -1516,21 +1895,39 @@ const EmployeeManagement = () => {
                       value={form.designation}
                       onChange={(e) => setForm({ ...form, designation: e.target.value })}
                       className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                      placeholder="e.g. Support Specialist"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Department</label>
                     <select
                       name="department"
-                      value={form.department}
-                      onChange={(e) => setForm({ ...form, department: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                      value={isCustomDepartment ? 'Other' : form.department}
+                      onChange={(e) => {
+                        if (e.target.value === 'Other') {
+                          setIsCustomDepartment(true);
+                          setForm({ ...form, department: '' });
+                        } else {
+                          setIsCustomDepartment(false);
+                          setForm({ ...form, department: e.target.value });
+                        }
+                      }}
+                      className="w-full px-4 py-2.5 mb-2 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                     >
                       <option value="">Select Department</option>
                       <option value="Digital Marketing">Digital Marketing</option>
                       <option value="Web Development">Web Development</option>
+                      <option value="Other">Other (Type custom)</option>
                     </select>
+                    
+                    {isCustomDepartment && (
+                      <input
+                        type="text"
+                        value={form.department}
+                        onChange={(e) => setForm({ ...form, department: e.target.value })}
+                        placeholder="Enter custom department"
+                        className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                      />
+                    )}
                   </div>
                 </div>
               </div>
@@ -1538,7 +1935,7 @@ const EmployeeManagement = () => {
               <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-100 dark:border-slate-700">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={handleCloseModal}
                   className="px-5 py-2.5 text-sm font-semibold text-slate-655 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
                 >
                   Cancel

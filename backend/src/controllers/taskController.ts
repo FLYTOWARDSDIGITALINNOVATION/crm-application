@@ -58,20 +58,12 @@ export const toggleTask = async (req: Request, res: Response) => {
     }
 
     if (task.status === 'Completed') {
-      // Only admin can un-complete a task
-      if (req.user?.role !== 'admin') {
-        return res.status(403).json({ message: 'Only admin can change a completed task status' });
-      }
       task.status = 'Pending';
       task.completedBy = '';
     } else {
       task.status = task.status === 'Pending' ? 'In Progress' : 'Completed';
       if (task.status === 'Completed') {
-        // Only admin can mark as completed
-        if (req.user?.role !== 'admin') {
-          return res.status(403).json({ message: 'Only admin can mark a task as Completed' });
-        }
-        task.completedBy = req.user.name;
+        task.completedBy = req.user?.name || '';
       }
     }
 
@@ -93,10 +85,7 @@ export const updateTask = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Task not found' });
     }
 
-    // Only admin can mark task as Completed
-    if (status === 'Completed' && req.user?.role !== 'admin') {
-      return res.status(403).json({ message: 'Only admin can mark a task as Completed' });
-    }
+
 
     if (status !== undefined) {
       task.status = status;

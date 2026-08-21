@@ -37,11 +37,13 @@ export interface IUser extends Document {
     pfContribution?: number;
     uan?: string;
     pensionStatus?: string;
+    generatedPassword?: string;
   };
   currentSessionId?: mongoose.Types.ObjectId;
   lastLoginAt?: Date;
   lastLogoutAt?: Date;
   isOnline?: boolean;
+  pushSubscriptions?: any[];
   createdAt: Date;
   updatedAt: Date;
   matchPassword(enteredPassword: string): Promise<boolean>;
@@ -87,11 +89,13 @@ const UserSchema: Schema = new Schema(
       pfContribution: { type: Number },
       uan: { type: String },
       pensionStatus: { type: String },
+      generatedPassword: { type: String },
     },
     currentSessionId: { type: Schema.Types.ObjectId, ref: 'EmployeeSession' },
     lastLoginAt: { type: Date },
     lastLogoutAt: { type: Date },
     isOnline: { type: Boolean, default: false },
+    pushSubscriptions: { type: Array, default: [] },
   },
   { timestamps: true }
 );

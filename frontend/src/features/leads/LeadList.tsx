@@ -32,6 +32,7 @@ const LeadList: React.FC<LeadListProps> = ({ hideHeader = false }) => {
   const { items: leads, isLoading, error } = useAppSelector((state) => state.leads);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [dateFilter, setDateFilter] = useState('');
   
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 30;
@@ -43,7 +44,7 @@ const LeadList: React.FC<LeadListProps> = ({ hideHeader = false }) => {
   const [leadToDelete, setLeadToDelete] = useState<string | null>(null);
 
   const isMarketing = isDigitalMarketingEmployee(user);
-  const canAccessLeads = user?.role === 'admin' || isMarketing;
+  const canAccessLeads = user?.role === 'superadmin' || user?.role === 'admin' || isMarketing;
 
   React.useEffect(() => {
     if (canAccessLeads) {
@@ -86,17 +87,20 @@ const LeadList: React.FC<LeadListProps> = ({ hideHeader = false }) => {
   };
 
   const filteredLeads = leads.filter(lead => {
-    const matchesSearch = (lead.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         (lead.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (lead.company ? lead.company.toLowerCase().includes(searchTerm.toLowerCase()) : false);
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = (lead.name || '').toLowerCase().includes(searchLower) || 
+                         (lead.email || '').toLowerCase().includes(searchLower) ||
+                         (lead.phone || '').includes(searchTerm) ||
+                         (lead.company ? lead.company.toLowerCase().includes(searchLower) : false);
     const matchesStatus = statusFilter === 'All' || lead.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesDate = !dateFilter || (lead.createdAt && lead.createdAt.startsWith(dateFilter));
+    return matchesSearch && matchesStatus && matchesDate;
   });
 
   // Reset to first page when filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter]);
+  }, [searchTerm, statusFilter, dateFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredLeads.length / ITEMS_PER_PAGE));
   const paginatedLeads = filteredLeads.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -225,15 +229,26 @@ const LeadList: React.FC<LeadListProps> = ({ hideHeader = false }) => {
 
       {/* Filters & Search */}
       <div className="glass p-4 rounded-2xl flex flex-col gap-3">
-        <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
-          <input
-            type="text"
-            placeholder="Search leads by name, email, or company..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="flex flex-col sm:flex-row gap-3 w-full">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
+            <input
+              type="text"
+              placeholder="Search leads by name, email, phone, or company..."
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="relative w-full sm:w-48">
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
+            <input
+              type="date"
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+            />
+          </div>
         </div>
         <div className="flex items-center gap-1.5 mb-1">
           <Filter className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />

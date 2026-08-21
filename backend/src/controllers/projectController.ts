@@ -8,10 +8,12 @@ import User from '../models/User';
 export const getProjects = async (req: Request, res: Response) => {
   try {
     let projects;
-    if (req.user?.role === 'admin') {
+    console.log("getProjects req.user:", req.user);
+    if (req.user?.role === 'admin' || req.user?.role === 'superadmin') {
       projects = await Project.find()
         .sort({ createdAt: -1 })
         .populate('assignedEmployees', 'name email role designation');
+      console.log("Found projects for superadmin:", projects.length);
     } else {
       // Employee sees only their assigned projects
       projects = await Project.find({ assignedEmployees: req.user?.id })
@@ -29,7 +31,7 @@ export const getProjects = async (req: Request, res: Response) => {
 // @access  Admin only
 export const createProject = async (req: Request, res: Response) => {
   try {
-    const { name, description, status, requirements, files, assignedEmployees } = req.body;
+    const { name, description, status, requirements, projectUrl, files, assignedEmployees } = req.body;
     if (!name) {
       return res.status(400).json({ message: 'Project name is required' });
     }
@@ -38,6 +40,7 @@ export const createProject = async (req: Request, res: Response) => {
       description: description || '',
       status: status || 'Active',
       requirements: requirements || '',
+      projectUrl: projectUrl || '',
       files: files || [],
       createdBy: req.user?.id,
       assignedEmployees: assignedEmployees || [],
@@ -58,11 +61,12 @@ export const updateProject = async (req: Request, res: Response) => {
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
-    const { name, description, status, requirements, files, assignedEmployees } = req.body;
+    const { name, description, status, requirements, projectUrl, files, assignedEmployees } = req.body;
     if (name !== undefined) project.name = name;
     if (description !== undefined) project.description = description;
     if (status !== undefined) project.status = status;
     if (requirements !== undefined) project.requirements = requirements;
+    if (projectUrl !== undefined) project.projectUrl = projectUrl;
     if (files !== undefined) project.files = files;
     if (assignedEmployees !== undefined) project.assignedEmployees = assignedEmployees;
     await project.save();

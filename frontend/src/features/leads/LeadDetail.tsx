@@ -171,8 +171,8 @@ const LeadDetail: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 rounded-xl text-sm font-semibold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all"
           >
             <CheckCircle2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Mark as Converted</span>
-            <span className="sm:hidden">Convert</span>
+            <span className="hidden sm:inline">Details</span>
+            <span className="sm:hidden">Details</span>
           </button>
         </div>
       </div>

@@ -13,6 +13,8 @@ const buildEmployeeResponse = (user: any) => ({
   designation: user.designation,
   department: user.department,
   joiningDate: user.joiningDate,
+  employeeId: user.employeeId,
+  profile: user.profile,
   lastLoginAt: user.lastLoginAt || null,
   lastLogoutAt: user.lastLogoutAt || null,
 });
@@ -65,7 +67,7 @@ export const getEmployees = async (req: Request, res: Response) => {
 // @access  Public
 export const createEmployee = async (req: Request, res: Response) => {
   try {
-    const { name, email, password, phone, designation, department, joiningDate } = req.body;
+    const { name, email, password, phone, designation, department, joiningDate, photo } = req.body;
 
     const userExists = await User.findOne({ email });
 
@@ -81,7 +83,11 @@ export const createEmployee = async (req: Request, res: Response) => {
       phone,
       designation,
       department,
-      joiningDate
+      joiningDate,
+      profile: {
+        ...(photo ? { photo } : {}),
+        generatedPassword: password
+      }
     });
 
     await ensureEmployeeWorkLogCollection((user._id as any).toString()).catch((error) => {
@@ -117,6 +123,64 @@ export const updateEmployeePayroll = async (req: Request, res: Response) => {
     res.status(200).json(employee);
   } catch (error) {
     res.status(550).json({ message: 'Server Error updating employee payroll', error });
+  }
+};
+
+// @desc    Update employee basic details (admin)
+// @route   PUT /api/users/employees/:id
+// @access  Private (Admin)
+export const updateEmployeeAdmin = async (req: Request, res: Response) => {
+  try {
+    const { name, email, password, phone, designation, department, joiningDate, employeeId, profile } = req.body;
+    const employee = await User.findById(req.params.id).select('-password');
+
+    if (!employee || employee.role !== 'employee') {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+
+    if (name) employee.name = name;
+    if (email) employee.email = email;
+    if (phone) employee.phone = phone;
+    if (designation) employee.designation = designation;
+    if (department) employee.department = department;
+    if (joiningDate) employee.joiningDate = joiningDate;
+    if (employeeId) employee.employeeId = employeeId;
+    if (password) {
+      employee.password = password;
+      employee.profile = employee.profile || {};
+      employee.profile.generatedPassword = password;
+    }
+
+    if (profile) {
+      employee.profile = employee.profile || {};
+      if (profile.dob) employee.profile.dob = profile.dob;
+      if (profile.gender) employee.profile.gender = profile.gender;
+      if (profile.address) employee.profile.address = profile.address;
+      if (profile.aadhaar) employee.profile.aadhaar = profile.aadhaar;
+      if (profile.pan) employee.profile.pan = profile.pan;
+      
+      if (profile.bank) {
+        employee.profile.bank = employee.profile.bank || {};
+        if (profile.bank.accountType) employee.profile.bank.accountType = profile.bank.accountType;
+        if (profile.bank.accountNumber) employee.profile.bank.accountNumber = profile.bank.accountNumber;
+        if (profile.bank.ifsc) employee.profile.bank.ifsc = profile.bank.ifsc;
+      }
+      
+      if (profile.emergencyContact) {
+        employee.profile.emergencyContact = employee.profile.emergencyContact || {};
+        if (profile.emergencyContact.name) employee.profile.emergencyContact.name = profile.emergencyContact.name;
+        if (profile.emergencyContact.relation) employee.profile.emergencyContact.relation = profile.emergencyContact.relation;
+        if (profile.emergencyContact.phone) employee.profile.emergencyContact.phone = profile.emergencyContact.phone;
+      }
+
+      if (profile.photo !== undefined) employee.profile.photo = profile.photo;
+    }
+
+    await employee.save();
+
+    res.status(200).json(buildEmployeeResponse(employee));
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error updating employee details', error });
   }
 };
 
@@ -213,7 +277,19 @@ export const submitEmployeeProfile = async (req: Request, res: Response) => {
       user.profile.photo = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
     }
     user.profile.submittedAt = new Date();
-    user.employeeId ||= `EMP-${user._id.toString().slice(-6).toUpperCase()}`;
+    if (!user.employeeId) {
+      const usersWithId = await User.find({ employeeId: { $regex: /^FTDI\d+$/ } }).select('employeeId').exec();
+      if (usersWithId.length > 0) {
+        const maxId = usersWithId.reduce((max, u) => {
+          const num = parseInt(u.employeeId!.replace('FTDI', ''), 10);
+          return num > max ? num : max;
+        }, 0);
+        const nextNumber = maxId + 1;
+        user.employeeId = `FTDI${nextNumber.toString().padStart(3, '0')}`;
+      } else {
+        user.employeeId = 'FTDI001';
+      }
+    }
 
     user.profileCompleted = true;
     if (user.approvalStatus === 'Approved') {
@@ -223,6 +299,24 @@ export const submitEmployeeProfile = async (req: Request, res: Response) => {
     }
 
     await user.save();
+
+    // Send push notification to all superadmins
+    try {
+      const superAdmins = await User.find({ role: 'superadmin' });
+      for (const sa of superAdmins) {
+        const subscriptions = sa.pushSubscriptions || [];
+        for (const sub of subscriptions) {
+          try {
+            const { sendPushNotification } = require('../utils/webpush');
+            await sendPushNotification(sub, {
+              title: 'Pending Employee Approval',
+              body: `${user.name} is waiting for approval.`,
+              url: '/employee-approvals'
+            });
+          } catch (err) {}
+        }
+      }
+    } catch (e) {}
 
     return res.status(200).json({ message: 'Profile submitted successfully' });
   } catch (error) {

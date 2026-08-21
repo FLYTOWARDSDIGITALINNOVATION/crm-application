@@ -676,27 +676,20 @@ const ProjectDetail: React.FC = () => {
 
                       {/* Status */}
                       <div className="relative">
-                        {!isAdmin && task.status === 'Completed' ? (
-                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-xl">
-                            <Lock className="w-3 h-3 text-emerald-500" />
-                            <span className="text-xs font-bold text-emerald-600">Completed</span>
-                          </div>
-                        ) : (
-                          <select
-                            value={task.status}
-                            onChange={e => handleStatusChange(task, e.target.value)}
-                            className={cn(
-                              'text-xs font-bold bg-white border rounded-xl px-3 py-1.5 cursor-pointer focus:ring-2 focus:ring-indigo-500 outline-none transition-colors appearance-none pr-6',
-                              statusColor(task.status),
-                              task.status === 'Completed' ? 'border-emerald-200' :
-                              task.status === 'In Progress' ? 'border-blue-200' : 'border-slate-200'
-                            )}
-                          >
-                            <option value="Pending">Pending</option>
-                            <option value="In Progress">In Progress</option>
-                            {isAdmin && <option value="Completed">Completed</option>}
-                          </select>
-                        )}
+                        <select
+                          value={task.status}
+                          onChange={e => handleStatusChange(task, e.target.value)}
+                          className={cn(
+                            'text-xs font-bold bg-white border rounded-xl px-3 py-1.5 cursor-pointer focus:ring-2 focus:ring-indigo-500 outline-none transition-colors appearance-none pr-6',
+                            statusColor(task.status),
+                            task.status === 'Completed' ? 'border-emerald-200' :
+                            task.status === 'In Progress' ? 'border-blue-200' : 'border-slate-200'
+                          )}
+                        >
+                          <option value="Pending">Pending</option>
+                          <option value="In Progress">In Progress</option>
+                          <option value="Completed">Completed</option>
+                        </select>
                       </div>
 
                       {isAdmin && (
@@ -727,6 +720,25 @@ const ProjectDetail: React.FC = () => {
 
         {/* Right Column: Project Sidebar */}
         <div className="space-y-6">
+          {/* Project URL */}
+          {project?.projectUrl && (
+            <div className="glass p-6 rounded-3xl space-y-4">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest opacity-40">Project URL</h3>
+              <a 
+                href={project.projectUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 p-4 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 rounded-2xl border border-indigo-100 dark:border-indigo-800/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-full bg-white dark:bg-indigo-900/50 flex items-center justify-center shrink-0">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </div>
+                <span className="text-sm font-bold truncate">{project.projectUrl}</span>
+              </a>
+            </div>
+          )}
           {/* Project Requirements */}
           <div className="glass p-6 rounded-3xl space-y-4">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest opacity-40">Project Requirements</h3>

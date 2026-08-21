@@ -3,7 +3,7 @@ import {
   ArrowLeft, Mail, Phone, Building2,  
   Tag, MessageSquare, History,
   PhoneCall, MailPlus, AlertCircle,
-  Star, TrendingUp, DollarSign, Calendar, Lock, Trash2, FileText, Download,
+  Star, TrendingUp, IndianRupee, Calendar, Lock, Trash2, FileText, Download,
   ImageIcon, Plus
 } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
@@ -17,6 +17,7 @@ const CustomerDetail: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { items: customers } = useAppSelector((state) => state.customers);
+  const { user } = useAppSelector((state) => state.auth);
   const customer = customers.find((c) => c._id === id);
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -211,25 +212,32 @@ const CustomerDetail: React.FC = () => {
         {/* Left Column: Details & Timeline */}
         <div className="lg:col-span-2 space-y-6">
           {/* KPI Mini-Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="glass p-4 rounded-2xl flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-                <TrendingUp className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider block">Total Spent</span>
-                <span className="text-lg font-bold text-slate-900 dark:text-white">₹{customer.totalSpent?.toLocaleString()}</span>
-              </div>
-            </div>
-            <div className="glass p-4 rounded-2xl flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
-                <DollarSign className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider block">Advance Paid</span>
-                <span className="text-lg font-bold text-slate-900 dark:text-white">₹{customer.advanceAmount?.toLocaleString() || '0'}</span>
-              </div>
-            </div>
+          <div className={cn(
+            "grid grid-cols-1 sm:grid-cols-2 gap-4",
+            user?.role === 'superadmin' ? "md:grid-cols-4" : "md:grid-cols-2"
+          )}>
+            {user?.role === 'superadmin' && (
+              <>
+                <div className="glass p-4 rounded-2xl flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                    <TrendingUp className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider block">Total Spent</span>
+                    <span className="text-lg font-bold text-slate-900 dark:text-white">₹{customer.totalSpent?.toLocaleString()}</span>
+                  </div>
+                </div>
+                <div className="glass p-4 rounded-2xl flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
+                    <IndianRupee className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider block">Advance Paid</span>
+                    <span className="text-lg font-bold text-slate-900 dark:text-white">₹{customer.advanceAmount?.toLocaleString() || '0'}</span>
+                  </div>
+                </div>
+              </>
+            )}
             <div className="glass p-4 rounded-2xl flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
                 <Star className="w-5 h-5" />

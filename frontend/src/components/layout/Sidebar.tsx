@@ -4,15 +4,17 @@ import { NavLink } from 'react-router-dom';
 import { 
   BarChart3, 
   Users, 
-  UserPlus, 
+  Target, 
   CheckSquare, 
   MessageSquare, 
   ChevronLeft, 
   ChevronRight,
   LayoutDashboard,
-  FolderKanban,
+  BookOpen,
   CalendarDays,
-  ShieldCheck
+  ShieldCheck,
+  Bell,
+  Building2
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAppSelector } from '../../store';
@@ -31,8 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
 
   let navItems = [
     { title: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { title: 'Leads', icon: UserPlus, path: '/leads' },
-    { title: 'Customers', icon: Users, path: '/customers' },
+    { title: 'Leads', icon: Target, path: '/leads' },
     { title: 'Tasks', icon: CheckSquare, path: '/tasks' },
     { title: 'Support', icon: MessageSquare, path: '/support' },
     { title: 'Analytics', icon: BarChart3, path: '/analytics' },
@@ -41,18 +42,28 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
   if (user?.role === 'employee') {
     navItems = [
       { title: 'Dashboard', icon: LayoutDashboard, path: '/' },
-      ...(isMarketing ? [{ title: 'Leads', icon: UserPlus, path: '/leads' }] : []),
+      ...(isMarketing ? [{ title: 'Leads', icon: Target, path: '/leads' }] : []),
       { title: 'Tasks', icon: CheckSquare, path: '/tasks' },
       { title: 'Support', icon: MessageSquare, path: '/support' },
     ];
   } else if (user?.role === 'admin') {
+    navItems = navItems.filter(item => item.title !== 'Analytics');
     navItems.push({ title: 'Employees', icon: Users, path: '/employees' });
-    navItems.push({ title: 'Employee Approvals', icon: Users, path: '/employee-approvals' });
-    navItems.push({ title: 'Projects', icon: FolderKanban, path: '/projects' });
+    navItems.push({ title: 'Employee Approvals', icon: Bell, path: '/employee-approvals' });
+    navItems.push({ title: 'Projects', icon: BookOpen, path: '/projects' });
+    navItems.push({ title: 'Customers', icon: Building2, path: '/customers' });
     navItems.push({ title: 'Leaves', icon: CalendarDays, path: '/leaves' });
   } else if (user?.role === 'superadmin') {
     navItems = [
       { title: 'Monitoring', icon: ShieldCheck, path: '/super-admin' },
+      { title: 'Leads', icon: Target, path: '/leads' },
+      { title: 'Tasks', icon: CheckSquare, path: '/tasks' },
+      { title: 'Support', icon: MessageSquare, path: '/support' },
+      { title: 'Employees', icon: Users, path: '/employees' },
+      { title: 'Projects', icon: BookOpen, path: '/projects' },
+      { title: 'Customers', icon: Building2, path: '/customers' },
+      { title: 'Employee Approvals', icon: Bell, path: '/employee-approvals' },
+      { title: 'Leaves', icon: CalendarDays, path: '/leaves' }
     ];
   }
 

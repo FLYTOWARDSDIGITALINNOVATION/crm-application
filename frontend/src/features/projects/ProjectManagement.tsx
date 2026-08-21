@@ -44,7 +44,7 @@ const ProjectManagement: React.FC = () => {
   const { items: projects, isLoading } = useAppSelector((s) => s.projects);
   const { employees } = useAppSelector((s) => s.users);
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
   // ── Modals state ──────────────────────────────────────────
   const [showCreate, setShowCreate] = useState(false);
@@ -58,6 +58,7 @@ const ProjectManagement: React.FC = () => {
     description: '',
     status: 'Active' as typeof STATUS_OPTIONS[number],
     requirements: '',
+    projectUrl: '',
     files: [] as Array<{ name: string; url: string }>,
     assignedEmployees: [] as string[]
   });
@@ -80,6 +81,7 @@ const ProjectManagement: React.FC = () => {
       description: p.description || '',
       status: p.status,
       requirements: p.requirements || '',
+      projectUrl: p.projectUrl || '',
       files: p.files ? p.files.map(f => ({ name: f.name, url: f.url })) : [],
       assignedEmployees: p.assignedEmployees ? p.assignedEmployees.map(e => e._id) : []
     });
@@ -100,6 +102,7 @@ const ProjectManagement: React.FC = () => {
       description: form.description,
       status: form.status,
       requirements: form.requirements,
+      projectUrl: form.projectUrl,
       files: form.files,
       assignedEmployees: form.assignedEmployees
     }));
@@ -109,6 +112,7 @@ const ProjectManagement: React.FC = () => {
       description: '',
       status: 'Active',
       requirements: '',
+      projectUrl: '',
       files: [],
       assignedEmployees: []
     });
@@ -124,6 +128,7 @@ const ProjectManagement: React.FC = () => {
       description: form.description,
       status: form.status,
       requirements: form.requirements,
+      projectUrl: form.projectUrl,
       files: form.files,
       assignedEmployees: form.assignedEmployees
     }));
@@ -211,15 +216,26 @@ const ProjectManagement: React.FC = () => {
                     className="input-field resize-none"
                   />
                 </FormField>
+
+                <FormField label="Project URL">
+                  <input
+                    type="url"
+                    placeholder="https://example.com"
+                    value={form.projectUrl}
+                    onChange={e => setForm({ ...form, projectUrl: e.target.value })}
+                    className="input-field"
+                  />
+                </FormField>
               </div>
 
               {/* Right Column: Files & Members */}
               <div className="space-y-4 flex flex-col h-full">
-                <FormField label="Project Files">
+                <FormField label="Project Files (PDF, Images, Docs)">
                   <div className="space-y-2">
                     <input
                       type="file"
                       multiple
+                      accept=".pdf,image/*,.doc,.docx"
                       onChange={e => {
                         const selectedFiles = Array.from(e.target.files || []);
                         selectedFiles.forEach(file => {
@@ -383,15 +399,26 @@ const ProjectManagement: React.FC = () => {
                     className="input-field resize-none"
                   />
                 </FormField>
+
+                <FormField label="Project URL">
+                  <input
+                    type="url"
+                    placeholder="https://example.com"
+                    value={form.projectUrl}
+                    onChange={e => setForm({ ...form, projectUrl: e.target.value })}
+                    className="input-field"
+                  />
+                </FormField>
               </div>
 
               {/* Right Column: Files & Members */}
               <div className="space-y-4 flex flex-col h-full">
-                <FormField label="Project Files">
+                <FormField label="Project Files (PDF, Images, Docs)">
                   <div className="space-y-2">
                     <input
                       type="file"
                       multiple
+                      accept=".pdf,image/*,.doc,.docx"
                       onChange={e => {
                         const selectedFiles = Array.from(e.target.files || []);
                         selectedFiles.forEach(file => {

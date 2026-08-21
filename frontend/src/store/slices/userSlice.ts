@@ -44,6 +44,15 @@ export const createEmployee = createAsyncThunk('users/createEmployee', async (us
   }
 });
 
+export const updateEmployeeDetails = createAsyncThunk('users/updateEmployeeDetails', async ({ id, data }: { id: string, data: any }, { rejectWithValue }) => {
+  try {
+    const response = await api.put(`/users/employees/${id}`, data);
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.message || error.response?.data || error.message || 'Failed to update employee');
+  }
+});
+
 const userSlice = createSlice({
   name: 'users',
   initialState,
@@ -73,6 +82,12 @@ const userSlice = createSlice({
       .addCase(createEmployee.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
+      })
+      .addCase(updateEmployeeDetails.fulfilled, (state, action) => {
+        const index = state.employees.findIndex(emp => emp._id === action.payload._id);
+        if (index !== -1) {
+          state.employees[index] = { ...state.employees[index], ...action.payload };
+        }
       });
   },
 });

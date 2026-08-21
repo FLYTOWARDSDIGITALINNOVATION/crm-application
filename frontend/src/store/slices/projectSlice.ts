@@ -17,6 +17,7 @@ export interface Project {
   assignedEmployees: ProjectEmployee[];
   createdBy: string;
   requirements?: string;
+  projectUrl?: string;
   files?: Array<{ name: string; url: string; uploadedAt: string }>;
   createdAt: string;
   updatedAt: string;

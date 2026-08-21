@@ -11,6 +11,7 @@ import { fetchCustomers } from '../../store/slices/customerSlice';
 
 const CustomerList: React.FC = () => {
   const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
   const { items: customers, isLoading } = useAppSelector((state) => state.customers);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -86,47 +87,51 @@ const CustomerList: React.FC = () => {
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Customer Directory</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm">Manage your long-term business relationships and lifetime value.</p>
         </div>
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={handleExport}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm"
-          >
-            <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">Export data</span>
-          </button>
-        </div>
+        {user?.role === 'superadmin' && (
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={handleExport}
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Export data</span>
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* KPI Cards for Customers */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="glass p-6 rounded-2xl flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-            <Users className="w-6 h-6" />
+      {/* KPI Cards for Customers - Only for superadmin */}
+      {user?.role === 'superadmin' && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="glass p-6 rounded-2xl flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+              <Users className="w-6 h-6" />
+            </div>
+            <div>
+              <span className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-wider">Total Customers</span>
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{customers.length}</h3>
+            </div>
           </div>
-          <div>
-            <span className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-wider">Total Customers</span>
-            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{customers.length}</h3>
+          <div className="glass p-6 rounded-2xl flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <ArrowUpRight className="w-6 h-6" />
+            </div>
+            <div>
+              <span className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-wider">Retention Rate</span>
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-white">94.2%</h3>
+            </div>
+          </div>
+          <div className="glass p-6 rounded-2xl flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
+              <Star className="w-6 h-6" />
+            </div>
+            <div>
+              <span className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-wider">Total Revenue</span>
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-white">₹{(totalSpent / 1000).toFixed(1)}k</h3>
+            </div>
           </div>
         </div>
-        <div className="glass p-6 rounded-2xl flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-            <ArrowUpRight className="w-6 h-6" />
-          </div>
-          <div>
-            <span className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-wider">Retention Rate</span>
-            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">94.2%</h3>
-          </div>
-        </div>
-        <div className="glass p-6 rounded-2xl flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
-            <Star className="w-6 h-6" />
-          </div>
-          <div>
-            <span className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-wider">Total Revenue</span>
-            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">₹{(totalSpent / 1000).toFixed(1)}k</h3>
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* Search & Filter */}
       <div className="glass p-4 rounded-2xl">
@@ -176,10 +181,17 @@ const CustomerList: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-2 gap-4 mt-8">
-              <div className="space-y-1">
-                <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-widest">Total Spent</span>
-                <p className="text-sm font-bold text-slate-900 dark:text-white">₹{customer.totalSpent?.toLocaleString() || 0}</p>
-              </div>
+              {user?.role === 'superadmin' ? (
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-widest">Total Spent</span>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">₹{customer.totalSpent?.toLocaleString() || 0}</p>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-widest">Status</span>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">{customer.status}</p>
+                </div>
+              )}
               <div className="space-y-1">
                 <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-widest">Sector</span>
                 <p className="text-sm font-bold text-slate-900 dark:text-white">{customer.sector || 'N/A'}</p>

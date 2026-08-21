@@ -21,14 +21,23 @@ api.interceptors.request.use((config) => {
 
     if (typeof headers.delete === 'function') {
       headers.delete('Content-Type');
-      headers.delete('content-type');
-    } else {
-      delete headers['Content-Type'];
-      delete headers['content-type'];
     }
   }
-
   return config;
 });
+
+// Add response interceptor to handle 401
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // Clear token and user on 401 Unauthorized
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api;

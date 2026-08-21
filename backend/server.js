@@ -20,7 +20,8 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // Simple request logger
 app.use((req, _res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
@@ -40,6 +41,12 @@ const projectRoutes = require('./src/routes/projectRoutes').default;
 const workLogRoutes = require('./src/routes/workLogRoutes').default;
 const leaveRoutes = require('./src/routes/leaveRoutes').default;
 const superAdminRoutes = require('./src/routes/superAdminRoutes').default;
+const notificationRoutes = require('./src/routes/notificationRoutes').default;
+const { startCronJobs } = require('./src/utils/cronJobs');
+
+// Start Background Cron Jobs
+startCronJobs();
+
 app.use('/api/leads', leadRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/customers', customerRoutes);
@@ -51,6 +58,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/work-logs', workLogRoutes);
 app.use('/api/leaves', leaveRoutes);
 app.use('/api/super-admin', superAdminRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Database Connection
 const connectDB = async () => {

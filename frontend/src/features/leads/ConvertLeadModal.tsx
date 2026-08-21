@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, CheckCircle2, DollarSign, Calendar, ShieldCheck, ArrowRight, Copy, Phone, Briefcase, FileText, ChevronDown } from 'lucide-react';
+import { X, CheckCircle2, IndianRupee, Calendar, ShieldCheck, ArrowRight, Copy, Phone, Briefcase, FileText, ChevronDown } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -9,7 +9,6 @@ import { convertLead } from '../../store/slices/leadSlice';
 import { useNavigate } from 'react-router-dom';
 
 const schema = yup.object().shape({
-  phone: yup.string().required('Phone number is required'),
   dealValue: yup.number().typeError('Must be a number').required('Deal value is required').min(1, 'Value must be greater than 0'),
   advanceAmount: yup.number().typeError('Must be a number').min(0, 'Cannot be negative').default(0),
   sector: yup.string().required('Service/Sector is required'),
@@ -41,7 +40,6 @@ const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({ isOpen, onClose, le
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<LeadConversionForm>({
     resolver: yupResolver(schema),
     defaultValues: {
-      phone: '',
       dealValue: 0,
       advanceAmount: 0,
       sector: '',
@@ -191,29 +189,12 @@ const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({ isOpen, onClose, le
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-8">
                 {/* Left Column */}
                 <div className="space-y-6">
-                  {/* Phone Number */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Phone Number</label>
-                    <div className="relative group">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                      <input
-                        {...register('phone')}
-                        type="text"
-                        className={cn(
-                          "w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-2xl text-sm transition-all focus:ring-2 focus:ring-indigo-500 outline-none font-bold",
-                          errors.phone ? "border-rose-300 ring-rose-100" : "border-slate-100"
-                        )}
-                      />
-                    </div>
-                    {errors.phone && <p className="mt-1 text-xs text-rose-500 font-medium">{errors.phone.message}</p>}
-                  </div>
-
                   <div className="grid grid-cols-2 gap-4">
                     {/* Deal Value */}
                     <div>
                       <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Deal Value (₹)</label>
                       <div className="relative group">
-                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input
                           {...register('dealValue')}
                           type="number"
@@ -230,7 +211,7 @@ const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({ isOpen, onClose, le
                     <div>
                       <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Advance Amount (₹)</label>
                       <div className="relative group">
-                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input
                           {...register('advanceAmount')}
                           type="number"

@@ -39,19 +39,19 @@ function App() {
           index 
           element={
             user?.role === 'customer' ? <CustomerDashboard /> :
-            user?.role === 'employee' ? <EmployeeDashboard /> :
+            (user?.role === 'employee' || user?.role === 'admin') ? <EmployeeDashboard /> :
             <Dashboard />
           } 
         />
         <Route path="leads" element={<LeadList />} />
         <Route path="leads/create" element={<CreateLead />} />
         <Route path="leads/:id" element={<LeadDetail />} />
-        <Route path="customers" element={<CustomerList />} />
-        <Route path="customers/:id" element={<CustomerDetail />} />
-        <Route path="employees" element={user?.role === 'admin' ? <EmployeeManagement /> : <Navigate to="/" replace />} />
+        <Route path="customers" element={user?.role === 'superadmin' || user?.role === 'admin' ? <CustomerList /> : <Navigate to="/" replace />} />
+        <Route path="customers/:id" element={user?.role === 'superadmin' || user?.role === 'admin' ? <CustomerDetail /> : <Navigate to="/" replace />} />
+        <Route path="employees" element={user?.role === 'superadmin' || user?.role === 'admin' ? <EmployeeManagement /> : <Navigate to="/" replace />} />
         <Route path="complete-profile" element={<CompleteProfile />} />
         <Route path="approval-status" element={<EmployeeApprovalPending />} />
-        <Route path="employee-approvals" element={user?.role === 'admin' ? <EmployeeApprovalsAdmin /> : <Navigate to="/" replace />} />
+        <Route path="employee-approvals" element={user?.role === 'superadmin' || user?.role === 'admin' ? <EmployeeApprovalsAdmin /> : <Navigate to="/" replace />} />
         <Route path="tasks" element={<TaskList />} />
         <Route path="support" element={<SupportTickets />} />
         <Route path="projects" element={<ProjectManagement />} />

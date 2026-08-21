@@ -10,7 +10,7 @@ import LeaveRequest from '../models/LeaveRequest';
 // @access  Super Admin only
 export const getEmployeeOverview = async (_req: Request, res: Response) => {
   try {
-    const employees = await User.find({ role: 'employee' })
+    const employees = await User.find({ role: { $in: ['employee', 'admin'] } })
       .select('-password')
       .lean();
 
