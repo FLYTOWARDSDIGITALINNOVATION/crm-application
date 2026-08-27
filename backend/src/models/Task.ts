@@ -3,9 +3,11 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface ITask extends Document {
   title: string;
   description?: string;
+  startDate?: string;
   dueDate: string;
   priority: 'High' | 'Medium' | 'Low';
-  status: 'Pending' | 'In Progress' | 'Completed';
+  status: 'To Do' | 'In Progress' | 'Review' | 'Completed' | 'Pending';
+  progress?: number;
   assignedTo: string[];
   relatedTo: string;
   projectId?: mongoose.Types.ObjectId;
@@ -19,6 +21,7 @@ const TaskSchema: Schema = new Schema(
   {
     title: { type: String, required: true },
     description: { type: String, required: false },
+    startDate: { type: String, default: '' },
     dueDate: { type: String, required: true },
     priority: {
       type: String,
@@ -27,10 +30,10 @@ const TaskSchema: Schema = new Schema(
     },
     status: {
       type: String,
-      enum: ['Pending', 'In Progress', 'Completed'],
-      default: 'Pending',
+      enum: ['To Do', 'In Progress', 'Review', 'Completed', 'Pending'],
+      default: 'To Do',
     },
-    // Support multiple assignees as array of strings (names or identifiers)
+    progress: { type: Number, default: 0 },
     assignedTo: { type: [String], required: true, default: [] },
     relatedTo: { type: String, default: '' },
     projectId: { type: Schema.Types.ObjectId, ref: 'Project', required: false },

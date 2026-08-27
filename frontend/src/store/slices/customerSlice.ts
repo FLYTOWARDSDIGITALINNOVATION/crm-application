@@ -10,6 +10,7 @@ export interface Customer {
   phone?: string;
   company?: string;
   sector?: string;
+  pdfUrl?: string;
   totalSpent: number;
   status: 'Active' | 'VIP' | 'New' | 'Inactive';
   notes?: string;

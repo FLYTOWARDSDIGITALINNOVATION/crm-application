@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon -e ts,js server.js",
+    "start": "node server-local.js",
+    "dev": "nodemon -e ts,js server-local.js",
     "start:prod": "node dist/server.js",
     "build": "tsc"
   },

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Task from '../models/Task';
+import Project from '../models/Project';
 
 // @desc    Get all tasks (optionally filtered by projectId)
 // @route   GET /api/tasks?projectId=xxx
@@ -12,15 +13,21 @@ export const getTasks = async (req: Request, res: Response) => {
       filter.projectId = req.query.projectId;
     }
 
-    // Employees only see their own tasks — match against array membership
+    // Employees see ONLY tasks assigned to them (by ID, name, email)
     if (req.user?.role === 'employee') {
-      const names: string[] = [];
-      if (req.user?.name) names.push(req.user.name);
-      const userEmail = req.user?.email;
-      if (userEmail) names.push(userEmail);
-      if (names.length > 0) {
-        filter.assignedTo = { $in: names };
+      const userId = req.user?.id || req.user?._id;
+      const userIdentifiers: any[] = [];
+      if (userId) userIdentifiers.push(userId.toString());
+      if (req.user?.name) {
+        userIdentifiers.push(req.user.name);
+        userIdentifiers.push(new RegExp(`^${req.user.name.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}$`, 'i'));
       }
+      if (req.user?.email) {
+        userIdentifiers.push(req.user.email);
+        userIdentifiers.push(new RegExp(`^${req.user.email.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}$`, 'i'));
+      }
+
+      filter.assignedTo = { $in: userIdentifiers };
     }
 
     const tasks = await Task.find(filter).sort({ createdAt: -1 });
@@ -79,28 +86,31 @@ export const toggleTask = async (req: Request, res: Response) => {
 // @access  Protected
 export const updateTask = async (req: Request, res: Response) => {
   try {
-    const { status, assignedTo, dueDate, description } = req.body as any;
+    const { title, status, priority, assignedTo, startDate, dueDate, progress, description, relatedTo, projectId } = req.body as any;
     const task = await Task.findById(req.params.id);
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
     }
 
-
+    if (title !== undefined) task.title = title;
+    if (priority !== undefined) task.priority = priority;
+    if (startDate !== undefined) task.startDate = startDate;
+    if (dueDate !== undefined) task.dueDate = dueDate;
+    if (progress !== undefined) task.progress = Number(progress);
+    if (description !== undefined) task.description = description;
+    if (relatedTo !== undefined) task.relatedTo = relatedTo;
+    if (projectId !== undefined) task.projectId = projectId;
 
     if (status !== undefined) {
       task.status = status;
       if (status === 'Completed') {
         task.completedBy = req.user?.name || 'Admin';
+        if (progress === undefined) task.progress = 100;
       } else {
         task.completedBy = '';
       }
     }
-    if (dueDate) {
-      task.dueDate = dueDate;
-    }
-    if (description !== undefined) {
-      task.description = description;
-    }
+
     if (assignedTo !== undefined) {
       task.assignedTo = Array.isArray(assignedTo) ? assignedTo : [assignedTo];
     }

@@ -160,36 +160,48 @@ const EmployeeDashboard: React.FC = () => {
 
   const normalizeAssignedTo = (assignedTo: string | string[]) => {
     if (!assignedTo) return [];
-    if (Array.isArray(assignedTo)) return assignedTo.map((s) => s.trim().toLowerCase()).filter(Boolean);
-    return assignedTo.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+    if (Array.isArray(assignedTo)) return assignedTo.map((s) => String(s).trim().toLowerCase()).filter(Boolean);
+    return String(assignedTo).split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
   };
 
   const isAssignedToUser = (assignedTo: string | string[], u?: any) => {
     if (!assignedTo || !u) return false;
     const parts = normalizeAssignedTo(assignedTo);
-    return (u.name && parts.includes(u.name.toLowerCase())) || (u.email && parts.includes(u.email.toLowerCase()));
+    const uId = (u._id || u.id || '').toString().toLowerCase();
+    const uName = (u.name || '').toLowerCase();
+    const uEmail = (u.email || '').toLowerCase();
+    return parts.some(p => 
+      (uId && p === uId) || 
+      (uName && p === uName) || 
+      (uEmail && p === uEmail) || 
+      (uName && (p.includes(uName) || uName.includes(p)))
+    );
   };
 
-  const myTasks = tasks.filter((task) => isAssignedToUser(task.assignedTo, user) && !task.projectId);
-  const myProjects = user?.role === 'employee' 
-    ? projects 
-    : projects.filter(p => p.assignedEmployees?.some(e => e._id === user?._id));
+  const myTasks = tasks.filter((task) => isAssignedToUser(task.assignedTo, user));
+  const myProjects = projects.filter(p => 
+    p.assignedEmployees?.some(e => {
+      const eId = (typeof e === 'object' && e ? e._id || e.id : e || '').toString().toLowerCase();
+      const eName = (typeof e === 'object' && e ? e.name : '').toLowerCase();
+      const uId = (user?._id || user?.id || '').toString().toLowerCase();
+      const uName = (user?.name || '').toLowerCase();
+      return (uId && eId === uId) || (eName && uName && (eName === uName || uName.includes(eName) || eName.includes(uName)));
+    })
+  );
 
   const pendingCount = myTasks.filter((t) => t.status === 'Pending').length;
   const inProgressCount = myTasks.filter((t) => t.status === 'In Progress').length;
   const completedCount = myTasks.filter((t) => t.status === 'Completed').length;
-
-  const marketingLeadCount = leads.length;
-  const marketingNewCount = leads.filter((lead) => lead.status === 'New').length;
-  const marketingContactedCount = leads.filter((lead) => lead.status === 'Contacted').length;
-  const marketingConvertedCount = leads.filter((lead) => lead.status === 'Converted').length;
 
   const sessionStartedAt = user?.lastLoginAt
     ? new Date(user.lastLoginAt).toLocaleString('en-IN', {
         dateStyle: 'medium',
         timeStyle: 'short',
       })
-    : 'Not recorded yet';
+    : new Date().toLocaleString('en-IN', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      });
 
   const getPriorityStyle = (priority: string) => {
     switch (priority) {

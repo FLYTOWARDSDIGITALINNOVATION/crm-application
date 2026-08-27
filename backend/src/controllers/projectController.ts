@@ -8,17 +8,17 @@ import User from '../models/User';
 export const getProjects = async (req: Request, res: Response) => {
   try {
     let projects;
-    console.log("getProjects req.user:", req.user);
     if (req.user?.role === 'admin' || req.user?.role === 'superadmin') {
       projects = await Project.find()
         .sort({ createdAt: -1 })
-        .populate('assignedEmployees', 'name email role designation');
-      console.log("Found projects for superadmin:", projects.length);
+        .populate('assignedEmployees', 'name email role designation')
+        .populate('createdBy', 'name email role designation');
     } else {
       // Employee sees only their assigned projects
       projects = await Project.find({ assignedEmployees: req.user?.id })
         .sort({ createdAt: -1 })
-        .populate('assignedEmployees', 'name email role designation');
+        .populate('assignedEmployees', 'name email role designation')
+        .populate('createdBy', 'name email role designation');
     }
     res.status(200).json(projects);
   } catch (error) {
@@ -31,7 +31,7 @@ export const getProjects = async (req: Request, res: Response) => {
 // @access  Admin only
 export const createProject = async (req: Request, res: Response) => {
   try {
-    const { name, description, status, requirements, projectUrl, files, assignedEmployees } = req.body;
+    const { name, description, status, requirements, projectUrl, files, assignedEmployees, startDate, dueDate } = req.body;
     if (!name) {
       return res.status(400).json({ message: 'Project name is required' });
     }
@@ -41,11 +41,16 @@ export const createProject = async (req: Request, res: Response) => {
       status: status || 'Active',
       requirements: requirements || '',
       projectUrl: projectUrl || '',
+      startDate: startDate || undefined,
+      dueDate: dueDate || undefined,
       files: files || [],
       createdBy: req.user?.id,
       assignedEmployees: assignedEmployees || [],
     });
-    const populated = await project.populate('assignedEmployees', 'name email role designation');
+    const populated = await project.populate([
+      { path: 'assignedEmployees', select: 'name email role designation' },
+      { path: 'createdBy', select: 'name email role designation' }
+    ]);
     res.status(201).json(populated);
   } catch (error) {
     res.status(500).json({ message: 'Server Error creating project', error });
@@ -61,16 +66,21 @@ export const updateProject = async (req: Request, res: Response) => {
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
-    const { name, description, status, requirements, projectUrl, files, assignedEmployees } = req.body;
+    const { name, description, status, requirements, projectUrl, files, assignedEmployees, startDate, dueDate } = req.body;
     if (name !== undefined) project.name = name;
     if (description !== undefined) project.description = description;
     if (status !== undefined) project.status = status;
     if (requirements !== undefined) project.requirements = requirements;
     if (projectUrl !== undefined) project.projectUrl = projectUrl;
+    if (startDate !== undefined) project.startDate = startDate;
+    if (dueDate !== undefined) project.dueDate = dueDate;
     if (files !== undefined) project.files = files;
     if (assignedEmployees !== undefined) project.assignedEmployees = assignedEmployees;
     await project.save();
-    const populated = await project.populate('assignedEmployees', 'name email role designation');
+    const populated = await project.populate([
+      { path: 'assignedEmployees', select: 'name email role designation' },
+      { path: 'createdBy', select: 'name email role designation' }
+    ]);
     res.status(200).json(populated);
   } catch (error) {
     res.status(500).json({ message: 'Server Error updating project', error });

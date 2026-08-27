@@ -21,10 +21,30 @@ import ProjectManagement from './features/projects/ProjectManagement';
 import ProjectDetail from './features/projects/ProjectDetail';
 import LeaveManagement from './features/leaves/LeaveManagement';
 import SuperAdminDashboard from './features/superadmin/SuperAdminDashboard';
-import { useAppSelector } from './store';
+import { useAppSelector, useAppDispatch } from './store';
+import { useEffect } from 'react';
+import { logout } from './store/slices/authSlice';
 
 function App() {
   const { user } = useAppSelector((state) => state.auth);
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'FORCE_LOGOUT') {
+        window.dispatchEvent(
+          new CustomEvent('show_force_logout_modal', {
+            detail: { message: event.data.message || 'You have been logged out by the Super Admin.' }
+          })
+        );
+      }
+    };
+    
+    navigator.serviceWorker.addEventListener('message', handleMessage);
+    return () => navigator.serviceWorker.removeEventListener('message', handleMessage);
+  }, [dispatch]);
 
   return (
     <Routes>
@@ -54,7 +74,7 @@ function App() {
         <Route path="employee-approvals" element={user?.role === 'superadmin' || user?.role === 'admin' ? <EmployeeApprovalsAdmin /> : <Navigate to="/" replace />} />
         <Route path="tasks" element={<TaskList />} />
         <Route path="support" element={<SupportTickets />} />
-        <Route path="projects" element={<ProjectManagement />} />
+        <Route path="projects" element={user?.role === 'superadmin' || user?.role === 'admin' ? <ProjectManagement /> : <Navigate to="/" replace />} />
         <Route path="projects/:id" element={<ProjectDetail />} />
         <Route path="leaves" element={<LeaveManagement />} />
         <Route path="super-admin" element={user?.role === 'superadmin' ? <SuperAdminDashboard /> : <Navigate to="/" replace />} />

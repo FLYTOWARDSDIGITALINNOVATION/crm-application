@@ -3,11 +3,13 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IProject extends Document {
   name: string;
   description?: string;
-  status: 'Active' | 'Completed' | 'On Hold';
+  status: 'Active' | 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
   assignedEmployees: mongoose.Types.ObjectId[];
-  createdBy: mongoose.Types.ObjectId;
+  createdBy: any;
   requirements?: string;
   projectUrl?: string;
+  startDate?: Date;
+  dueDate?: Date;
   files?: Array<{ name: string; url: string; uploadedAt: Date }>;
   createdAt: Date;
   updatedAt: Date;
@@ -19,7 +21,7 @@ const ProjectSchema: Schema = new Schema(
     description: { type: String, default: '' },
     status: {
       type: String,
-      enum: ['Active', 'Completed', 'On Hold'],
+      enum: ['Active', 'In Progress', 'Planning', 'Completed', 'On Hold'],
       default: 'Active',
     },
     assignedEmployees: [
@@ -28,6 +30,8 @@ const ProjectSchema: Schema = new Schema(
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     requirements: { type: String, default: '' },
     projectUrl: { type: String, default: '' },
+    startDate: { type: Date },
+    dueDate: { type: Date },
     files: [
       {
         name: { type: String },

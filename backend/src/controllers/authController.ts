@@ -60,7 +60,7 @@ export const registerUser = async (req: Request, res: Response) => {
     }
 
     const userCount = await User.countDocuments({});
-    const role = userCount === 0 ? 'admin' : (req.body.role || 'customer');
+    const role = userCount === 0 ? 'admin' : (req.body.role || 'employee');
 
     const user = await User.create({
       name,
@@ -94,7 +94,7 @@ export const loginUser = async (req: Request, res: Response) => {
     if (user && (await user.matchPassword(password))) {
       const now = new Date();
 
-      if (user.role === 'employee') {
+      if (user.role === 'employee' || user.role === 'admin') {
         const employeeLogModel = await ensureEmployeeWorkLogCollection(user._id.toString()).catch(() =>
           getEmployeeWorkLogModel(user._id.toString())
         );
@@ -104,7 +104,7 @@ export const loginUser = async (req: Request, res: Response) => {
           status: 'active',
         }).sort({ loginAt: -1 });
 
-        if (activeSession) {
+        if (activeSession && user.role === 'employee') {
           return res.status(409).json({
             message: 'Employee already has an active session. Please logout before logging in again.',
           });
@@ -222,48 +222,48 @@ export const logoutUser = async (req: Request, res: Response) => {
     }
 
     const now = new Date();
+    const workSummary = typeof req.body.workSummary === 'string' ? req.body.workSummary.trim() : '';
+    const gitLink = typeof req.body.gitLink === 'string' ? req.body.gitLink.trim() : '';
+    const screenshotFile = req.file as Express.Multer.File | undefined;
 
-    if (user.role === 'employee') {
+    const hasWorkSummary = workSummary.length > 0;
+    const hasGitLink = gitLink.length > 0;
+    const hasScreenshot = !!screenshotFile;
+
+    if (user.role === 'employee' && !hasWorkSummary && !hasGitLink && !hasScreenshot) {
+      return res.status(400).json({
+        message: 'Please provide a work summary, screenshot, or Git push link before logout.',
+      });
+    }
+
+    let session: IEmployeeSession | null = null;
+
+    if (user.currentSessionId) {
+      session = await EmployeeSession.findById(user.currentSessionId);
+    }
+
+    if (!session || session.status !== 'active') {
+      session = await EmployeeSession.findOne({
+        userId: user._id,
+        status: 'active',
+      }).sort({ loginAt: -1 });
+    }
+
+    if (!session && (user.role === 'employee' || user.role === 'admin' || hasWorkSummary || hasGitLink || hasScreenshot)) {
+      session = await EmployeeSession.create({
+        userId: user._id,
+        userName: user.name,
+        userEmail: user.email,
+        loginAt: user.lastLoginAt || now,
+        logoutAt: now,
+        status: 'completed',
+      });
+    }
+
+    if (session) {
       const employeeLogModel = await ensureEmployeeWorkLogCollection(user._id.toString()).catch(() =>
         getEmployeeWorkLogModel(user._id.toString())
       );
-
-      const workSummary = typeof req.body.workSummary === 'string' ? req.body.workSummary.trim() : '';
-      const gitLink = typeof req.body.gitLink === 'string' ? req.body.gitLink.trim() : '';
-      const screenshotFile = req.file as Express.Multer.File | undefined;
-
-      const hasWorkSummary = workSummary.length > 0;
-      const hasGitLink = gitLink.length > 0;
-      const hasScreenshot = !!screenshotFile;
-
-      if (!hasWorkSummary && !hasGitLink && !hasScreenshot) {
-        return res.status(400).json({
-          message: 'Please provide a work summary, screenshot, or Git push link before logout.',
-        });
-      }
-
-      let session: IEmployeeSession | null = null;
-
-      if (user.currentSessionId) {
-        session = await EmployeeSession.findById(user.currentSessionId);
-      }
-
-      if (!session || session.status !== 'active') {
-        session = await EmployeeSession.findOne({
-          userId: user._id,
-          status: 'active',
-        }).sort({ loginAt: -1 });
-      }
-
-      if (!session) {
-        session = await EmployeeSession.create({
-          userId: user._id,
-          userName: user.name,
-          userEmail: user.email,
-          loginAt: user.lastLoginAt || now,
-          status: 'completed',
-        });
-      }
 
       let privateLog = await employeeLogModel.findOne({
         sharedSessionId: session._id,
@@ -286,23 +286,17 @@ export const logoutUser = async (req: Request, res: Response) => {
 
       if (hasWorkSummary) {
         session.workSummary = workSummary;
-        if (privateLog) {
-          privateLog.workSummary = workSummary;
-        }
+        if (privateLog) privateLog.workSummary = workSummary;
       }
 
       if (hasGitLink) {
         session.gitLink = gitLink;
-        if (privateLog) {
-          privateLog.gitLink = gitLink;
-        }
+        if (privateLog) privateLog.gitLink = gitLink;
       }
 
       if (hasScreenshot) {
         session.screenshot = `data:${screenshotFile.mimetype};base64,${screenshotFile.buffer.toString('base64')}`;
-        if (privateLog) {
-          privateLog.screenshot = `data:${screenshotFile.mimetype};base64,${screenshotFile.buffer.toString('base64')}`;
-        }
+        if (privateLog) privateLog.screenshot = session.screenshot;
       }
 
       session.proofType = resolveProofType({
@@ -321,21 +315,16 @@ export const logoutUser = async (req: Request, res: Response) => {
         privateLog.status = 'completed';
         await privateLog.save();
       }
-
-      user.lastLogoutAt = now;
-      user.currentSessionId = undefined;
-      await user.save();
-
-      return res.json({
-        message: 'Logout details saved successfully',
-        session,
-      });
     }
 
     user.lastLogoutAt = now;
+    user.currentSessionId = undefined;
+    user.isOnline = false;
     await user.save();
 
-    return res.json({ message: 'Logged out successfully' });
+    return res.json({
+      message: 'Logged out successfully',
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error });
   }

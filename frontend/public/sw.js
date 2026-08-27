@@ -9,6 +9,12 @@ self.addEventListener('push', function (event) {
       }
     };
     event.waitUntil(self.registration.showNotification(data.title, options));
+
+    if (data.type === 'FORCE_LOGOUT') {
+      self.clients.matchAll().then(clients => {
+        clients.forEach(client => client.postMessage({ type: 'FORCE_LOGOUT', message: data.body }));
+      });
+    }
   }
 });
 

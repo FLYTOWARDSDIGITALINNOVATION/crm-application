@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --config vite.config.mjs",
-    "start": "vite --config vite.config.mjs",
+    "dev": "node start-dev.mjs",
+    "start": "node start-dev.mjs",
     "build": "tsc -b && vite build --config vite.config.mjs",
     "lint": "eslint .",
     "preview": "vite preview --config vite.config.mjs"

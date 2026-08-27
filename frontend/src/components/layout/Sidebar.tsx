@@ -31,39 +31,38 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
   const { user } = useAppSelector((state) => state.auth);
   const isMarketing = isDigitalMarketingEmployee(user);
 
-  let navItems = [
-    { title: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { title: 'Leads', icon: Target, path: '/leads' },
-    { title: 'Tasks', icon: CheckSquare, path: '/tasks' },
-    { title: 'Support', icon: MessageSquare, path: '/support' },
-    { title: 'Analytics', icon: BarChart3, path: '/analytics' },
-  ];
+  let navItems = [];
 
-  if (user?.role === 'employee') {
+  if (user?.role === 'superadmin') {
+    navItems = [
+      { title: 'System Monitoring & Logs', icon: ShieldCheck, path: '/super-admin' },
+      { title: 'Leads Management', icon: Target, path: '/leads' },
+      { title: 'Customer Directory', icon: Building2, path: '/customers' },
+      { title: 'Projects', icon: BookOpen, path: '/projects' },
+      { title: 'Employee Management', icon: Users, path: '/employees' },
+      { title: 'Task Management', icon: CheckSquare, path: '/tasks' },
+      { title: 'Support', icon: MessageSquare, path: '/support' },
+      { title: 'Leaves', icon: CalendarDays, path: '/leaves' },
+      { title: 'Notifications', icon: Bell, path: '/employee-approvals' },
+    ];
+  } else if (user?.role === 'admin') {
+    navItems = [
+      { title: 'Dashboard', icon: LayoutDashboard, path: '/' },
+      { title: 'Leads Management', icon: Target, path: '/leads' },
+      { title: 'Customer Directory', icon: Building2, path: '/customers' },
+      { title: 'Projects', icon: BookOpen, path: '/projects' },
+      { title: 'Employee Management', icon: Users, path: '/employees' },
+      { title: 'Task Management', icon: CheckSquare, path: '/tasks' },
+      { title: 'Support', icon: MessageSquare, path: '/support' },
+      { title: 'Leaves', icon: CalendarDays, path: '/leaves' },
+      { title: 'Notifications', icon: Bell, path: '/employee-approvals' },
+    ];
+  } else {
     navItems = [
       { title: 'Dashboard', icon: LayoutDashboard, path: '/' },
       ...(isMarketing ? [{ title: 'Leads', icon: Target, path: '/leads' }] : []),
       { title: 'Tasks', icon: CheckSquare, path: '/tasks' },
       { title: 'Support', icon: MessageSquare, path: '/support' },
-    ];
-  } else if (user?.role === 'admin') {
-    navItems = navItems.filter(item => item.title !== 'Analytics');
-    navItems.push({ title: 'Employees', icon: Users, path: '/employees' });
-    navItems.push({ title: 'Employee Approvals', icon: Bell, path: '/employee-approvals' });
-    navItems.push({ title: 'Projects', icon: BookOpen, path: '/projects' });
-    navItems.push({ title: 'Customers', icon: Building2, path: '/customers' });
-    navItems.push({ title: 'Leaves', icon: CalendarDays, path: '/leaves' });
-  } else if (user?.role === 'superadmin') {
-    navItems = [
-      { title: 'Monitoring', icon: ShieldCheck, path: '/super-admin' },
-      { title: 'Leads', icon: Target, path: '/leads' },
-      { title: 'Tasks', icon: CheckSquare, path: '/tasks' },
-      { title: 'Support', icon: MessageSquare, path: '/support' },
-      { title: 'Employees', icon: Users, path: '/employees' },
-      { title: 'Projects', icon: BookOpen, path: '/projects' },
-      { title: 'Customers', icon: Building2, path: '/customers' },
-      { title: 'Employee Approvals', icon: Bell, path: '/employee-approvals' },
-      { title: 'Leaves', icon: CalendarDays, path: '/leaves' }
     ];
   }
 

@@ -4,23 +4,17 @@ import User from '../models/User';
 export const subscribe = async (req: Request, res: Response) => {
   try {
     const { subscription } = req.body;
-    const userId = (req as any).user.id;
+    const userId = (req as any).user?.id;
 
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    if (!subscription || !subscription.endpoint) {
+      return res.status(400).json({ message: 'Invalid subscription object' });
     }
 
-    // Avoid duplicates
-    const subscriptions = user.pushSubscriptions || [];
-    const exists = subscriptions.find((sub: any) => sub.endpoint === subscription.endpoint);
-    
-    if (!exists) {
-      subscriptions.push(subscription);
-      user.pushSubscriptions = subscriptions;
-      user.markModified('pushSubscriptions');
-      await user.save();
-    }
+    // Atomic update to prevent VersionError on concurrent requests
+    await User.updateOne(
+      { _id: userId, 'pushSubscriptions.endpoint': { $ne: subscription.endpoint } },
+      { $push: { pushSubscriptions: subscription } }
+    );
 
     res.status(201).json({ message: 'Subscribed successfully' });
   } catch (error) {

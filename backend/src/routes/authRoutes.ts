@@ -12,8 +12,7 @@ const upload = multer({
 router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.post('/reset-password', resetPassword);
-router.post('/logout', upload.single('screenshot'), logoutUser);
-router.post('/logout', protect, logoutUser);
+router.post('/logout', protect, upload.single('screenshot'), logoutUser);
 router.get('/me', protect, getCurrentUser);
 
 export default router;

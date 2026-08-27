@@ -44,13 +44,26 @@ const EmployeeLogoutModal: React.FC<EmployeeLogoutModalProps> = ({ isOpen, onClo
     }
   }, [dispatch, isOpen]);
 
-  if (!isOpen || user?.role !== 'employee') {
+  if (!isOpen || user?.role === 'superadmin') {
     return null;
   }
 
   const closeModal = () => {
     if (isLoading) return;
     onClose();
+  };
+
+  const handleDirectLogout = async () => {
+    try {
+      await dispatch(logoutUser()).unwrap();
+      dispatch(logout());
+      onClose();
+      navigate('/login');
+    } catch (err) {
+      dispatch(logout());
+      onClose();
+      navigate('/login');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -249,7 +262,7 @@ const EmployeeLogoutModal: React.FC<EmployeeLogoutModalProps> = ({ isOpen, onClo
                     type="button"
                     onClick={closeModal}
                     disabled={isLoading}
-                    className="rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-600 shadow-sm ring-1 ring-slate-200 transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-600 shadow-sm ring-1 ring-slate-200 transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Cancel
                   </button>

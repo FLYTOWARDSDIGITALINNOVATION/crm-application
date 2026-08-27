@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Users, FolderKanban, MessageSquare, Calendar,
   Clock, CheckCircle2, XCircle, ShieldCheck, Activity,
-  ArrowRightLeft, AlertCircle, Loader2, ZoomIn, X
+  ArrowRightLeft, AlertCircle, Loader2, ZoomIn, X, LogOut
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAppDispatch, useAppSelector } from '../../store';
@@ -12,8 +12,10 @@ import {
   fetchAllLeavesForSuperAdmin,
   fetchAllProjectsOverview,
 } from '../../store/slices/superAdminSlice';
+import api from '../../utils/api';
+import LogoutReports from './LogoutReports';
 
-type Tab = 'activity' | 'projects' | 'logs' | 'leaves';
+type Tab = 'activity' | 'projects' | 'logs' | 'leaves' | 'logouts';
 
 const API_BASE = 'http://localhost:5000';
 
@@ -23,13 +25,14 @@ const SuperAdminDashboard: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<Tab>('activity');
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+  const [employeeToLogout, setEmployeeToLogout] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
-    if (activeTab === 'activity') dispatch(fetchEmployeeOverview());
-    if (activeTab === 'projects') dispatch(fetchAllProjectsOverview());
-    if (activeTab === 'logs') dispatch(fetchAllWorkLogsForSuperAdmin());
-    if (activeTab === 'leaves') dispatch(fetchAllLeavesForSuperAdmin());
-  }, [dispatch, activeTab]);
+    dispatch(fetchEmployeeOverview());
+    dispatch(fetchAllProjectsOverview());
+    dispatch(fetchAllWorkLogsForSuperAdmin());
+    dispatch(fetchAllLeavesForSuperAdmin());
+  }, [dispatch]);
 
   const formatDateTime = (dateStr?: string) => {
     if (!dateStr) return 'Never';
@@ -37,6 +40,25 @@ const SuperAdminDashboard: React.FC = () => {
       day: '2-digit', month: 'short', year: 'numeric',
       hour: '2-digit', minute: '2-digit'
     });
+  };
+
+  const handleForceLogout = async (employeeId: string) => {
+    try {
+      await api.post(`/super-admin/force-logout/${employeeId}`);
+
+      // Broadcast signal across tabs for instant logout
+      try {
+        const bc = new BroadcastChannel('crm_session_channel');
+        bc.postMessage({ type: 'FORCE_LOGOUT', userId: employeeId });
+        bc.close();
+      } catch (e) {}
+
+      localStorage.setItem('force_logout_signal', JSON.stringify({ userId: employeeId, time: Date.now() }));
+
+      dispatch(fetchEmployeeOverview());
+    } catch (err) {
+      console.error('Failed to force logout:', err);
+    }
   };
 
   return (
@@ -60,6 +82,7 @@ const SuperAdminDashboard: React.FC = () => {
           { id: 'projects', label: 'Project Allocations', icon: <FolderKanban className="w-4 h-4" /> },
           { id: 'logs', label: 'Work Log Reviews', icon: <MessageSquare className="w-4 h-4" /> },
           { id: 'leaves', label: 'Leave Requests', icon: <Calendar className="w-4 h-4" /> },
+          { id: 'logouts', label: 'Logout Reports', icon: <ArrowRightLeft className="w-4 h-4" /> },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -94,12 +117,13 @@ const SuperAdminDashboard: React.FC = () => {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-50/70 border-b border-slate-100">
+                    <tr className="border-b border-slate-100 bg-slate-50/50">
                       <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Employee</th>
                       <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
                       <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Session Details</th>
                       <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Work Progress</th>
                       <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Assigned Projects</th>
+                      <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-sm">
@@ -174,6 +198,22 @@ const SuperAdminDashboard: React.FC = () => {
                                   </span>
                                 ))}
                               </div>
+                            )}
+                          </td>
+                          {/* Actions */}
+                          <td className="p-4 text-right">
+                            {emp.isOnline ? (
+                              <button
+                                onClick={() => setEmployeeToLogout({ id: emp._id, name: emp.name })}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-600 rounded-xl font-bold hover:bg-rose-100 transition-all text-xs"
+                              >
+                                <LogOut className="w-3.5 h-3.5" />
+                                Logout
+                              </button>
+                            ) : (
+                              <span className="inline-block px-2.5 py-1 bg-slate-100 text-slate-400 rounded-lg text-xs font-semibold">
+                                Logged Out
+                              </span>
                             )}
                           </td>
                         </tr>
@@ -331,6 +371,9 @@ const SuperAdminDashboard: React.FC = () => {
               )}
             </div>
           )}
+
+          {/* TAB 5: Logout Reports & Session Calendar */}
+          {activeTab === 'logouts' && <LogoutReports />}
         </div>
       )}
 
@@ -352,6 +395,39 @@ const SuperAdminDashboard: React.FC = () => {
             className="max-w-full max-h-[90vh] rounded-2xl shadow-2xl object-contain animate-fade-in"
             onClick={e => e.stopPropagation()}
           />
+        </div>
+      )}
+
+      {/* Centered Force Logout Confirmation Modal */}
+      {employeeToLogout && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200 text-center">
+            <div className="w-14 h-14 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-7 h-7" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 mb-2">Force Logout Employee</h3>
+            <p className="text-sm text-slate-500 mb-6">
+              Are you sure you want to force logout <span className="font-bold text-slate-800">{employeeToLogout.name}</span>? They will receive a warning message and be immediately logged out.
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={() => setEmployeeToLogout(null)}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  const empId = employeeToLogout.id;
+                  setEmployeeToLogout(null);
+                  await handleForceLogout(empId);
+                }}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-rose-600 text-white font-bold text-xs shadow-lg shadow-rose-200 hover:bg-rose-700 transition-all"
+              >
+                Confirm Logout
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

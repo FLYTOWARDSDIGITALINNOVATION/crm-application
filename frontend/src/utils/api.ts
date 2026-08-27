@@ -31,10 +31,20 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Clear token and user on 401 Unauthorized
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      const isForceLogout = error.response.data?.isForceLogout;
+      const msg = error.response.data?.message;
+      
+      if (isForceLogout || msg === 'You have been logged out by the Super Admin.') {
+        window.dispatchEvent(
+          new CustomEvent('show_force_logout_modal', {
+            detail: { message: msg || 'You have been logged out by the Super Admin.' }
+          })
+        );
+      } else {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

@@ -30,9 +30,8 @@ const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({ isOpen, onClose, le
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { isLoading } = useAppSelector(state => state.leads);
-  const [createdCredentials, setCreatedCredentials] = useState<{ email: string; password: string } | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [convertedCustomerId, setConvertedCustomerId] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const [isCustomSector, setIsCustomSector] = useState(false);
   const [isSectorDropdownOpen, setIsSectorDropdownOpen] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -64,36 +63,25 @@ const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({ isOpen, onClose, le
       const result = await dispatch(convertLead({ id: leadId, data: formData })).unwrap();
       reset();
       setPdfFile(null);
-      if (result.credentials) {
-        setCreatedCredentials(result.credentials);
-        if (result.customer) {
-          setConvertedCustomerId(result.customer._id);
-        }
-      } else {
-        onClose();
-        if (result.customer) {
-          navigate(`/customers/${result.customer._id}`);
-        }
+      if (result.customer) {
+        setConvertedCustomerId(result.customer._id);
       }
+      setShowSuccessModal(true);
     } catch (err) {
       console.error('Conversion failed:', err);
       alert('Conversion failed: ' + (typeof err === 'string' ? err : JSON.stringify(err)));
     }
   };
 
-  const handleCopy = () => {
-    if (!createdCredentials) return;
-    const text = `User ID / Email: ${createdCredentials.email}\nPassword: ${createdCredentials.password}`;
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleFinish = () => {
-    setCreatedCredentials(null);
+  const handleSuccessOk = () => {
+    const custId = convertedCustomerId;
+    setShowSuccessModal(false);
+    setConvertedCustomerId(null);
     onClose();
-    if (convertedCustomerId) {
-      navigate(`/customers/${convertedCustomerId}`);
+    if (custId) {
+      navigate(`/customers/${custId}`);
+    } else {
+      navigate('/customers');
     }
   };
 
@@ -104,68 +92,40 @@ const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({ isOpen, onClose, le
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-fade-in" 
-        onClick={onClose}
+        onClick={() => {
+          if (showSuccessModal) {
+            handleSuccessOk();
+          } else {
+            onClose();
+          }
+        }}
       ></div>
 
       {/* Modal Content */}
       <div className="relative w-full h-full sm:h-auto sm:max-h-[95vh] sm:max-w-5xl bg-white sm:rounded-[2rem] shadow-2xl overflow-y-auto animate-slide-up border border-indigo-100 flex flex-col">
-        {createdCredentials ? (
-          <div className="animate-fade-in flex flex-col h-full">
-            {/* Success Header */}
-            <div className="bg-hero-gradient p-8 text-white relative text-center flex flex-col items-center">
-              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-4 backdrop-blur-sm border border-white/30">
-                <CheckCircle2 className="w-8 h-8 text-white" />
-              </div>
-              <h2 className="text-2xl font-bold font-inter tracking-tight">Converted Successfully!</h2>
-              <p className="text-indigo-100/80 text-sm mt-1">Customer account created in CRM.</p>
+        {showSuccessModal ? (
+          <div className="p-8 sm:p-12 text-center flex flex-col items-center justify-center space-y-6 my-auto animate-fade-in min-h-[350px]">
+            <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shadow-lg shadow-emerald-100 border border-emerald-200">
+              <CheckCircle2 className="w-10 h-10 text-emerald-600" />
             </div>
 
-            {/* Success Content */}
-            <div className="p-8 space-y-6 bg-white w-full max-w-xl mx-auto flex-1 flex flex-col justify-center my-8">
-              <p className="text-slate-500 text-sm text-center leading-relaxed">
-                Provide these unique login credentials to the customer to let them log in to the <strong>Customer Portal</strong>.
+            <div className="space-y-2">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                Converted Successfully!
+              </h2>
+              <p className="text-slate-500 text-base max-w-md mx-auto">
+                Lead <span className="font-bold text-slate-800">&ldquo;{leadName}&rdquo;</span> has been successfully converted into a Customer.
               </p>
-
-              <div className="space-y-4">
-                {/* Username */}
-                <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl relative">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block mb-1">User ID / Email</span>
-                  <span className="font-bold text-slate-800 text-sm">{createdCredentials.email}</span>
-                </div>
-
-                {/* Password */}
-                <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl relative">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block mb-1">Temporary Password</span>
-                  <span className="font-mono font-bold text-indigo-600 text-base tracking-wide">{createdCredentials.password}</span>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex flex-col gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={handleCopy}
-                  className={cn(
-                    "w-full py-4 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 border-2",
-                    copied
-                      ? "bg-emerald-50 text-emerald-600 border-emerald-200"
-                      : "bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100/50"
-                  )}
-                >
-                  <Copy className="w-4 h-4" />
-                  {copied ? "Copied to Clipboard!" : "Copy Login Credentials"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleFinish}
-                  className="w-full py-4 bg-indigo-600 rounded-2xl text-sm font-bold text-white hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all flex items-center justify-center gap-2 group"
-                >
-                  Go to Customer Profile
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </button>
-              </div>
             </div>
+
+            <button
+              type="button"
+              onClick={handleSuccessOk}
+              className="w-full sm:w-64 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-base rounded-2xl shadow-xl shadow-emerald-100 transition-all cursor-pointer flex items-center justify-center gap-2 mt-4"
+            >
+              <span>OK</span>
+              <CheckCircle2 className="w-5 h-5" />
+            </button>
           </div>
         ) : (
           <>

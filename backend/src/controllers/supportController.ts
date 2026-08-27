@@ -12,7 +12,7 @@ export const getTickets = async (req: Request, res: Response) => {
     if (!user) return res.status(401).json({ message: 'Not authorised' });
 
     let tickets;
-    if (user.role === 'admin' || user.role === 'sales') {
+    if (user.role === 'admin' || user.role === 'superadmin') {
       tickets = await SupportTicket.find().sort({ updatedAt: -1 });
     } else {
       // employee sees only their own tickets

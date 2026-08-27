@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import { cn } from '../../utils/cn';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { logoutUser } from '../../store/slices/authSlice';
-import { LogOut } from 'lucide-react';
+import { LogOut, AlertTriangle } from 'lucide-react';
 import NotificationManager from './NotificationManager';
+import api from '../../utils/api';
 
 const MainLayout: React.FC = () => {
   const navigate = useNavigate();
@@ -14,6 +15,60 @@ const MainLayout: React.FC = () => {
   const { isAuthenticated, user } = useAppSelector((state) => state.auth);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [forceLogoutNotice, setForceLogoutNotice] = useState<string | null>(null);
+
+  // Global force logout modal event listener
+  useEffect(() => {
+    const handleForceLogoutModal = (e: any) => {
+      setForceLogoutNotice(e.detail?.message || 'You have been logged out by the Super Admin.');
+    };
+    window.addEventListener('show_force_logout_modal', handleForceLogoutModal);
+    return () => window.removeEventListener('show_force_logout_modal', handleForceLogoutModal);
+  }, []);
+
+  // Heartbeat polling & cross-tab forced logout detection
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+
+    const currentUserId = (user as any).id || (user as any)._id;
+
+    // 1. Periodic heartbeat to check session status
+    const interval = setInterval(() => {
+      api.get('/auth/me').catch(() => {
+        // Handled automatically by api.ts 401 interceptor
+      });
+    }, 4000);
+
+    // 2. BroadcastChannel listener for instant cross-tab logout
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel('crm_session_channel');
+      bc.onmessage = (event) => {
+        if (event.data && event.data.type === 'FORCE_LOGOUT' && event.data.userId === currentUserId) {
+          setForceLogoutNotice('You have been logged out by the Super Admin.');
+        }
+      };
+    } catch (e) {}
+
+    // 3. Storage event listener
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'force_logout_signal' && e.newValue) {
+        try {
+          const data = JSON.parse(e.newValue);
+          if (data.userId === currentUserId) {
+            setForceLogoutNotice('You have been logged out by the Super Admin.');
+          }
+        } catch (err) {}
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      clearInterval(interval);
+      if (bc) bc.close();
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [isAuthenticated, user]);
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -58,8 +113,8 @@ const MainLayout: React.FC = () => {
               <span className="block text-[10px] text-slate-400 font-bold">Customer Account</span>
             </div>
             <button
-              onClick={() => {
-                dispatch(logoutUser());
+              onClick={async () => {
+                await dispatch(logoutUser());
                 navigate('/login');
               }}
               className="flex items-center gap-2 px-4 py-2 border border-rose-200 text-rose-500 rounded-xl text-xs font-bold hover:bg-rose-50 transition-all"
@@ -128,6 +183,31 @@ const MainLayout: React.FC = () => {
           &copy; 2026 FlyTowards CRM. All rights reserved.
         </footer>
       </div>
+
+      {/* Centered Forced Logout Warning Modal */}
+      {forceLogoutNotice && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 dark:border-slate-700 animate-in zoom-in-95 duration-200 text-center">
+            <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2">Session Terminated</h3>
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
+              {forceLogoutNotice}
+            </p>
+            <button
+              onClick={() => {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+              }}
+              className="w-full py-3 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-200 dark:shadow-none transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+            >
+              OK, Go to Login
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

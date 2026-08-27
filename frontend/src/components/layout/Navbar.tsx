@@ -1,19 +1,18 @@
 import React from 'react';
-import { Search, Bell, Sun, Moon, Menu, Monitor, LogOut } from 'lucide-react';
+import { Search, Bell, Sun, Moon, Menu, Monitor, LogOut, Edit2 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAppDispatch, useAppSelector } from '../../store';
 import GlobalSearch from './GlobalSearch';
 import { useTheme } from '../ThemeProvider';
-import { fetchTasks, updateTask } from '../../store/slices/taskSlice';
+import { fetchTasks } from '../../store/slices/taskSlice';
 import { fetchEmployees } from '../../store/slices/userSlice';
-import { logout, logoutUser } from '../../store/slices/authSlice';
+import { logoutUser } from '../../store/slices/authSlice';
 import type { Task } from '../../store/slices/taskSlice';
 import { format, isPast, isToday } from 'date-fns';
 import { useLocation, useNavigate } from 'react-router-dom';
 import EditNotificationModal from '../../features/leads/EditNotificationModal';
 import EmployeeLogoutModal from './EmployeeLogoutModal';
 import LogoutConfirmModal from './LogoutConfirmModal';
-import { Edit2, Trash2 } from 'lucide-react';
 
 interface NavbarProps {
   isSidebarCollapsed: boolean;
@@ -244,13 +243,13 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarCollapsed, onMenuToggle }) => 
 
         <button
           onClick={() => {
-            if (user?.role === 'employee') {
+            if (user?.role === 'superadmin') {
+              setIsStandardLogoutModalOpen(true);
+            } else {
               setIsLogoutModalOpen(true);
-              return;
             }
-            setIsStandardLogoutModalOpen(true);
           }}
-          className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 shadow-sm transition-all hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800"
+          className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 shadow-sm transition-all hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
         >
           <LogOut className="w-4 h-4" />
           <span className="hidden sm:inline text-sm font-medium">Logout</span>
@@ -292,10 +291,9 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarCollapsed, onMenuToggle }) => 
       <LogoutConfirmModal
         isOpen={isStandardLogoutModalOpen}
         onClose={() => setIsStandardLogoutModalOpen(false)}
-        onConfirm={() => {
+        onConfirm={async () => {
           setIsStandardLogoutModalOpen(false);
-          dispatch(logout());
-          dispatch(logoutUser());
+          await dispatch(logoutUser());
           navigate('/login');
         }}
       />

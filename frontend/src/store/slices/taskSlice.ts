@@ -4,9 +4,11 @@ import api from '../../utils/api';
 export interface Task {
   id: string;
   title: string;
+  startDate?: string;
   dueDate: string;
   priority: 'High' | 'Medium' | 'Low' | string;
-  status: 'Pending' | 'In Progress' | 'Completed' | string;
+  status: 'To Do' | 'In Progress' | 'Review' | 'Completed' | 'Pending' | string;
+  progress?: number;
   assignedTo: string;
   relatedTo: string;
   projectId?: string;
@@ -18,9 +20,11 @@ export interface Task {
 const mapTask = (doc: any): Task => ({
   id: doc._id,
   title: doc.title,
+  startDate: doc.startDate || doc.createdAt ? new Date(doc.startDate || doc.createdAt).toISOString().split('T')[0] : '',
   dueDate: doc.dueDate,
   priority: doc.priority,
-  status: doc.status,
+  status: doc.status || 'To Do',
+  progress: typeof doc.progress === 'number' ? doc.progress : (doc.status === 'Completed' ? 100 : doc.status === 'In Progress' ? 50 : 0),
   assignedTo: Array.isArray(doc.assignedTo) ? doc.assignedTo.join(', ') : (doc.assignedTo || ''),
   relatedTo: doc.relatedTo,
   projectId: doc.projectId,
@@ -81,9 +85,10 @@ export const toggleTaskStatus = createAsyncThunk(
 
 export const updateTask = createAsyncThunk(
   'tasks/update',
-  async ({ id, status, assignedTo, dueDate, description }: { id: string; status?: string; assignedTo?: any; dueDate?: string; description?: string }, { rejectWithValue }) => {
+  async (updates: Partial<Task> & { id: string }, { rejectWithValue }) => {
     try {
-      const res = await api.patch(`/tasks/${id}`, { status, assignedTo, dueDate, description });
+      const { id, ...data } = updates;
+      const res = await api.patch(`/tasks/${id}`, data);
       return mapTask(res.data);
     } catch (err: any) {
       return rejectWithValue(err.response?.data?.message || err.message);

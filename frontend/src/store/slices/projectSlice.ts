@@ -13,11 +13,13 @@ export interface Project {
   _id: string;
   name: string;
   description: string;
-  status: 'Active' | 'Completed' | 'On Hold';
+  status: 'Active' | 'In Progress' | 'Planning' | 'Completed' | 'On Hold' | string;
   assignedEmployees: ProjectEmployee[];
-  createdBy: string;
+  createdBy?: ProjectEmployee | string;
   requirements?: string;
   projectUrl?: string;
+  startDate?: string;
+  dueDate?: string;
   files?: Array<{ name: string; url: string; uploadedAt: string }>;
   createdAt: string;
   updatedAt: string;
@@ -51,7 +53,7 @@ export const fetchProjects = createAsyncThunk(
 
 export const createProject = createAsyncThunk(
   'projects/create',
-  async (data: { name: string; description?: string; status?: string; requirements?: string; files?: Array<{ name: string; url: string }>; assignedEmployees?: string[] }, { rejectWithValue }) => {
+  async (data: { name: string; description?: string; status?: string; requirements?: string; files?: Array<{ name: string; url: string }>; assignedEmployees?: string[]; startDate?: string; dueDate?: string }, { rejectWithValue }) => {
     try {
       const res = await api.post('/projects', data);
       return res.data as Project;
@@ -64,7 +66,7 @@ export const createProject = createAsyncThunk(
 export const updateProject = createAsyncThunk(
   'projects/update',
   async (
-    { id, ...updates }: { id: string; name?: string; description?: string; status?: string; requirements?: string; files?: Array<{ name: string; url: string }>; assignedEmployees?: string[] },
+    { id, ...updates }: { id: string; name?: string; description?: string; status?: string; requirements?: string; files?: Array<{ name: string; url: string }>; assignedEmployees?: string[]; startDate?: string; dueDate?: string },
     { rejectWithValue }
   ) => {
     try {

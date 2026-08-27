@@ -62,26 +62,7 @@ export const convertLeadToCustomer = async (req: Request, res: Response) => {
       });
     }
 
-    // 3. Create User account for the customer
-    let credentials = null;
-    const userExists = await User.findOne({ email: { $regex: new RegExp('^' + lead.email + '$', 'i') } });
-    if (!userExists) {
-      const password = 'Cust@' + Math.floor(10000 + Math.random() * 90000);
-      await User.create({
-        name: lead.name,
-        email: lead.email,
-        password: password,
-        role: 'customer',
-      });
-      credentials = { email: lead.email, password };
-      
-      customer.portalPassword = password;
-      await customer.save();
-    } else {
-      credentials = { email: lead.email, password: '(Account already exists)' };
-    }
-
-    res.status(201).json({ lead, customer, credentials });
+    res.status(201).json({ lead, customer, credentials: null });
   } catch (error) {
     res.status(500).json({ message: 'Server Error converting lead', error });
   }
@@ -159,20 +140,6 @@ export const updateLead = async (req: Request, res: Response) => {
           status: 'Active',
           joinedAt: new Date(),
         });
-      }
-
-      // Create User account if not exists
-      const userExists = await User.findOne({ email: lead.email });
-      if (!userExists) {
-        const password = 'Cust@' + Math.floor(10000 + Math.random() * 90000);
-        await User.create({
-          name: lead.name,
-          email: lead.email,
-          password: password,
-          role: 'customer',
-        });
-        customer.portalPassword = password;
-        await customer.save();
       }
 
       return res.status(200).json(lead);

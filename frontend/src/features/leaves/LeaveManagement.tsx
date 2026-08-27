@@ -103,20 +103,18 @@ const LeaveManagement: React.FC = () => {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Leave Management</h1>
           <p className="text-slate-500 text-sm mt-0.5">
-            {isAdmin
-              ? 'Approve or reject leave requests across the team.'
+            {isAdmin 
+              ? 'Review and manage employee leave requests and approvals.' 
               : 'Submit and track your leave applications.'}
           </p>
         </div>
-        {!isAdmin && (
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-5 py-3 bg-indigo-600 rounded-2xl text-sm font-bold text-white hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all self-start sm:self-auto"
-          >
-            <Plus className="w-5 h-5" />
-            Request Leave
-          </button>
-        )}
+        <button
+          onClick={() => setShowModal(true)}
+          className="flex items-center gap-2 px-5 py-3 bg-indigo-600 rounded-2xl text-sm font-bold text-white hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all self-start sm:self-auto cursor-pointer"
+        >
+          <Plus className="w-5 h-5" />
+          Request Leave
+        </button>
       </div>
 
       {/* Quick Filters */}

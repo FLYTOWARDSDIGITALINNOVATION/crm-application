@@ -50,12 +50,10 @@ const mergeWorkLogs = (sharedSessions: any[], privateLogs: any[]) => {
   });
 };
 
-// @desc    Get all employees
-// @route   GET /api/users/employees
-// @access  Public
 export const getEmployees = async (req: Request, res: Response) => {
   try {
-    const employees = await User.find({ role: 'employee' }).select('-password');
+    const employees = await User.find({ role: { $ne: 'customer' } }).select('-password');
+    console.log("getEmployees found:", employees.length, "users. Roles:", employees.map(e => e.role).join(', '));
     res.status(200).json(employees);
   } catch (error) {
     res.status(500).json({ message: 'Server Error fetching employees', error });
