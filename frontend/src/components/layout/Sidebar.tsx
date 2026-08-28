@@ -42,7 +42,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
       { title: 'Employee Management', icon: Users, path: '/employees' },
       { title: 'Task Management', icon: CheckSquare, path: '/tasks' },
       { title: 'Support', icon: MessageSquare, path: '/support' },
-      { title: 'Leaves', icon: CalendarDays, path: '/leaves' },
+      // { title: 'Leaves', icon: CalendarDays, path: '/leaves' },
       { title: 'Notifications', icon: Bell, path: '/employee-approvals' },
     ];
   } else if (user?.role === 'admin') {
@@ -54,7 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
       { title: 'Employee Management', icon: Users, path: '/employees' },
       { title: 'Task Management', icon: CheckSquare, path: '/tasks' },
       { title: 'Support', icon: MessageSquare, path: '/support' },
-      { title: 'Leaves', icon: CalendarDays, path: '/leaves' },
+      // { title: 'Leaves', icon: CalendarDays, path: '/leaves' },
       { title: 'Notifications', icon: Bell, path: '/employee-approvals' },
     ];
   } else {

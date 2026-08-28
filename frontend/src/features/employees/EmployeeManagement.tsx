@@ -261,6 +261,7 @@ const EmployeeManagement = () => {
       const updatedEmployee = await dispatch(updateEmployeeDetails({ id: selectedEmployee._id, data: editDetailsForm })).unwrap();
       setSelectedEmployee({ ...selectedEmployee, ...updatedEmployee });
       setIsEditingDetails(false);
+      dispatch(fetchEmployees());
     } catch (err: any) {
       setDetailsError(err || 'Failed to update employee details');
     } finally {
@@ -506,9 +507,18 @@ const EmployeeManagement = () => {
               <div className="space-y-8 animate-fade-in">
                 {/* Profile Status Banner */}
                 {!selectedEmployee.profileCompleted && (
-                  <div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-250 dark:border-amber-900 text-amber-800 dark:text-amber-400 rounded-2xl text-xs flex items-center gap-2 font-semibold">
-                    <span>⚠</span>
-                    <span>Employee has not completed their profile setup yet. Some personal details might be unavailable.</span>
+                  <div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-400 rounded-2xl text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 font-semibold">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">⚠️</span>
+                      <span>Profile setup incomplete. Click "Fill Details Now" to add/edit personal and work details.</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingDetails(true)}
+                      className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm shrink-0 self-start sm:self-auto"
+                    >
+                      Fill Details Now
+                    </button>
                   </div>
                 )}
 
@@ -1622,10 +1632,42 @@ const EmployeeManagement = () => {
                 </div>
               </div>
 
-              {/* Employee Profile */}
-              <div className="space-y-4 pt-2">
+              {/* Profile Information */}
+              <div className="space-y-4">
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest opacity-50 border-b border-slate-100 dark:border-slate-700 pb-2">Profile Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-20">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Department</label>
+                    <select
+                      name="department"
+                      value={isCustomDepartment ? 'Other' : form.department}
+                      onChange={(e) => {
+                        if (e.target.value === 'Other') {
+                          setIsCustomDepartment(true);
+                          setForm({ ...form, department: '' });
+                        } else {
+                          setIsCustomDepartment(false);
+                          setForm({ ...form, department: e.target.value });
+                        }
+                      }}
+                      className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    >
+                      <option value="">Select Department</option>
+                      <option value="Telecalling">Telecalling</option>
+                      <option value="Digital Marketing">Digital Marketing</option>
+                      <option value="Web Development">Web Development</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Designation</label>
+                    <input
+                      type="text"
+                      value={form.designation}
+                      onChange={(e) => setForm({ ...form, designation: e.target.value })}
+                      placeholder="e.g. Senior Caller"
+                      className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    />
+                  </div>
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Phone Number</label>
                     <input
@@ -1643,47 +1685,6 @@ const EmployeeManagement = () => {
                       onChange={(e) => setForm({ ...form, joiningDate: e.target.value })}
                       className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                     />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Designation</label>
-                    <input
-                      type="text"
-                      value={form.designation}
-                      onChange={(e) => setForm({ ...form, designation: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Department</label>
-                    <select
-                      name="department"
-                      value={isCustomDepartment ? 'Other' : form.department}
-                      onChange={(e) => {
-                        if (e.target.value === 'Other') {
-                          setIsCustomDepartment(true);
-                          setForm({ ...form, department: '' });
-                        } else {
-                          setIsCustomDepartment(false);
-                          setForm({ ...form, department: e.target.value });
-                        }
-                      }}
-                      className="w-full px-4 py-2.5 mb-2 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                    >
-                      <option value="">Select Department</option>
-                      <option value="Digital Marketing">Digital Marketing</option>
-                      <option value="Web Development">Web Development</option>
-                      <option value="Other">Other (Type custom)</option>
-                    </select>
-                    
-                    {isCustomDepartment && (
-                      <input
-                        type="text"
-                        value={form.department}
-                        onChange={(e) => setForm({ ...form, department: e.target.value })}
-                        placeholder="Enter custom department"
-                        className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                      />
-                    )}
                   </div>
                 </div>
               </div>

@@ -81,7 +81,7 @@ const SuperAdminDashboard: React.FC = () => {
           { id: 'activity', label: 'Employee Activity', icon: <Activity className="w-4 h-4" /> },
           { id: 'projects', label: 'Project Allocations', icon: <FolderKanban className="w-4 h-4" /> },
           { id: 'logs', label: 'Work Log Reviews', icon: <MessageSquare className="w-4 h-4" /> },
-          { id: 'leaves', label: 'Leave Requests', icon: <Calendar className="w-4 h-4" /> },
+          // { id: 'leaves', label: 'Leave Requests', icon: <Calendar className="w-4 h-4" /> },
           { id: 'logouts', label: 'Logout Reports', icon: <ArrowRightLeft className="w-4 h-4" /> },
         ].map((tab) => (
           <button
@@ -333,8 +333,8 @@ const SuperAdminDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 4: Leave Requests */}
-          {activeTab === 'leaves' && (
+          {/* TAB 4: Leave Requests (Commented out) */}
+          {/* activeTab === 'leaves' && (
             <div className="space-y-4">
               {leaves.length === 0 ? (
                 <div className="glass p-12 text-center text-slate-400 italic">No leave requests found.</div>
@@ -370,7 +370,7 @@ const SuperAdminDashboard: React.FC = () => {
                 ))
               )}
             </div>
-          )}
+          ) */}
 
           {/* TAB 5: Logout Reports & Session Calendar */}
           {activeTab === 'logouts' && <LogoutReports />}

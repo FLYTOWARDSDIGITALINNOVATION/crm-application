@@ -73,11 +73,22 @@ export const createEmployee = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    const usersWithId = await User.find({ employeeId: { $regex: /^FTDI\d+$/ } }).select('employeeId').exec();
+    let nextEmployeeId = 'FTDI001';
+    if (usersWithId.length > 0) {
+      const maxId = usersWithId.reduce((max, u) => {
+        const num = parseInt(u.employeeId!.replace('FTDI', ''), 10);
+        return num > max ? num : max;
+      }, 0);
+      nextEmployeeId = `FTDI${(maxId + 1).toString().padStart(3, '0')}`;
+    }
+
     const user = await User.create({
       name,
       email,
       password,
       role: 'employee',
+      employeeId: nextEmployeeId,
       phone,
       designation,
       department,
@@ -132,9 +143,11 @@ export const updateEmployeeAdmin = async (req: Request, res: Response) => {
     const { name, email, password, phone, designation, department, joiningDate, employeeId, profile } = req.body;
     const employee = await User.findById(req.params.id).select('-password');
 
-    if (!employee || employee.role !== 'employee') {
-      return res.status(404).json({ message: 'Employee not found' });
+    if (!employee) {
+      return res.status(404).json({ message: 'User not found' });
     }
+
+    employee.profileCompleted = true;
 
     if (name) employee.name = name;
     if (email) employee.email = email;
@@ -142,7 +155,20 @@ export const updateEmployeeAdmin = async (req: Request, res: Response) => {
     if (designation) employee.designation = designation;
     if (department) employee.department = department;
     if (joiningDate) employee.joiningDate = joiningDate;
-    if (employeeId) employee.employeeId = employeeId;
+    if (employeeId) {
+      employee.employeeId = employeeId;
+    } else if (!employee.employeeId) {
+      const usersWithId = await User.find({ employeeId: { $regex: /^FTDI\d+$/ } }).select('employeeId').exec();
+      if (usersWithId.length > 0) {
+        const maxId = usersWithId.reduce((max, u) => {
+          const num = parseInt(u.employeeId!.replace('FTDI', ''), 10);
+          return num > max ? num : max;
+        }, 0);
+        employee.employeeId = `FTDI${(maxId + 1).toString().padStart(3, '0')}`;
+      } else {
+        employee.employeeId = 'FTDI001';
+      }
+    }
     if (password) {
       employee.password = password;
       employee.profile = employee.profile || {};
@@ -223,7 +249,7 @@ export const submitEmployeeProfile = async (req: Request, res: Response) => {
     if (!userId) return res.status(401).json({ message: 'Not authorised' });
 
     const user = await User.findById(userId);
-    if (!user || user.role !== 'employee') return res.status(404).json({ message: 'Employee not found' });
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
     // Accept fields from body; photo can be base64 or URL
     const {

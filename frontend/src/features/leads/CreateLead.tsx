@@ -12,7 +12,7 @@ import BulkUploadLeads from './BulkUploadLeads';
 
 const schema = yup.object({
   name: yup.string().required('Full name is required'),
-  email: yup.string().email('Invalid email').required('Email is required'),
+  email: yup.string().transform(v => (v === '' ? undefined : v)).email('Invalid email').optional().default(''),
   phone: yup.string().required('Phone number is required'),
   company: yup.string().required('Company name is required'),
   source: yup.string().required('Lead source is required'),
@@ -37,7 +37,7 @@ const CreateLead: React.FC = () => {
       company: '',
       status: 'New',
       source: 'Software',
-      softwareType: 'Billing',
+      softwareType: 'Billing Software',
       notes: '',
     }
   });
@@ -122,7 +122,7 @@ const CreateLead: React.FC = () => {
 
               {/* Email */}
               <div className="space-y-2">
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Email Address</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Email Address (Optional)</label>
                 <div className="relative group">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
                   <input
@@ -207,7 +207,9 @@ const CreateLead: React.FC = () => {
                         watch('status') === 'Not Interested' ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
                       )}
                     >
-                      <option value="Billing">Billing</option>
+                      <option value="Billing Software">Billing Software</option>
+                      <option value="CRM Software">CRM Software</option>
+                      <option value="Payroll Software">Payroll Software</option>
                       <option value="Website">Website</option>
                       <option value="WebApp">WebApp</option>
                     </select>

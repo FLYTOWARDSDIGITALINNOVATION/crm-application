@@ -88,13 +88,15 @@ const SupportTickets: React.FC = () => {
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white font-inter tracking-tight">Support Center</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm hidden sm:block">Resolve customer inquiries and maintain high satisfaction.</p>
         </div>
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-3 sm:px-6 py-2 sm:py-3 bg-indigo-600 rounded-2xl text-sm font-bold text-white hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all self-start sm:self-auto"
-        >
-          <Plus className="w-5 h-5" />
-          <span className="hidden sm:inline">New Message</span>
-        </button>
+        {user?.role !== 'superadmin' && (
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 px-3 sm:px-6 py-2 sm:py-3 bg-indigo-600 rounded-2xl text-sm font-bold text-white hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all self-start sm:self-auto"
+          >
+            <Plus className="w-5 h-5" />
+            <span className="hidden sm:inline">New Message</span>
+          </button>
+        )}
       </div>
 
       {error && (

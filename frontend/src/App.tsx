@@ -76,7 +76,7 @@ function App() {
         <Route path="support" element={<SupportTickets />} />
         <Route path="projects" element={user?.role === 'superadmin' || user?.role === 'admin' ? <ProjectManagement /> : <Navigate to="/" replace />} />
         <Route path="projects/:id" element={<ProjectDetail />} />
-        <Route path="leaves" element={<LeaveManagement />} />
+        {/* <Route path="leaves" element={<LeaveManagement />} /> */}
         <Route path="super-admin" element={user?.role === 'superadmin' ? <SuperAdminDashboard /> : <Navigate to="/" replace />} />
         <Route path="analytics" element={<Navigate to="/" replace />} />
       </Route>

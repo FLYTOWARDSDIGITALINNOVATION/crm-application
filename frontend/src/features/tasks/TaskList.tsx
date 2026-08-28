@@ -145,8 +145,8 @@ const TaskList: React.FC = () => {
   const openCreate = () => {
     setForm({
       title: '',
-      projectId: projects[0]?._id || '',
-      relatedTo: projects[0]?.name || '',
+      projectId: '',
+      relatedTo: '',
       assignedTo: [],
       priority: 'Medium',
       status: 'To Do',
@@ -539,20 +539,14 @@ const TaskList: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Project</label>
-                <select
-                  value={form.projectId}
-                  onChange={e => {
-                    const pId = e.target.value;
-                    const proj = projects.find(p => p._id === pId);
-                    setForm({ ...form, projectId: pId, relatedTo: proj ? proj.name : '' });
-                  }}
-                  className="input-field cursor-pointer"
-                >
-                  {projects.map(p => (
-                    <option key={p._id} value={p._id}>{p.name}</option>
-                  ))}
-                </select>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Project Name</label>
+                <input
+                  type="text"
+                  placeholder="Enter project name..."
+                  value={form.relatedTo}
+                  onChange={e => setForm({ ...form, relatedTo: e.target.value, projectId: '' })}
+                  className="input-field"
+                />
               </div>
             </div>
 

@@ -87,8 +87,8 @@ export const createLead = async (req: Request, res: Response) => {
   try {
     const { name, email, phone, company, status, source, value, notes } = req.body;
     
-    if (!name || !email) {
-      return res.status(400).json({ message: 'Please provide name and email' });
+    if (!name) {
+      return res.status(400).json({ message: 'Please provide lead name' });
     }
 
     const lead = await Lead.create({

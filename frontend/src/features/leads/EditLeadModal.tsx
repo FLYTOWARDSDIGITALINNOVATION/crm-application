@@ -11,7 +11,7 @@ import type { Lead } from '../../store/slices/leadSlice';
 
 const schema = yup.object({
   name: yup.string().required('Full name is required'),
-  email: yup.string().email('Invalid email').required('Email is required'),
+  email: yup.string().transform(v => (v === '' ? undefined : v)).email('Invalid email').optional().default(''),
   phone: yup.string().required('Phone number is required'),
   company: yup.string().required('Company name is required'),
   source: yup.string().required('Lead source is required'),
@@ -210,7 +210,9 @@ const EditLeadModal: React.FC<EditLeadModalProps> = ({ isOpen, onClose, lead }) 
                       watch('status') === 'Not Interested' ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
                     )}
                   >
-                    <option value="Billing">Billing</option>
+                    <option value="Billing Software">Billing Software</option>
+                    <option value="CRM Software">CRM Software</option>
+                    <option value="Payroll Software">Payroll Software</option>
                     <option value="Website">Website</option>
                     <option value="WebApp">WebApp</option>
                   </select>

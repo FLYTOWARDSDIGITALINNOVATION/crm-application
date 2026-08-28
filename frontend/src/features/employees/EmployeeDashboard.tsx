@@ -193,6 +193,11 @@ const EmployeeDashboard: React.FC = () => {
   const inProgressCount = myTasks.filter((t) => t.status === 'In Progress').length;
   const completedCount = myTasks.filter((t) => t.status === 'Completed').length;
 
+  const marketingLeadCount = leads.length;
+  const marketingNewCount = leads.filter((l) => l.status === 'New').length;
+  const marketingContactedCount = leads.filter((l) => l.status === 'Contacted').length;
+  const marketingConvertedCount = leads.filter((l) => l.status === 'Converted').length;
+
   const sessionStartedAt = user?.lastLoginAt
     ? new Date(user.lastLoginAt).toLocaleString('en-IN', {
         dateStyle: 'medium',
@@ -384,10 +389,9 @@ const EmployeeDashboard: React.FC = () => {
                       className="mt-1 w-full px-4 py-2 rounded-xl border"
                     >
                       <option value="">Select Department</option>
+                      <option value="Telecalling">Telecalling</option>
                       <option value="Digital Marketing">Digital Marketing</option>
                       <option value="Web Development">Web Development</option>
-                      <option value="Sales">Sales</option>
-                      <option value="Support">Support</option>
                     </select>
                   ) : (
                     <p className="mt-1 text-sm text-slate-900">{user.department || 'N/A'}</p>
@@ -701,17 +705,21 @@ const EmployeeDashboard: React.FC = () => {
                                 <select
                                   value={task.status}
                                   onChange={(e) => {
-                                    if (e.target.value !== 'Completed') {
-                                      dispatch(updateTask({ id: task.id, status: e.target.value }));
-                                    }
+                                    const newStatus = e.target.value;
+                                    dispatch(updateTask({ 
+                                      id: task.id, 
+                                      status: newStatus,
+                                      progress: newStatus === 'Completed' ? 100 : newStatus === 'In Progress' ? 50 : 0
+                                    }));
                                   }}
                                   className={cn(
                                     "text-sm font-bold bg-transparent border-none cursor-pointer focus:ring-0 outline-none transition-colors pr-4 appearance-none",
-                                    task.status === 'In Progress' ? "text-blue-600" : "text-slate-600"
+                                    task.status === 'Completed' ? "text-emerald-600" : task.status === 'In Progress' ? "text-blue-600" : "text-slate-600"
                                   )}
                                 >
                                   <option value="Pending">Pending</option>
                                   <option value="In Progress">In Progress</option>
+                                  <option value="Completed">Completed</option>
                                 </select>
                               </div>
                             )}

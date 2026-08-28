@@ -2,7 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ILead extends Document {
   name: string;
-  email: string;
+  email?: string;
   phone?: string;
   company?: string;
   status: 'New' | 'Contacted' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Converted' | 'Not Interested' | 'Follow Up' | 'Direct Visit';
@@ -23,7 +23,7 @@ export interface ILead extends Document {
 const LeadSchema: Schema = new Schema(
   {
     name: { type: String, required: true },
-    email: { type: String, required: true },
+    email: { type: String, default: '' },
     phone: { type: String },
     company: { type: String },
     status: {
