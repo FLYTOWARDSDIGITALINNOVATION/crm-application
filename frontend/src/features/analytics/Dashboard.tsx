@@ -16,6 +16,7 @@ import { Link } from 'react-router-dom';
 
 const Dashboard: React.FC = () => {
   const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
   const leads = useAppSelector((state) => state.leads.items);
   const customers = useAppSelector((state) => state.customers.items);
   const { isDark } = useTheme();
@@ -119,21 +120,21 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 animate-fade-in pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Dashboard Overview</h1>
-          <p className="text-slate-500 dark:text-slate-400">Welcome back, John! Here's what's happening today.</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Welcome back, {user?.name || 'Super Admin'}! Here's what's happening today.</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button 
             onClick={exportToCSV}
-            className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+            className="flex-1 sm:flex-initial px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm"
           >
             Export CSV
           </button>
-          <Link to="/leads/create" className="px-4 py-2 bg-indigo-600 rounded-xl text-sm font-semibold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/50 transition-all flex items-center justify-center">
+          <Link to="/leads/create" className="flex-1 sm:flex-initial px-4 py-2 bg-indigo-600 rounded-xl text-xs sm:text-sm font-semibold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/50 transition-all flex items-center justify-center whitespace-nowrap">
             Add New Lead
           </Link>
         </div>

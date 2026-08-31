@@ -14,7 +14,8 @@ import {
   CalendarDays,
   ShieldCheck,
   Bell,
-  Building2
+  Building2,
+  LogOut
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAppSelector } from '../../store';
@@ -35,6 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
 
   if (user?.role === 'superadmin') {
     navItems = [
+      { title: 'Dashboard', icon: LayoutDashboard, path: '/' },
       { title: 'System Monitoring & Logs', icon: ShieldCheck, path: '/super-admin' },
       { title: 'Leads Management', icon: Target, path: '/leads' },
       { title: 'Customer Directory', icon: Building2, path: '/customers' },
@@ -126,6 +128,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar, isMobileO
           </NavLink>
         ))}
       </nav>
+
+      {/* Mobile Logout Option in Drawer */}
+      <div className="p-4 border-t border-slate-100 dark:border-slate-800 lg:hidden">
+        <button
+          onClick={() => {
+            onCloseMobile?.();
+            window.dispatchEvent(new CustomEvent('trigger_logout_modal'));
+          }}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-bold text-xs hover:bg-rose-100 transition-all border border-rose-100 dark:border-rose-900/50"
+        >
+          <LogOut className="w-4 h-4" />
+          Logout Account
+        </button>
+      </div>
     </div>
   );
 };

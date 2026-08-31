@@ -84,9 +84,22 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarCollapsed, onMenuToggle }) => 
         setIsNotifMenuOpen(false);
       }
     };
+
+    const handleTriggerLogout = () => {
+      if (user?.role === 'superadmin') {
+        setIsStandardLogoutModalOpen(true);
+      } else {
+        setIsLogoutModalOpen(true);
+      }
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    window.addEventListener('trigger_logout_modal', handleTriggerLogout);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('trigger_logout_modal', handleTriggerLogout);
+    };
+  }, [user?.role]);
 
   return (
     <header
@@ -108,11 +121,11 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarCollapsed, onMenuToggle }) => 
         <GlobalSearch />
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
         <div className="relative" ref={themeMenuRef}>
           <button
             onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
-            className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all flex items-center justify-center"
+            className="p-1.5 sm:p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all flex items-center justify-center"
             aria-label="Toggle theme"
           >
             {theme === 'system' ? <Monitor className="w-5 h-5" /> : theme === 'dark' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
@@ -145,101 +158,14 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarCollapsed, onMenuToggle }) => 
         <div className="relative" ref={notifMenuRef}>
           <button 
             onClick={() => setIsNotifMenuOpen(!isNotifMenuOpen)}
-            className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all relative flex items-center justify-center"
+            className="p-1.5 sm:p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all relative flex items-center justify-center"
           >
             <Bell className="w-5 h-5" />
             {notifications.length > 0 && (
-              <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white dark:border-slate-900"></span>
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white dark:border-slate-900"></span>
             )}
           </button>
-
-          {isNotifMenuOpen && (
-            <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden z-50 animate-fade-in flex flex-col">
-              <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center">
-                <span className="font-bold text-sm text-slate-900 dark:text-white">Notifications</span>
-                {notifications.length > 0 && (
-                  <span className="bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    {notifications.length} New
-                  </span>
-                )}
-              </div>
-              
-              <div className="max-h-[350px] overflow-y-auto">
-                {notifications.length > 0 ? (
-                  notifications.map(notif => {
-                    const due = new Date(notif.dueDate);
-                    const isValidDate = !isNaN(due.getTime());
-                    const past = isValidDate ? isPast(due) : false;
-                    const today = isValidDate ? isToday(due) : false;
-                    return (
-                      <div 
-                        key={notif.id} 
-                        onClick={() => {
-                          setIsNotifMenuOpen(false);
-                          if (notif.relatedTo === 'employee-approvals') navigate('/employee-approvals');
-                          else if (notif.relatedTo) navigate(`/leads/${notif.relatedTo}`);
-                          else navigate('/tasks');
-                        }}
-                        className="p-4 border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer group flex flex-col"
-                      >
-                        <div className="flex justify-between items-start mb-1">
-                          <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-1">
-                            {notif.title}
-                          </h4>
-                        </div>
-                        {notif.description && (
-                          <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-1">
-                            {notif.description}
-                          </p>
-                        )}
-                        <div className="flex items-center justify-between mt-3">
-                          <span className={cn(
-                            "text-[10px] font-bold px-2 py-1 rounded-md whitespace-nowrap",
-                            past ? "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400" :
-                            today ? "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400" :
-                            "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
-                          )}>
-                            {isValidDate ? format(due, 'MMM d, h:mm a') : 'No Date'}
-                          </span>
-                          
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (notif.type === 'task') {
-                                  setEditingTask(tasks.find(t => t.id === notif.id) || null);
-                                } else {
-                                  navigate('/employee-approvals');
-                                }
-                              }}
-                              className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 bg-white dark:bg-slate-800 shadow-sm rounded-md transition-colors border border-slate-200 dark:border-slate-700"
-                              title="Edit notification"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="p-8 text-center flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
-                    <Bell className="w-8 h-8 mb-2 opacity-20" />
-                    <p className="text-sm">No new notifications</p>
-                  </div>
-                )}
-              </div>
-              
-              {notifications.length > 0 && (
-                <a href="/tasks" className="block text-center text-xs font-bold text-indigo-600 dark:text-indigo-400 py-3 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                  View All Tasks
-                </a>
-              )}
-            </div>
-          )}
         </div>
-
-        <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-2"></div>
 
         <button
           onClick={() => {
@@ -249,13 +175,11 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarCollapsed, onMenuToggle }) => 
               setIsLogoutModalOpen(true);
             }
           }}
-          className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 shadow-sm transition-all hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+          className="flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50/80 px-2 sm:px-3 py-1.5 text-rose-600 shadow-sm transition-all hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-400 dark:hover:bg-rose-900/50 cursor-pointer shrink-0"
         >
-          <LogOut className="w-4 h-4" />
-          <span className="hidden sm:inline text-sm font-medium">Logout</span>
+          <LogOut className="w-4 h-4 shrink-0" />
+          <span className="hidden sm:inline text-xs sm:text-sm font-bold">Logout</span>
         </button>
-
-        <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-2"></div>
 
         <button
           type="button"
@@ -264,15 +188,15 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarCollapsed, onMenuToggle }) => 
               navigate(`${location.pathname}?profile=true`, { replace: true });
             }
           }}
-          className="flex items-center gap-3 p-1.5 pr-3 rounded-xl bg-slate-100/80 dark:bg-slate-900/70 transition-all hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+          className="hidden sm:flex items-center gap-2 p-1 pr-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-900/70 transition-all hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer shrink-0"
           title={user?.role === 'employee' ? 'Open your profile' : undefined}
         >
-          <div className="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-700 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800/50">
+          <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-700 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800/50 text-xs">
             {initials}
           </div>
-          <div className="hidden sm:flex flex-col items-start leading-tight">
-            <span className="text-sm font-semibold text-slate-900 dark:text-white">{user?.name || 'User'}</span>
-            <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">{user?.role || 'Staff'}</span>
+          <div className="flex flex-col items-start leading-tight">
+            <span className="text-xs font-semibold text-slate-900 dark:text-white">{user?.name || 'User'}</span>
+            <span className="text-[9px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">{user?.role || 'Staff'}</span>
           </div>
         </button>
       </div>

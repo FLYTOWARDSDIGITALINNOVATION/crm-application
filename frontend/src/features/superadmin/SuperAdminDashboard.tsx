@@ -75,20 +75,43 @@ const SuperAdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="glass p-2 rounded-2xl flex items-center gap-2 overflow-x-auto shrink-0 scrollbar-none">
+      {/* Tabs - Mobile 2x2 Grid View */}
+      <div className="grid grid-cols-2 gap-2 sm:hidden p-1.5 glass rounded-2xl">
         {[
           { id: 'activity', label: 'Employee Activity', icon: <Activity className="w-4 h-4" /> },
           { id: 'projects', label: 'Project Allocations', icon: <FolderKanban className="w-4 h-4" /> },
           { id: 'logs', label: 'Work Log Reviews', icon: <MessageSquare className="w-4 h-4" /> },
-          // { id: 'leaves', label: 'Leave Requests', icon: <Calendar className="w-4 h-4" /> },
           { id: 'logouts', label: 'Logout Reports', icon: <ArrowRightLeft className="w-4 h-4" /> },
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as Tab)}
             className={cn(
-              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 border border-transparent",
+              "flex items-center justify-center gap-1.5 px-2.5 py-2.5 rounded-xl text-[11px] font-bold transition-all text-center border border-transparent",
+              activeTab === tab.id
+                ? "bg-indigo-600 text-white shadow-md shadow-indigo-100"
+                : "bg-slate-50/70 text-slate-600 hover:bg-slate-100 border-slate-100"
+            )}
+          >
+            {tab.icon}
+            <span className="truncate">{tab.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Tabs - Desktop Horizontal View */}
+      <div className="hidden sm:flex glass p-2 rounded-2xl items-center gap-2 overflow-x-auto shrink-0 scrollbar-none">
+        {[
+          { id: 'activity', label: 'Employee Activity', icon: <Activity className="w-4 h-4" /> },
+          { id: 'projects', label: 'Project Allocations', icon: <FolderKanban className="w-4 h-4" /> },
+          { id: 'logs', label: 'Work Log Reviews', icon: <MessageSquare className="w-4 h-4" /> },
+          { id: 'logouts', label: 'Logout Reports', icon: <ArrowRightLeft className="w-4 h-4" /> },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as Tab)}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 border border-transparent whitespace-nowrap",
               activeTab === tab.id
                 ? "bg-indigo-600 text-white shadow-md shadow-indigo-100"
                 : "bg-slate-50/50 text-slate-500 hover:bg-slate-100/50 border-slate-100/50"
@@ -113,8 +136,9 @@ const SuperAdminDashboard: React.FC = () => {
         <div className="space-y-6">
           {/* TAB 1: Employee Activity */}
           {activeTab === 'activity' && (
-            <div className="glass rounded-3xl overflow-hidden border border-slate-100 shadow-xl">
-              <div className="overflow-x-auto">
+            <div className="glass rounded-3xl overflow-hidden border border-slate-100 shadow-xl p-3 sm:p-0">
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50/50">
@@ -129,7 +153,7 @@ const SuperAdminDashboard: React.FC = () => {
                   <tbody className="divide-y divide-slate-100 text-sm">
                     {employees.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="p-12 text-center text-slate-400 italic">No employees found.</td>
+                        <td colSpan={6} className="p-12 text-center text-slate-400 italic">No employees found.</td>
                       </tr>
                     ) : (
                       employees.map((emp) => (
@@ -222,24 +246,122 @@ const SuperAdminDashboard: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+
+              {/* Mobile Cards View */}
+              <div className="grid grid-cols-1 gap-3.5 md:hidden">
+                {employees.length === 0 ? (
+                  <div className="p-8 text-center text-slate-400 italic">No employees found.</div>
+                ) : (
+                  employees.map((emp) => (
+                    <div key={emp._id} className="p-4 bg-white/90 rounded-2xl border border-slate-100 shadow-sm space-y-3">
+                      {/* Top Row: Info & Status */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 text-sm font-bold flex items-center justify-center shrink-0">
+                            {emp.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-slate-800 text-sm truncate">{emp.name}</h4>
+                            <p className="text-xs text-slate-400 font-medium truncate">{emp.designation || 'Staff'} • {emp.department || 'General'}</p>
+                          </div>
+                        </div>
+                        <span className={cn(
+                          "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border shrink-0",
+                          emp.isOnline
+                            ? "text-emerald-700 bg-emerald-50 border-emerald-200"
+                            : "text-slate-400 bg-slate-50 border-slate-200"
+                        )}>
+                          <span className={cn("w-1.5 h-1.5 rounded-full", emp.isOnline ? "bg-emerald-500" : "bg-slate-300")} />
+                          {emp.isOnline ? 'Online' : 'Offline'}
+                        </span>
+                      </div>
+
+                      {/* Middle Grid: Session & Work Progress */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs bg-slate-50/80 p-3 rounded-xl">
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Session Details</span>
+                          <div className="flex items-center gap-1.5 text-slate-600 text-[11px]">
+                            <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span className="font-medium">In:</span>
+                            <span className="font-bold text-slate-700">{formatDateTime(emp.lastLoginAt)}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-slate-600 text-[11px]">
+                            <ArrowRightLeft className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span className="font-medium">Out:</span>
+                            <span className="font-bold text-slate-700">{formatDateTime(emp.lastLogoutAt)}</span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1 pt-2 sm:pt-0 border-t sm:border-t-0 sm:border-l border-slate-200 sm:pl-3">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Work Progress</span>
+                          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600">
+                            <span>{emp.completedTaskCount}/{emp.taskCount} Tasks</span>
+                            <span>{emp.workLogCount} Logs</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-indigo-600"
+                              style={{ width: `${emp.taskCount > 0 ? (emp.completedTaskCount / emp.taskCount) * 100 : 0}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Bottom Row: Projects & Actions */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100">
+                        <div className="flex-1 min-w-[120px]">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Assigned Projects</span>
+                          {emp.projects.length === 0 ? (
+                            <span className="text-xs text-slate-400 font-medium">None</span>
+                          ) : (
+                            <div className="flex flex-wrap gap-1">
+                              {emp.projects.map((proj) => (
+                                <span key={proj._id} className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-lg">
+                                  {proj.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="shrink-0">
+                          {emp.isOnline ? (
+                            <button
+                              onClick={() => setEmployeeToLogout({ id: emp._id, name: emp.name })}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-600 rounded-xl font-bold hover:bg-rose-100 transition-all text-xs"
+                            >
+                              <LogOut className="w-3.5 h-3.5" />
+                              Logout
+                            </button>
+                          ) : (
+                            <span className="inline-block px-2.5 py-1 bg-slate-100 text-slate-400 rounded-lg text-xs font-semibold">
+                              Logged Out
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           )}
 
           {/* TAB 2: Project Allocations */}
           {activeTab === 'projects' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               {projects.length === 0 ? (
-                <div className="col-span-full glass p-12 text-center text-slate-400 italic">No projects found.</div>
+                <div className="col-span-full glass p-8 sm:p-12 text-center text-slate-400 italic">No projects found.</div>
               ) : (
                 projects.map((project) => (
-                  <div key={project._id} className="glass p-6 rounded-3xl border border-slate-100 flex flex-col gap-4">
-                    <div className="flex items-start justify-between">
+                  <div key={project._id} className="glass p-4 sm:p-6 rounded-3xl border border-slate-100 flex flex-col gap-4">
+                    <div className="flex items-start justify-between gap-3">
                       <div>
                         <h3 className="font-bold text-slate-800 text-base">{project.name}</h3>
-                        <p className="text-xs text-slate-400 line-clamp-1 mt-0.5">{project.description || 'No description'}</p>
+                        <p className="text-xs text-slate-400 line-clamp-2 sm:line-clamp-1 mt-0.5">{project.description || 'No description'}</p>
                       </div>
                       <span className={cn(
-                        "text-[10px] font-bold px-2 py-0.5 border rounded-lg",
+                        "text-[10px] font-bold px-2 py-0.5 border rounded-lg shrink-0",
                         project.status === 'Active' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' :
                         project.status === 'Completed' ? 'text-indigo-700 bg-indigo-50 border-indigo-200' :
                         'text-amber-700 bg-amber-50 border-amber-200'
@@ -256,14 +378,14 @@ const SuperAdminDashboard: React.FC = () => {
                         <div className="space-y-2">
                           {project.assignedEmployees.map((emp) => (
                             <div key={emp._id} className="flex items-center justify-between text-xs bg-slate-50 px-3 py-2 rounded-xl">
-                              <div className="flex items-center gap-2">
-                                <span className={cn("w-2 h-2 rounded-full", emp.isOnline ? "bg-emerald-500" : "bg-slate-300")} />
-                                <div>
-                                  <p className="font-bold text-slate-700">{emp.name}</p>
-                                  <p className="text-[10px] text-slate-400">{emp.designation || 'Staff'}</p>
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className={cn("w-2 h-2 rounded-full shrink-0", emp.isOnline ? "bg-emerald-500" : "bg-slate-300")} />
+                                <div className="min-w-0">
+                                  <p className="font-bold text-slate-700 truncate">{emp.name}</p>
+                                  <p className="text-[10px] text-slate-400 truncate">{emp.designation || 'Staff'}</p>
                                 </div>
                               </div>
-                              <span className="text-[10px] text-slate-400 font-medium">{emp.department}</span>
+                              <span className="text-[10px] text-slate-400 font-medium shrink-0 ml-2">{emp.department}</span>
                             </div>
                           ))}
                         </div>
@@ -279,25 +401,25 @@ const SuperAdminDashboard: React.FC = () => {
           {activeTab === 'logs' && (
             <div className="space-y-4">
               {workLogs.length === 0 ? (
-                <div className="glass p-12 text-center text-slate-400 italic">No work logs submitted yet.</div>
+                <div className="glass p-8 sm:p-12 text-center text-slate-400 italic">No work logs submitted yet.</div>
               ) : (
                 workLogs.map((log) => (
-                  <div key={log._id} className="glass p-6 rounded-3xl border border-slate-100 space-y-3">
-                    <div className="flex items-start justify-between gap-4">
+                  <div key={log._id} className="glass p-4 sm:p-6 rounded-3xl border border-slate-100 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-sm">
+                        <div className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-sm shrink-0">
                           {log.employeeName.charAt(0).toUpperCase()}
                         </div>
                         <div>
                           <h4 className="font-bold text-slate-800">{log.employeeName}</h4>
-                          <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
+                          <div className="flex flex-wrap items-center gap-x-2 text-xs text-slate-400 font-medium">
                             <span>Project: <strong className="text-slate-600">{(log.project as any)?.name || 'Unknown'}</strong></span>
-                            <span>•</span>
+                            <span className="hidden sm:inline">•</span>
                             <span>Task: <strong className="text-slate-600">{(log.task as any)?.title || 'Unknown'}</strong></span>
                           </div>
                         </div>
                       </div>
-                      <span className="text-[10px] text-slate-400 font-bold">
+                      <span className="text-[10px] text-slate-400 font-bold self-start sm:self-auto">
                         {new Date(log.createdAt).toLocaleString('en-IN', {
                           day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
                         })}
@@ -332,45 +454,6 @@ const SuperAdminDashboard: React.FC = () => {
               )}
             </div>
           )}
-
-          {/* TAB 4: Leave Requests (Commented out) */}
-          {/* activeTab === 'leaves' && (
-            <div className="space-y-4">
-              {leaves.length === 0 ? (
-                <div className="glass p-12 text-center text-slate-400 italic">No leave requests found.</div>
-              ) : (
-                leaves.map((leave) => (
-                  <div key={leave._id} className="glass p-5 rounded-3xl border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="space-y-1 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className={cn(
-                          "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border",
-                          leave.status === 'Approved' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' :
-                          leave.status === 'Rejected' ? 'text-rose-700 bg-rose-50 border-rose-200' :
-                          'text-amber-700 bg-amber-50 border-amber-200'
-                        )}>
-                          {leave.status}
-                        </span>
-                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{leave.type} Leave</span>
-                      </div>
-                      <div className="flex items-center gap-2 pt-1">
-                        <h4 className="font-bold text-slate-800 text-sm">{leave.employeeName}</h4>
-                        <span className="text-xs text-slate-400 font-medium">({leave.startDate} to {leave.endDate})</span>
-                      </div>
-                      <p className="text-xs text-slate-500 font-medium mt-1">&ldquo;{leave.reason}&rdquo;</p>
-                    </div>
-
-                    {leave.approvedOrRejectedBy && (
-                      <div className="text-right shrink-0 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
-                        <span className="text-[9px] text-slate-400 font-bold block uppercase tracking-wider">Reviewed By</span>
-                        <span className="text-xs font-bold text-slate-700">{leave.approvedOrRejectedBy}</span>
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          ) */}
 
           {/* TAB 5: Logout Reports & Session Calendar */}
           {activeTab === 'logouts' && <LogoutReports />}

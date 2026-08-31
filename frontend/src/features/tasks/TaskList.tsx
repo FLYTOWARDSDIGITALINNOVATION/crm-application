@@ -246,14 +246,14 @@ const TaskList: React.FC = () => {
       </div>
 
       {/* Toolbar: Filters, Search & Action Button */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white/60 backdrop-blur-md p-4 rounded-2xl border border-slate-100 shadow-sm">
-        {/* Left Filter Dropdowns */}
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 bg-white/60 backdrop-blur-md p-3.5 sm:p-4 rounded-2xl border border-slate-100 shadow-sm">
+        {/* Filter Dropdowns Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 w-full lg:w-auto">
           {/* Projects Filter */}
           <select
             value={selectedProject}
             onChange={e => setSelectedProject(e.target.value)}
-            className="px-3.5 py-2 bg-white rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer"
+            className="w-full px-3.5 py-2 bg-white rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer"
           >
             <option value="All">All Projects</option>
             {projects.map(p => (
@@ -265,7 +265,7 @@ const TaskList: React.FC = () => {
           <select
             value={selectedStatus}
             onChange={e => setSelectedStatus(e.target.value)}
-            className="px-3.5 py-2 bg-white rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer"
+            className="w-full px-3.5 py-2 bg-white rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer"
           >
             <option value="All">All Status</option>
             <option value="To Do">To Do</option>
@@ -278,7 +278,7 @@ const TaskList: React.FC = () => {
           <select
             value={selectedPriority}
             onChange={e => setSelectedPriority(e.target.value)}
-            className="px-3.5 py-2 bg-white rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer"
+            className="w-full px-3.5 py-2 bg-white rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer"
           >
             <option value="All">All Priority</option>
             <option value="High">High</option>
@@ -288,7 +288,7 @@ const TaskList: React.FC = () => {
         </div>
 
         {/* Right Search Input & Green Create Button */}
-        <div className="flex items-center gap-3 self-stretch lg:self-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full lg:w-auto">
           <div className="relative flex-1 lg:w-64">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -303,7 +303,7 @@ const TaskList: React.FC = () => {
           {isAdmin && (
             <button
               onClick={openCreate}
-              className="flex items-center gap-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md shadow-emerald-200 transition-all shrink-0 cursor-pointer"
+              className="flex items-center justify-center gap-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md shadow-emerald-200 transition-all shrink-0 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               New Task
@@ -322,7 +322,7 @@ const TaskList: React.FC = () => {
 
       {/* Empty State */}
       {!isLoading && filteredTasks.length === 0 && (
-        <div className="bg-white p-12 rounded-3xl text-center border border-slate-100 shadow-sm">
+        <div className="bg-white p-8 sm:p-12 rounded-3xl text-center border border-slate-100 shadow-sm">
           <div className="w-14 h-14 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-3 text-emerald-600">
             <CheckSquare className="w-7 h-7" />
           </div>
@@ -333,135 +333,234 @@ const TaskList: React.FC = () => {
         </div>
       )}
 
-      {/* Tasks Table View - Matching Reference Image 1 */}
+      {/* Tasks Table / Mobile Cards Container */}
       {!isLoading && filteredTasks.length > 0 && (
-        <div className="bg-white rounded-3xl border border-slate-100/90 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto custom-scrollbar">
-            <table className="w-full text-left border-collapse min-w-[900px]">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                  <th className="py-4 px-6">Task Title</th>
-                  <th className="py-4 px-4">Project</th>
-                  <th className="py-4 px-4">Assigned To</th>
-                  <th className="py-4 px-4">Priority</th>
-                  <th className="py-4 px-4">Status</th>
-                  <th className="py-4 px-4">Start Date</th>
-                  <th className="py-4 px-4">Due Date</th>
-                  <th className="py-4 px-4">Progress</th>
-                  <th className="py-4 px-6 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-xs">
-                {filteredTasks.map((task, idx) => {
-                  const pName = task.relatedTo || (projects.find(p => p._id === task.projectId)?.name) || 'Project';
-                  const assignees = task.assignedTo ? task.assignedTo.split(',').map(s => s.trim()).filter(Boolean) : [];
-                  const mainAssignee = (user?.role === 'employee' && user?.name)
-                    ? (assignees.find(a => a.toLowerCase().includes(user.name.toLowerCase()) || (user.email && a.toLowerCase().includes(user.email.toLowerCase()))) || assignees[0] || 'Unassigned')
-                    : (assignees[0] || 'Unassigned');
-                  const progressVal = typeof task.progress === 'number' ? task.progress : (task.status === 'Completed' ? 100 : task.status === 'In Progress' ? 50 : 0);
+        <div className="space-y-4">
+          {/* Desktop Table View */}
+          <div className="hidden md:block bg-white rounded-3xl border border-slate-100/90 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto custom-scrollbar">
+              <table className="w-full text-left border-collapse min-w-[900px]">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    <th className="py-4 px-6">Task Title</th>
+                    <th className="py-4 px-4">Project</th>
+                    <th className="py-4 px-4">Assigned To</th>
+                    <th className="py-4 px-4">Priority</th>
+                    <th className="py-4 px-4">Status</th>
+                    <th className="py-4 px-4">Start Date</th>
+                    <th className="py-4 px-4">Due Date</th>
+                    <th className="py-4 px-4">Progress</th>
+                    <th className="py-4 px-6 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-xs">
+                  {filteredTasks.map((task, idx) => {
+                    const pName = task.relatedTo || (projects.find(p => p._id === task.projectId)?.name) || 'Project';
+                    const assignees = task.assignedTo ? task.assignedTo.split(',').map(s => s.trim()).filter(Boolean) : [];
+                    const mainAssignee = (user?.role === 'employee' && user?.name)
+                      ? (assignees.find(a => a.toLowerCase().includes(user.name.toLowerCase()) || (user.email && a.toLowerCase().includes(user.email.toLowerCase()))) || assignees[0] || 'Unassigned')
+                      : (assignees[0] || 'Unassigned');
+                    const progressVal = typeof task.progress === 'number' ? task.progress : (task.status === 'Completed' ? 100 : task.status === 'In Progress' ? 50 : 0);
 
-                  return (
-                    <tr key={task.id} className="hover:bg-slate-50/60 transition-colors group">
-                      {/* Task Title */}
-                      <td className="py-4 px-6 font-bold text-slate-900">
-                        {task.title}
-                      </td>
+                    return (
+                      <tr key={task.id} className="hover:bg-slate-50/60 transition-colors group">
+                        {/* Task Title */}
+                        <td className="py-4 px-6 font-bold text-slate-900">
+                          {task.title}
+                        </td>
 
-                      {/* Project */}
-                      <td className="py-4 px-4">
-                        <span className={projectColor(pName, idx)}>
-                          {pName}
-                        </span>
-                      </td>
-
-                      {/* Assigned To */}
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-700 font-bold text-[10px] flex items-center justify-center shrink-0 border border-slate-300">
-                            {mainAssignee.charAt(0).toUpperCase()}
-                          </div>
-                          <span className="font-semibold text-slate-800 truncate max-w-[120px]">
-                            {mainAssignee}
+                        {/* Project */}
+                        <td className="py-4 px-4">
+                          <span className={projectColor(pName, idx)}>
+                            {pName}
                           </span>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Priority */}
-                      <td className="py-4 px-4">
-                        <span className={cn('px-3 py-1 rounded-full text-[11px] font-bold border inline-block text-center min-w-[60px]', priorityStyle(task.priority))}>
-                          {task.priority}
-                        </span>
-                      </td>
-
-                      {/* Status */}
-                      <td className="py-4 px-4">
-                        <span className={cn('px-3 py-1 rounded-xl text-[11px] font-bold border inline-block text-center whitespace-nowrap', statusStyle(task.status))}>
-                          {task.status}
-                        </span>
-                      </td>
-
-                      {/* Start Date */}
-                      <td className="py-4 px-4 font-medium text-slate-600">
-                        {formatDate(task.startDate)}
-                      </td>
-
-                      {/* Due Date */}
-                      <td className="py-4 px-4 font-medium text-slate-600">
-                        {formatDate(task.dueDate)}
-                      </td>
-
-                      {/* Progress Bar */}
-                      <td className="py-4 px-4 min-w-[120px]">
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                            <div 
-                              className="bg-emerald-600 h-full rounded-full transition-all duration-300"
-                              style={{ width: `${progressVal}%` }}
-                            />
+                        {/* Assigned To */}
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-700 font-bold text-[10px] flex items-center justify-center shrink-0 border border-slate-300">
+                              {mainAssignee.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="font-semibold text-slate-800 truncate max-w-[120px]">
+                              {mainAssignee}
+                            </span>
                           </div>
-                          <span className="text-[10px] font-bold text-slate-400 w-7 text-right">
-                            {progressVal}%
-                          </span>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Actions */}
-                      <td className="py-4 px-6 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                        {/* Priority */}
+                        <td className="py-4 px-4">
+                          <span className={cn('px-3 py-1 rounded-full text-[11px] font-bold border inline-block text-center min-w-[60px]', priorityStyle(task.priority))}>
+                            {task.priority}
+                          </span>
+                        </td>
+
+                        {/* Status */}
+                        <td className="py-4 px-4">
+                          <span className={cn('px-3 py-1 rounded-xl text-[11px] font-bold border inline-block text-center whitespace-nowrap', statusStyle(task.status))}>
+                            {task.status}
+                          </span>
+                        </td>
+
+                        {/* Start Date */}
+                        <td className="py-4 px-4 font-medium text-slate-600">
+                          {formatDate(task.startDate)}
+                        </td>
+
+                        {/* Due Date */}
+                        <td className="py-4 px-4 font-medium text-slate-600">
+                          {formatDate(task.dueDate)}
+                        </td>
+
+                        {/* Progress Bar */}
+                        <td className="py-4 px-4 min-w-[120px]">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                              <div 
+                                className="bg-emerald-600 h-full rounded-full transition-all duration-300"
+                                style={{ width: `${progressVal}%` }}
+                              />
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-400 w-7 text-right">
+                              {progressVal}%
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-4 px-6 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => setViewTask(task)}
+                              title="View details"
+                              className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all cursor-pointer"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+
+                            {isAdmin && (
+                              <>
+                                <button
+                                  onClick={() => openEdit(task)}
+                                  title="Edit task"
+                                  className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+
+                                <button
+                                  onClick={() => setDeleteConfirm(task)}
+                                  title="Delete task"
+                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile Cards View */}
+          <div className="grid grid-cols-1 gap-3.5 md:hidden">
+            {filteredTasks.map((task, idx) => {
+              const pName = task.relatedTo || (projects.find(p => p._id === task.projectId)?.name) || 'Project';
+              const assignees = task.assignedTo ? task.assignedTo.split(',').map(s => s.trim()).filter(Boolean) : [];
+              const mainAssignee = (user?.role === 'employee' && user?.name)
+                ? (assignees.find(a => a.toLowerCase().includes(user.name.toLowerCase()) || (user.email && a.toLowerCase().includes(user.email.toLowerCase()))) || assignees[0] || 'Unassigned')
+                : (assignees[0] || 'Unassigned');
+              const progressVal = typeof task.progress === 'number' ? task.progress : (task.status === 'Completed' ? 100 : task.status === 'In Progress' ? 50 : 0);
+
+              return (
+                <div key={task.id} className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm space-y-3">
+                  {/* Top Row: Title & Actions */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-0.5 min-w-0">
+                      <h4 className="font-bold text-slate-900 text-sm leading-snug">{task.title}</h4>
+                      <span className={cn("text-xs block truncate", projectColor(pName, idx))}>
+                        {pName}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => setViewTask(task)}
+                        title="View details"
+                        className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all cursor-pointer"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      {isAdmin && (
+                        <>
                           <button
-                            onClick={() => setViewTask(task)}
-                            title="View details"
-                            className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all cursor-pointer"
+                            onClick={() => openEdit(task)}
+                            title="Edit task"
+                            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Edit2 className="w-4 h-4" />
                           </button>
+                          <button
+                            onClick={() => setDeleteConfirm(task)}
+                            title="Delete task"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
 
-                          {isAdmin && (
-                            <>
-                              <button
-                                onClick={() => openEdit(task)}
-                                title="Edit task"
-                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </button>
+                  {/* Status & Priority Badges */}
+                  <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                    <span className={cn('px-2.5 py-0.5 rounded-full text-[10px] font-bold border', priorityStyle(task.priority))}>
+                      {task.priority} Priority
+                    </span>
+                    <span className={cn('px-2.5 py-0.5 rounded-xl text-[10px] font-bold border', statusStyle(task.status))}>
+                      {task.status}
+                    </span>
+                  </div>
 
-                              <button
-                                onClick={() => setDeleteConfirm(task)}
-                                title="Delete task"
-                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  {/* Assigned & Dates Info */}
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50/80 p-2.5 rounded-xl">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-700 font-bold text-[10px] flex items-center justify-center shrink-0 border border-slate-300">
+                        {mainAssignee.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-[9px] font-bold uppercase text-slate-400 block leading-tight">Assigned</span>
+                        <span className="font-semibold text-slate-800 text-[11px] truncate block">{mainAssignee}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-0.5">
+                      <span className="text-[9px] font-bold uppercase text-slate-400 block leading-tight">Due Date</span>
+                      <span className="font-semibold text-slate-700 text-[11px] block">{formatDate(task.dueDate)}</span>
+                    </div>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="space-y-1 pt-1">
+                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-500">
+                      <span>Progress</span>
+                      <span>{progressVal}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                      <div 
+                        className="bg-emerald-600 h-full rounded-full transition-all duration-300"
+                        style={{ width: `${progressVal}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
